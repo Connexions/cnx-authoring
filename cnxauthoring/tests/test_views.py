@@ -10,7 +10,10 @@ import datetime
 import hashlib
 import unittest
 import uuid
-from unittest import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from pyramid import testing
 

@@ -29,9 +29,8 @@ def main(global_config, **settings):
     #     Lookup storage factory by name and pass in '<name>.*' values,
     #     where '*' would be a keyword argument..
     from . import storage
-    from .storage.mongodb import MongoDBStorage
-    storage_instance = MongoDBStorage(settings['mongodb.connection_uri'],
-                                      settings['mongodb.database_name'])
+    from .storage.main import BaseStorage
+    storage_instance = BaseStorage()
     setattr(storage, 'storage', storage_instance)
 
     config.scan()
