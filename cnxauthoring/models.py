@@ -8,6 +8,7 @@
 import time
 import datetime
 import hashlib
+import uuid
 
 import pytz
 
@@ -91,7 +92,7 @@ class Document:
                  license=LICENSE_PARAMETER_MARKER,
                  language=None, derived_from=None):
         self.title = title
-        self.id = id
+        self.id = id or uuid.uuid4()
         self.contents = contents
         self.summary = summary is None and '' or summary
         now = datetime.datetime.now(tz=TZINFO)
@@ -104,6 +105,13 @@ class Document:
             self.license = license
         self.language = language is None and DEFAULT_LANGUAGE or language
         self.derived_from = derived_from
+
+    def to_dict(self):
+        c = self.__dict__.copy()
+        c['created'] = str(c['created'])
+        c['modified'] = str(c['modified'])
+        c['license'] = c['license'].__dict__
+        return c
 
 
 def create_content(**appstruct):

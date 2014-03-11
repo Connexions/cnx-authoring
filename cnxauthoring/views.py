@@ -20,7 +20,7 @@ def get_content(request):
     content = storage.get(id=id)
     if content is None:
         raise httpexceptions.HTTPNotFound()
-    return content
+    return content.to_dict()
 
 
 @view_config(route_name='get-resource', request_method='GET')
@@ -41,7 +41,7 @@ def post_content(request):
     """Create content.
     Returns the content location and a copy of the newly created content.
     """
-    cstruct = request.POST
+    cstruct = request.json_body
     appstruct = DocumentSchema().bind().deserialize(cstruct)
     content = create_content(**appstruct)
 
@@ -53,7 +53,7 @@ def post_content(request):
     resp.headers.add(
         'Location',
         request.route_url('get-content', id=content.id))
-    return content
+    return content.to_dict()
 
 
 @view_config(route_name='post-resource', request_method='POST', renderer='json')

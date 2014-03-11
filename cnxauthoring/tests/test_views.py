@@ -49,7 +49,7 @@ class ViewsTests(unittest.TestCase):
         with mock.patch.object(self.storage_cls, 'get', return_value=expected):
             from ..views import get_content
             content = get_content(request)
-        self.assertEqual(content, expected)
+        self.assertEqual(content, expected.to_dict())
 
     def test_get_content_404(self):
         request = testing.DummyRequest()
@@ -101,11 +101,11 @@ class ViewsTests(unittest.TestCase):
 
         # Minimal document posts require a title.
         request = testing.DummyRequest()
-        request.POST = {'title': title}
+        request.json_body = {'title': title}
         from ..views import post_content
         returned_document = post_content(request)
 
-        self.assertEqual(returned_document, self.document)
+        self.assertEqual(returned_document, self.document.to_dict())
         self.assertEqual(request.response.status, '201 Created')
         content_url = request.route_url('get-content', id=self.document.id)
         self.assertIn(('Location', content_url,),
@@ -134,7 +134,7 @@ class ViewsTests(unittest.TestCase):
 
         # Minimal document posts require a title.
         request = testing.DummyRequest()
-        request.POST = post_data.copy()
+        request.json_body = post_data.copy()
         from ..views import post_content
         returned_document = post_content(request)
 
@@ -143,13 +143,13 @@ class ViewsTests(unittest.TestCase):
         self.assertIn(('Location', content_url,),
                       request.response.headerlist)
 
-        self.assertEqual(returned_document, self.document)
-        self.assertEqual(returned_document.title, post_data['title'])
-        self.assertEqual(returned_document.summary, post_data['summary'])
+        self.assertEqual(returned_document, self.document.to_dict())
+        self.assertEqual(returned_document['title'], post_data['title'])
+        self.assertEqual(returned_document['summary'], post_data['summary'])
         # TODO Test created and modified dates.
-        self.assertEqual(returned_document.license.url, DEFAULT_LICENSE.url)
-        self.assertEqual(returned_document.language, post_data['language'])
-        self.assertEqual(returned_document.contents, post_data['contents'])
+        self.assertEqual(returned_document['license']['url'], DEFAULT_LICENSE.url)
+        self.assertEqual(returned_document['language'], post_data['language'])
+        self.assertEqual(returned_document['contents'], post_data['contents'])
 
     def test_post_resource(self):
         # Set up a resource
