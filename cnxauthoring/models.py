@@ -8,8 +8,11 @@
 import time
 import datetime
 import hashlib
+import uuid
 
 import pytz
+
+from .storage import Model
 
 
 # Timezone info initialized from the system timezone.
@@ -62,10 +65,11 @@ LICENSES = [License(**dict(args))
 DEFAULT_LICENSE = LICENSES[-1]
 
 
-class Resource:
+class Resource(Model):
     """Any *file* that is referenced within a ``Document``."""
 
     def __init__(self, mediatype, data):
+        super(Resource, self).__init__()
         self.mediatype = mediatype
         # ``data`` must be a buffer or file-like object.
         self.data = data
@@ -79,7 +83,7 @@ class Resource:
         return self._hash
 
 
-class Document:
+class Document(Model):
     """Modular documents that contain written text
     by one or more authors.
     """
@@ -90,8 +94,9 @@ class Document:
                  created=None, modified=None,
                  license=LICENSE_PARAMETER_MARKER,
                  language=None, derived_from=None):
+        super(Document, self).__init__()
         self.title = title
-        self.id = id
+        self.id = id or uuid.uuid4()
         self.contents = contents
         self.summary = summary is None and '' or summary
         now = datetime.datetime.now(tz=TZINFO)

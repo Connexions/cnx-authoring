@@ -8,6 +8,9 @@
 from pyramid.config import Configurator
 
 
+__version__ = '0.1'
+
+
 def declare_routes(config):
     """Declaration of routing"""
     add_route = config.add_route
