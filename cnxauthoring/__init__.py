@@ -33,5 +33,5 @@ def main(global_config, **settings):
     storage_instance = MemoryStorage()
     setattr(storage, 'storage', storage_instance)
 
-    config.scan()
+    config.scan(ignore='cnxauthoring.tests')
     return config.make_wsgi_app()

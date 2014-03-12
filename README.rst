@@ -7,6 +7,19 @@
 Game plan
 =========
 
+INSTALL
+-------
+
+1. ``virtualenv .``
+
+2. ``./bin/python setup.py install``
+
+3. Make a copy of ``development.ini.example`` and call it ``development.ini``.
+
+4. Edit settings in ``development.ini`` as necessary.
+
+5. ``./bin/pserve development.ini``
+
 Documentation of data
 ---------------------
 
