@@ -90,7 +90,7 @@ class Document:
                  contents=None, summary=None,
                  created=None, modified=None,
                  license=LICENSE_PARAMETER_MARKER,
-                 language=None, derived_from=None):
+                 language=None, derived_from=None, submitter=None):
         self.title = title
         self.id = id or uuid.uuid4()
         self.contents = contents
@@ -105,9 +105,11 @@ class Document:
             self.license = license
         self.language = language is None and DEFAULT_LANGUAGE or language
         self.derived_from = derived_from
+        self.submitter = submitter
 
     def to_dict(self):
         c = self.__dict__.copy()
+        c['id'] = str(c['id'])
         c['created'] = str(c['created'])
         c['modified'] = str(c['modified'])
         c['license'] = c['license'].__dict__

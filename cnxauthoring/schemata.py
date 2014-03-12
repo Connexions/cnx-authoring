@@ -79,5 +79,8 @@ class DocumentSchema(colander.MappingSchema):
         colander.String(),
         missing=colander.drop,
         )
+    submitter = colander.SchemaNode(
+        colander.String(),
+        )
 
 document_schema = DocumentSchema()

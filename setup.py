@@ -3,6 +3,7 @@ from setuptools import setup, find_packages
 
 install_requires = (
         'colander',
+        'openstax-accounts',
         'PasteDeploy',
         'pyramid',
         'pytz',

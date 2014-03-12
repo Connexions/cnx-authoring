@@ -5,19 +5,40 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
+from pyramid.security import forget
 from pyramid.view import view_config
 from pyramid import httpexceptions
 
+from . import Site
 from .models import create_content, Document, Resource
 from .schemata import DocumentSchema
 from .storage import storage
 
 
-@view_config(route_name='get-content', request_method='GET', renderer='json')
+@view_config(route_name='login', context=Site, permission='protected')
+def login(request):
+    # login must be protected so that effective_principals is called
+    pass
+
+
+@view_config(route_name='callback', context=Site, permission='protected')
+def callback(request):
+    # callback must be protected so that effective_principals is called
+    # callback must redirect
+    raise httpexceptions.HTTPFound(location='/')
+
+
+@view_config(route_name='logout')
+def logout(request):
+    forget(request)
+    raise httpexceptions.HTTPFound(location='/')
+
+
+@view_config(route_name='get-content', request_method='GET', renderer='json', context=Site, permission='protected')
 def get_content(request):
     """Acquisition of content by id"""
     id = request.matchdict['id']
-    content = storage.get(id=id)
+    content = storage.get(id=id, submitter=request.unauthenticated_userid)
     if content is None:
         raise httpexceptions.HTTPNotFound()
     return content.to_dict()
@@ -36,12 +57,13 @@ def get_resource(request):
     return resp
 
 
-@view_config(route_name='post-content', request_method='POST', renderer='json')
+@view_config(route_name='post-content', request_method='POST', renderer='json', context=Site, permission='protected')
 def post_content(request):
     """Create content.
     Returns the content location and a copy of the newly created content.
     """
     cstruct = request.json_body
+    cstruct['submitter'] = request.unauthenticated_userid
     appstruct = DocumentSchema().bind().deserialize(cstruct)
     content = create_content(**appstruct)
 
