@@ -6,10 +6,15 @@
 # See LICENCE.txt for details.
 # ###
 import json
+try:
+    from urllib import urlencode # python 2
+except ImportError:
+    from urllib.parse import urlencode # renamed in python 3
 
 from pyramid.security import forget
 from pyramid.view import view_config
 from pyramid import httpexceptions
+from openstax_accounts.interfaces import *
 
 from . import Site
 from .models import create_content, Document, Resource
@@ -34,6 +39,19 @@ def callback(request):
 def logout(request):
     forget(request)
     raise httpexceptions.HTTPFound(location='/')
+
+
+@view_config(route_name='user-search', request_method='GET', renderer='json', context=Site, permission='protected')
+def user_search(request):
+    """Search for openstax accounts users"""
+    q = request.GET.get('q', '')
+    if not q:
+        return []
+    params = urlencode({'q': q})
+    accounts = request.registry.getUtility(IOpenstaxAccounts)
+    result = accounts.request(
+            '/api/users/search.json?{}'.format(params))
+    return result
 
 
 @view_config(route_name='get-content', request_method='GET', renderer='json', context=Site, permission='protected')

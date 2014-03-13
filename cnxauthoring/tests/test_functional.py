@@ -7,6 +7,10 @@
 # ###
 import json
 import unittest
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from pyramid.interfaces import IAuthenticationPolicy
 from pyramid.security import Everyone, Authenticated
@@ -47,13 +51,22 @@ def mock_authentication_policy(config):
     config.set_authentication_policy(MockAuthenticationPolicy())
 
 
+def mock_openstax_accounts(config):
+    from openstax_accounts.interfaces import IOpenstaxAccounts
+    accounts = mock.MagicMock()
+    accounts.request.side_effect = lambda *args, **kwargs: (
+        FunctionalTests.accounts_request_return)
+    config.registry.registerUtility(accounts, IOpenstaxAccounts)
+
+
 class FunctionalTests(unittest.TestCase):
     profile = None
+    accounts_request_return = ''
 
     def setUp(self):
         # Mock all the openstax accounts code
         from openstax_accounts import openstax_accounts
-        openstax_accounts.main = lambda *args, **kwargs: None
+        openstax_accounts.main = mock_openstax_accounts
         from openstax_accounts import authentication_policy
         authentication_policy.main = mock_authentication_policy
 
@@ -139,3 +152,27 @@ class FunctionalTests(unittest.TestCase):
             u'language': post_data['language'],
             u'contents': post_data['contents'],
             })
+
+    def test_user_search_no_q(self):
+        response = self.testapp.get('/users/search')
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result, [])
+
+    def test_user_search_q_empty(self):
+        response = self.testapp.get('/users/search?q=')
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result, [])
+
+    def test_user_search(self):
+        FunctionalTests.accounts_request_return = {
+                'per_page': 20,
+                'users': [
+                    {'username': 'admin', 'id': 1, 'contact_infos': []}
+                    ],
+                'order_by': 'username ASC',
+                'num_matching_users': 1,
+                'page': 0,
+                }
+        response = self.testapp.get('/users/search?q=admin')
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result, FunctionalTests.accounts_request_return)

@@ -30,6 +30,7 @@ def declare_routes(config):
     add_route('get-resource', '/resources/{hash}', request_method='GET')
     add_route('post-content', '/contents', request_method='POST')
     add_route('post-resource', '/resources', request_method='POST')
+    add_route('user-search', '/users/search', request_method='GET')
 
 
 def declare_oauth_routes(config):
