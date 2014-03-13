@@ -32,4 +32,5 @@ setup(
                 ],
             },
         test_suite='cnxauthoring.tests',
+        zip_safe=False,
         )
