@@ -176,3 +176,13 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/users/search?q=admin')
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, FunctionalTests.accounts_request_return)
+
+    def test_profile_403(self):
+        FunctionalTests.profile = None
+        self.testapp.get('/users/profile', status=403)
+
+    def test_profile(self):
+        FunctionalTests.profile = {'username': 'first_last'}
+        response = self.testapp.get('/users/profile', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result, FunctionalTests.profile)

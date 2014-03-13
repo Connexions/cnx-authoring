@@ -54,6 +54,11 @@ def user_search(request):
     return result
 
 
+@view_config(route_name='profile', request_method='GET', renderer='json', context=Site, permission='protected')
+def profile(request):
+    return request.user
+
+
 @view_config(route_name='get-content', request_method='GET', renderer='json', context=Site, permission='protected')
 def get_content(request):
     """Acquisition of content by id"""
