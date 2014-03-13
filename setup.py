@@ -12,6 +12,7 @@ install_requires = (
 
 tests_require = (
         'mock',   # only required for python2
+        'WebTest',
         )
 
 setup(

@@ -5,6 +5,8 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
+import json
+
 from pyramid.security import forget
 from pyramid.view import view_config
 from pyramid import httpexceptions
@@ -62,9 +64,15 @@ def post_content(request):
     """Create content.
     Returns the content location and a copy of the newly created content.
     """
-    cstruct = request.json_body
+    try:
+        cstruct = request.json_body
+    except (TypeError, ValueError):
+        raise httpexceptions.HTTPBadRequest('Invalid JSON')
     cstruct['submitter'] = request.unauthenticated_userid
-    appstruct = DocumentSchema().bind().deserialize(cstruct)
+    try:
+        appstruct = DocumentSchema().bind().deserialize(cstruct)
+    except Exception as e:
+        raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
     content = create_content(**appstruct)
 
     content = storage.add(content)
