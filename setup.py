@@ -3,6 +3,7 @@ from setuptools import setup, find_packages
 
 install_requires = (
         'colander',
+        'openstax-accounts',
         'PasteDeploy',
         'pyramid',
         'pytz',
@@ -11,6 +12,7 @@ install_requires = (
 
 tests_require = (
         'mock',   # only required for python2
+        'WebTest',
         )
 
 setup(
@@ -31,4 +33,5 @@ setup(
                 ],
             },
         test_suite='cnxauthoring.tests',
+        zip_safe=False,
         )

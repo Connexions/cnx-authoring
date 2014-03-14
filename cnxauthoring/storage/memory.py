@@ -30,6 +30,7 @@ class MemoryStorage(BaseStorage):
         if isinstance(item_or_items, list):
             raise NotImplementedError()
         item = item_or_items
+        item.id = str(item.id)
         collection = self.storage[str(item.__class__)]
         collection.append(item)
         return item

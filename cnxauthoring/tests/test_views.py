@@ -100,9 +100,13 @@ class ViewsTests(unittest.TestCase):
         self.storage_cls.persist = mock.Mock(return_value=None)
 
         # Minimal document posts require a title.
+        from ..views import post_content
         request = testing.DummyRequest()
         request.json_body = {'title': title}
-        from ..views import post_content
+        _unauthenticated_userid = request.__class__.unauthenticated_userid
+        self.addCleanup(setattr, request.__class__, 'unauthenticated_userid',
+                        _unauthenticated_userid)
+        request.__class__.unauthenticated_userid = 'username'
         returned_document = post_content(request)
 
         self.assertEqual(returned_document, self.document.to_dict())
@@ -135,6 +139,10 @@ class ViewsTests(unittest.TestCase):
         # Minimal document posts require a title.
         request = testing.DummyRequest()
         request.json_body = post_data.copy()
+        _unauthenticated_userid = request.__class__.unauthenticated_userid
+        self.addCleanup(setattr, request.__class__, 'unauthenticated_userid',
+                        _unauthenticated_userid)
+        request.__class__.unauthenticated_userid = 'username'
         from ..views import post_content
         returned_document = post_content(request)
 
