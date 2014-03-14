@@ -8,6 +8,7 @@
 import io
 import datetime
 import hashlib
+import sys
 import unittest
 import uuid
 try:
@@ -21,6 +22,8 @@ from pyramid import testing
 class ViewsTests(unittest.TestCase):
 
     def setUp(self):
+        if 'cnxauthoring.views' in sys.modules:
+            del sys.modules['cnxauthoring.views']
         self.config = testing.setUp()
         from .. import declare_routes
         declare_routes(self.config)

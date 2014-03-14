@@ -5,7 +5,13 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
 import json
+import os
+import sys
 import unittest
 try:
     from unittest import mock
@@ -63,23 +69,38 @@ class FunctionalTests(unittest.TestCase):
     profile = None
     accounts_request_return = ''
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
+        # only run once for all the tests
+
+        # make sure storage is set correctly in cnxauthoring.views by reloading
+        # cnxauthoring.views
+        if 'cnxauthoring.views' in sys.modules:
+            del sys.modules['cnxauthoring.views']
+
         # Mock all the openstax accounts code
         from openstax_accounts import openstax_accounts
         openstax_accounts.main = mock_openstax_accounts
         from openstax_accounts import authentication_policy
         authentication_policy.main = mock_authentication_policy
 
+        # make sure test db is empty
+        config = ConfigParser.ConfigParser()
+        config.read(['testing.ini'])
+        test_db = config.get('app:main', 'pickle.filename')
+        try:
+            os.remove(test_db)
+        except OSError:
+            # file doesn't exist
+            pass
+
         import pyramid.paster
         app = pyramid.paster.get_app('testing.ini')
+
         from webtest import TestApp
         self.testapp = TestApp(app)
 
-        # make sure storage is set correctly in cnxauthoring.views by reloading
-        # cnxauthoring.views
-        import sys
-        del sys.modules['cnxauthoring.views']
-
+    def setUp(self):
         FunctionalTests.profile = {u'username': u'me'}
 
     def test_get_content_403(self):

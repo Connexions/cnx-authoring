@@ -61,8 +61,8 @@ def main(global_config, **settings):
     #     Lookup storage factory by name and pass in '<name>.*' values,
     #     where '*' would be a keyword argument..
     from . import storage
-    from .storage.memory import MemoryStorage
-    storage_instance = MemoryStorage()
+    from .storage.pickle_storage import PickleStorage
+    storage_instance = PickleStorage(settings['pickle.filename'])
     setattr(storage, 'storage', storage_instance)
 
     config.scan(ignore='cnxauthoring.tests')
