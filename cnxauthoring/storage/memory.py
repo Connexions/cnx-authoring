@@ -41,7 +41,18 @@ class MemoryStorage(BaseStorage):
 
     def update(self, item_or_items):
         """Updates any item or set of items in storage."""
-        raise NotImplementedError()
+        if isinstance(item_or_items, list):
+            raise NotImplementedError()
+        item = item_or_items
+        item.id = str(item.id)
+        collection = self.storage[str(item.__class__)]
+        for i, member in enumerate(collection):
+            if item.id == member.id:
+                index = i
+                break
+        collection.pop(index)
+        self.add(item)
+        return item
 
     def persist(self):
         """Persist/commit the changes."""

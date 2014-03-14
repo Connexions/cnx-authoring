@@ -128,3 +128,37 @@ def post_resource(request):
     location = request.route_url('get-resource', hash=resource.hash)
     resp.headers.add('Location', location)
     return location
+
+
+@view_config(route_name='put-content', request_method='PUT', renderer='json', context=Site, permission='protected')
+def put_content(request):
+    """Modify a stored document"""
+    id = request.matchdict['id']
+    content = storage.get(id=id, submitter=request.unauthenticated_userid)
+    if content is None:
+        raise httpexceptions.HTTPNotFound()
+
+    try:
+        cstruct = request.json_body
+    except (TypeError, ValueError):
+        raise httpexceptions.HTTPBadRequest('Invalid JSON')
+
+    cstruct['submitter'] = request.unauthenticated_userid
+    for key, value in content.to_dict().items():
+        cstruct.setdefault(key, value)
+
+    try:
+        appstruct = DocumentSchema().bind().deserialize(cstruct)
+    except Exception as e:
+        raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
+
+    content.update(**appstruct)
+    storage.update(content)
+    storage.persist()
+
+    resp = request.response
+    resp.status = 200
+    resp.headers.add(
+            'Location',
+            request.route_url('get-content', id=content.id))
+    return content.to_dict()

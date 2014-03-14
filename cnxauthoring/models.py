@@ -107,6 +107,13 @@ class Document:
         self.derived_from = derived_from
         self.submitter = submitter
 
+    def update(self, **kwargs):
+        if 'license' in kwargs:
+            del kwargs['license']
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
     def to_dict(self):
         c = self.__dict__.copy()
         c['id'] = str(c['id'])

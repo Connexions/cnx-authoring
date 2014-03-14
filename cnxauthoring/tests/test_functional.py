@@ -153,6 +153,42 @@ class FunctionalTests(unittest.TestCase):
             u'contents': post_data['contents'],
             })
 
+    def test_put_content_403(self):
+        FunctionalTests.profile = None
+        self.testapp.put('/contents/1234abcde', status=403)
+
+    def test_put_content_not_found(self):
+        self.testapp.put('/contents/1234abcde',
+                json.dumps({'title': u'Update document title'}),
+                status=404)
+
+    def test_put_content(self):
+        response = self.testapp.post('/contents', 
+                json.dumps({
+                    'title': u'My document タイトル',
+                    'summary': u'My document summary',
+                    'language': u'en-us'}),
+                status=201)
+        document = json.loads(response.body.decode('utf-8'))
+
+        update_data = {
+            'title': u"Turning DNA through resonance",
+            'summary': u"Theories on turning DNA structures",
+            'contents': u"Ding dong the switch is flipped.",
+            }
+
+        response = self.testapp.put('/contents/{}'.format(document['id']),
+                json.dumps(update_data),
+                status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['id'], document['id'])
+        self.assertEqual(result['title'], update_data['title'])
+        self.assertEqual(result['summary'], update_data['summary'])
+        self.assertEqual(result['language'], document['language'])
+        self.assertEqual(result['contents'], update_data['contents'])
+
+        response = self.testapp.get('/contents/{}'.format(document['id']))
+
     def test_user_search_no_q(self):
         response = self.testapp.get('/users/search')
         result = json.loads(response.body.decode('utf-8'))
