@@ -27,3 +27,8 @@ class BaseStorage:
     def persist(self):
         """Persist/commit the changes."""
         raise NotImplementedError()
+
+    def search(self, **kwargs):
+        """Retrieve any ``Document`` objects from storage that matches the
+        search terms."""
+        raise NotImplementedError()

@@ -20,6 +20,7 @@ from . import Site
 from .models import create_content, Document, Resource
 from .schemata import DocumentSchema
 from .storage import storage
+from .utils import structured_query
 
 
 @view_config(route_name='login', context=Site, permission='protected')
@@ -162,3 +163,35 @@ def put_content(request):
             'Location',
             request.route_url('get-content', id=content.id))
     return content.to_dict()
+
+
+@view_config(route_name='search-content', request_method='GET', renderer='json', context=Site, permission='protected')
+def search_content(request):
+    """Search documents by title and contents"""
+    empty_response = {
+            u'query': {
+                u'limits': [],
+                },
+            u'results': {
+                u'items': [],
+                u'total': 0,
+                u'limits': [],
+                },
+            }
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return empty_response
+    q = structured_query(q)
+
+    result = storage.search(q, submitter=request.unauthenticated_userid)
+    items = [i.to_dict() for i in result]
+    return {
+            u'query': {
+                u'limits': [{'tag': tag, 'value': value} for tag, value in q],
+                },
+            u'results': {
+                u'items': items,
+                u'total': len(items),
+                u'limits': [],
+                },
+            }

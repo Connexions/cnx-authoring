@@ -57,3 +57,23 @@ class MemoryStorage(BaseStorage):
     def persist(self):
         """Persist/commit the changes."""
         pass
+
+    def search(self, limits, type_=Document, submitter=None):
+        """Retrieve any ``Document`` objects from storage that matches the
+        search terms."""
+        if type_ != Document:
+            raise NotImplementedError()
+        collection = self.storage[str(type_)]
+
+        search_terms = []
+        for limit_type, term in limits:
+            if limit_type != 'text':
+                raise NotImplementedError()
+            search_terms.append(term.lower())
+
+        for item in collection:
+            title = item.title and item.title.lower() or u''
+            for term in search_terms:
+                if term in title:
+                    if submitter is None or item.submitter == submitter:
+                        yield item

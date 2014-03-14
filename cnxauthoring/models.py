@@ -120,6 +120,7 @@ class Document:
         c['created'] = str(c['created'])
         c['modified'] = str(c['modified'])
         c['license'] = c['license'].__dict__
+        c['mediaType'] = 'Module'
         return c
 
 

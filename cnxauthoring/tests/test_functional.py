@@ -13,6 +13,7 @@ import json
 import os
 import sys
 import unittest
+import uuid
 try:
     from unittest import mock
 except ImportError:
@@ -172,6 +173,7 @@ class FunctionalTests(unittest.TestCase):
             u'summary': post_data['summary'],
             u'language': post_data['language'],
             u'contents': post_data['contents'],
+            u'mediaType': u'Module',
             })
 
     def test_put_content_403(self):
@@ -209,6 +211,106 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['contents'], update_data['contents'])
 
         response = self.testapp.get('/contents/{}'.format(document['id']))
+
+    def test_search_content_403(self):
+        FunctionalTests.profile = None
+        self.testapp.get('/search', status=403)
+
+    def test_search_content_no_q(self):
+        response = self.testapp.get('/search', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result, {
+            'query': {'limits': []},
+            'results': {
+                'items': [],
+                'total': 0,
+                'limits': [],
+                }
+            })
+
+    def test_search_content_q_empty(self):
+        response = self.testapp.get('/search?q=', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result, {
+            'query': {'limits': []},
+            'results': {
+                'items': [],
+                'total': 0,
+                'limits': [],
+                }
+            })
+
+    def test_search_unbalanced_quotes(self):
+        FunctionalTests.profile = {'username': str(uuid.uuid4())}
+        post_data = {'title': u'Document'}
+        self.testapp.post('/contents', json.dumps(post_data), status=201)
+
+        response = self.testapp.get('/search?q="Document', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['query']['limits'],
+                [{'tag': 'text', 'value': 'Document'}])
+        self.assertEqual(result['results']['total'], 1)
+
+    def test_search_content(self):
+        post_data = {'title': u"Document"}
+        self.testapp.post('/contents', json.dumps(post_data), status=201)
+
+        FunctionalTests.profile = {'username': 'a_new_user'}
+        post_data = {
+            'title': u"Turning DNA through resonance",
+            'summary': u"Theories on turning DNA structures",
+            'created': u'2014-03-13T15:21:15.677617',
+            'modified': u'2014-03-13T15:21:15.677617',
+            'license': {'url': DEFAULT_LICENSE.url},
+            'language': u'en-us',
+            'contents': u"Ding dong the switch is flipped.",
+            }
+        response = self.testapp.post('/contents', json.dumps(post_data),
+                status=201)
+        result = json.loads(response.body.decode('utf-8'))
+        doc_id = result['id']
+
+        post_data = {'title': u'New stuff'}
+        response = self.testapp.post('/contents', json.dumps(post_data),
+                status=201)
+        result = json.loads(response.body.decode('utf-8'))
+        new_doc_id = result['id']
+
+        # should not be able to get other user's documents
+        response = self.testapp.get('/search?q=document', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertDictEqual(result, {
+            'query': {
+                'limits': [{'tag': 'text', 'value': 'document'}]},
+            'results': {
+                'items': [],
+                'total': 0,
+                'limits': []}})
+
+        # should be able to search user's own documents
+        response = self.testapp.get('/search?q=DNA', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['results']['total'], 1)
+        self.assertEqual(result['results']['items'][0]['id'], doc_id)
+
+        # should be able to search multiple terms
+        response = self.testapp.get('/search?q=new+resonance', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['query']['limits'], [
+            {'tag': 'text', 'value': 'new'},
+            {'tag': 'text', 'value': 'resonance'}])
+        self.assertEqual(result['results']['total'], 2)
+        self.assertEqual(sorted([i['id'] for i in result['results']['items']]),
+                sorted([doc_id, new_doc_id]))
+
+        # should be able to search with double quotes
+        response = self.testapp.get('/search?q="through resonance"',
+                status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['query']['limits'], [
+            {'tag': 'text', 'value': 'through resonance'}])
+        self.assertEqual(result['results']['total'], 1)
+        self.assertEqual(result['results']['items'][0]['id'], doc_id)
 
     def test_user_search_no_q(self):
         response = self.testapp.get('/users/search')
