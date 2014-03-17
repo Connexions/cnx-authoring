@@ -69,11 +69,8 @@ class Resource:
     def __init__(self, mediatype, data):
         self.mediatype = mediatype
         # ``data`` must be a buffer or file-like object.
-        self.data = data
-        self._hash = hashlib.new('sha1', self.data.read()).hexdigest()
-        # FIXME There has got to be a better way to reset position
-        #       to zero after read.
-        self.data.seek(0)
+        self.data = data.read()
+        self._hash = hashlib.new('sha1', self.data).hexdigest()
 
     @property
     def hash(self):
@@ -107,12 +104,20 @@ class Document:
         self.derived_from = derived_from
         self.submitter = submitter
 
+    def update(self, **kwargs):
+        if 'license' in kwargs:
+            del kwargs['license']
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
     def to_dict(self):
         c = self.__dict__.copy()
         c['id'] = str(c['id'])
         c['created'] = str(c['created'])
         c['modified'] = str(c['modified'])
         c['license'] = c['license'].__dict__
+        c['mediaType'] = 'Module'
         return c
 
 

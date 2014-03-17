@@ -5,8 +5,15 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
 import json
+import os
+import sys
 import unittest
+import uuid
 try:
     from unittest import mock
 except ImportError:
@@ -14,8 +21,10 @@ except ImportError:
 
 from pyramid.interfaces import IAuthenticationPolicy
 from pyramid.security import Everyone, Authenticated
+from webtest import Upload
 from zope.interface import implementer
 
+from . import test_data
 from ..models import DEFAULT_LICENSE
 
 
@@ -63,23 +72,38 @@ class FunctionalTests(unittest.TestCase):
     profile = None
     accounts_request_return = ''
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
+        # only run once for all the tests
+
+        # make sure storage is set correctly in cnxauthoring.views by reloading
+        # cnxauthoring.views
+        if 'cnxauthoring.views' in sys.modules:
+            del sys.modules['cnxauthoring.views']
+
         # Mock all the openstax accounts code
         from openstax_accounts import openstax_accounts
         openstax_accounts.main = mock_openstax_accounts
         from openstax_accounts import authentication_policy
         authentication_policy.main = mock_authentication_policy
 
+        # make sure test db is empty
+        config = ConfigParser.ConfigParser()
+        config.read(['testing.ini'])
+        test_db = config.get('app:main', 'pickle.filename')
+        try:
+            os.remove(test_db)
+        except OSError:
+            # file doesn't exist
+            pass
+
         import pyramid.paster
         app = pyramid.paster.get_app('testing.ini')
+
         from webtest import TestApp
         self.testapp = TestApp(app)
 
-        # make sure storage is set correctly in cnxauthoring.views by reloading
-        # cnxauthoring.views
-        import sys
-        del sys.modules['cnxauthoring.views']
-
+    def setUp(self):
         FunctionalTests.profile = {u'username': u'me'}
 
     def test_get_content_403(self):
@@ -151,7 +175,180 @@ class FunctionalTests(unittest.TestCase):
             u'summary': post_data['summary'],
             u'language': post_data['language'],
             u'contents': post_data['contents'],
+            u'mediaType': u'Module',
             })
+
+    def test_put_content_403(self):
+        FunctionalTests.profile = None
+        self.testapp.put('/contents/1234abcde', status=403)
+
+    def test_put_content_not_found(self):
+        self.testapp.put('/contents/1234abcde',
+                json.dumps({'title': u'Update document title'}),
+                status=404)
+
+    def test_put_content(self):
+        response = self.testapp.post('/contents', 
+                json.dumps({
+                    'title': u'My document タイトル',
+                    'summary': u'My document summary',
+                    'language': u'en-us'}),
+                status=201)
+        document = json.loads(response.body.decode('utf-8'))
+
+        update_data = {
+            'title': u"Turning DNA through resonance",
+            'summary': u"Theories on turning DNA structures",
+            'contents': u"Ding dong the switch is flipped.",
+            }
+
+        response = self.testapp.put('/contents/{}'.format(document['id']),
+                json.dumps(update_data),
+                status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['id'], document['id'])
+        self.assertEqual(result['title'], update_data['title'])
+        self.assertEqual(result['summary'], update_data['summary'])
+        self.assertEqual(result['language'], document['language'])
+        self.assertEqual(result['contents'], update_data['contents'])
+
+        response = self.testapp.get('/contents/{}'.format(document['id']))
+
+    def test_search_content_403(self):
+        FunctionalTests.profile = None
+        self.testapp.get('/search', status=403)
+
+    def test_search_content_no_q(self):
+        response = self.testapp.get('/search', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result, {
+            'query': {'limits': []},
+            'results': {
+                'items': [],
+                'total': 0,
+                'limits': [],
+                }
+            })
+
+    def test_search_content_q_empty(self):
+        response = self.testapp.get('/search?q=', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result, {
+            'query': {'limits': []},
+            'results': {
+                'items': [],
+                'total': 0,
+                'limits': [],
+                }
+            })
+
+    def test_search_unbalanced_quotes(self):
+        FunctionalTests.profile = {'username': str(uuid.uuid4())}
+        post_data = {'title': u'Document'}
+        self.testapp.post('/contents', json.dumps(post_data), status=201)
+
+        response = self.testapp.get('/search?q="Document', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['query']['limits'],
+                [{'tag': 'text', 'value': 'Document'}])
+        self.assertEqual(result['results']['total'], 1)
+
+    def test_search_content(self):
+        post_data = {'title': u"Document"}
+        self.testapp.post('/contents', json.dumps(post_data), status=201)
+
+        FunctionalTests.profile = {'username': 'a_new_user'}
+        post_data = {
+            'title': u"Turning DNA through resonance",
+            'summary': u"Theories on turning DNA structures",
+            'created': u'2014-03-13T15:21:15.677617',
+            'modified': u'2014-03-13T15:21:15.677617',
+            'license': {'url': DEFAULT_LICENSE.url},
+            'language': u'en-us',
+            'contents': u"Ding dong the switch is flipped.",
+            }
+        response = self.testapp.post('/contents', json.dumps(post_data),
+                status=201)
+        result = json.loads(response.body.decode('utf-8'))
+        doc_id = result['id']
+
+        post_data = {'title': u'New stuff'}
+        response = self.testapp.post('/contents', json.dumps(post_data),
+                status=201)
+        result = json.loads(response.body.decode('utf-8'))
+        new_doc_id = result['id']
+
+        # should not be able to get other user's documents
+        response = self.testapp.get('/search?q=document', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertDictEqual(result, {
+            'query': {
+                'limits': [{'tag': 'text', 'value': 'document'}]},
+            'results': {
+                'items': [],
+                'total': 0,
+                'limits': []}})
+
+        # should be able to search user's own documents
+        response = self.testapp.get('/search?q=DNA', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['results']['total'], 1)
+        self.assertEqual(result['results']['items'][0]['id'], doc_id)
+
+        # should be able to search multiple terms
+        response = self.testapp.get('/search?q=new+resonance', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['query']['limits'], [
+            {'tag': 'text', 'value': 'new'},
+            {'tag': 'text', 'value': 'resonance'}])
+        self.assertEqual(result['results']['total'], 2)
+        self.assertEqual(sorted([i['id'] for i in result['results']['items']]),
+                sorted([doc_id, new_doc_id]))
+
+        # should be able to search with double quotes
+        response = self.testapp.get('/search?q="through resonance"',
+                status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['query']['limits'], [
+            {'tag': 'text', 'value': 'through resonance'}])
+        self.assertEqual(result['results']['total'], 1)
+        self.assertEqual(result['results']['items'][0]['id'], doc_id)
+
+    def test_get_resource_403(self):
+        FunctionalTests.profile = None
+        self.testapp.get('/resources/1234abcde', status=403)
+
+    def test_get_resource_404(self):
+        self.testapp.get('/resources/1234abcde', status=404)
+
+    def test_get_resource(self):
+        with open(test_data('1x1.png'), 'rb') as data:
+            upload_data = data.read()
+
+        response = self.testapp.post('/resources',
+                {'file': Upload('1x1.png', upload_data, 'image/png')},
+                status=201)
+        redirect_url = response.headers['Location']
+        response = self.testapp.get(redirect_url, status=200)
+        self.assertEqual(response.body, upload_data)
+        self.assertEqual(response.content_type, 'image/png')
+
+        # any logged in user can retrieve any resource files
+        FunctionalTests.profile = {'username': str(uuid.uuid4())}
+        response = self.testapp.get(redirect_url, status=200)
+        self.assertEqual(response.body, upload_data)
+        self.assertEqual(response.content_type, 'image/png')
+
+    def test_post_resource_403(self):
+        FunctionalTests.profile = None
+        self.testapp.post('/resources',
+                {'file': Upload('a.txt', b'hello\n', 'text/plain')},
+                status=403)
+
+    def test_post_resource(self):
+        self.testapp.post('/resources',
+                {'file': Upload('a.txt', b'hello\n', 'text/plain')},
+                status=201)
 
     def test_user_search_no_q(self):
         response = self.testapp.get('/users/search')
@@ -186,3 +383,34 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/users/profile', status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, FunctionalTests.profile)
+
+    def test_user_contents_403(self):
+        FunctionalTests.profile = None
+        self.testapp.get('/users/contents', status=403)
+
+    def test_user_contents(self):
+        self.testapp.post('/contents',
+                json.dumps({'title': 'document by default user'}), status=201)
+
+        # a user should not get any contents that doesn't belong to themselves
+        uid = str(uuid.uuid4())
+        FunctionalTests.profile = {'username': uid}
+        response = self.testapp.get('/users/contents', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result, [])
+
+        self.testapp.post('/contents',
+                json.dumps({'title': 'document by {}'.format(uid)}),
+                status=201)
+
+        self.testapp.post('/contents',
+                json.dumps({'title': 'another document by {}'.format(uid)}),
+                status=201)
+
+        response = self.testapp.get('/users/contents', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(len(result), 2)
+        titles = [i['title'] for i in result]
+        self.assertEqual(sorted(titles), [
+            'another document by {}'.format(uid),
+            'document by {}'.format(uid)])

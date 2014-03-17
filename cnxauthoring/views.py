@@ -20,6 +20,7 @@ from . import Site
 from .models import create_content, Document, Resource
 from .schemata import DocumentSchema
 from .storage import storage
+from .utils import structured_query
 
 
 @view_config(route_name='login', context=Site, permission='protected')
@@ -59,6 +60,14 @@ def profile(request):
     return request.user
 
 
+@view_config(route_name='user-contents', request_method='GET', renderer='json', context=Site, permission='protected')
+def user_contents(request):
+    """Contents that belong to the current logged in user"""
+    return [content.to_dict()
+            for content in storage.get_all(
+                submitter=request.unauthenticated_userid)]
+
+
 @view_config(route_name='get-content', request_method='GET', renderer='json', context=Site, permission='protected')
 def get_content(request):
     """Acquisition of content by id"""
@@ -69,7 +78,7 @@ def get_content(request):
     return content.to_dict()
 
 
-@view_config(route_name='get-resource', request_method='GET')
+@view_config(route_name='get-resource', request_method='GET', context=Site, permission='protected')
 def get_resource(request):
     """Acquisition of a resource item"""
     hash = request.matchdict['hash']
@@ -77,7 +86,7 @@ def get_resource(request):
     if resource is None:
         raise httpexceptions.HTTPNotFound()
     resp = request.response
-    resp.body_file = resource.data
+    resp.body = resource.data
     resp.content_type = resource.mediatype
     return resp
 
@@ -109,7 +118,7 @@ def post_content(request):
     return content.to_dict()
 
 
-@view_config(route_name='post-resource', request_method='POST', renderer='json')
+@view_config(route_name='post-resource', request_method='POST', renderer='json', context=Site, permission='protected')
 def post_resource(request):
     """Accept a resource file.
     On success, the Location header is set to the resource location.
@@ -128,3 +137,69 @@ def post_resource(request):
     location = request.route_url('get-resource', hash=resource.hash)
     resp.headers.add('Location', location)
     return location
+
+
+@view_config(route_name='put-content', request_method='PUT', renderer='json', context=Site, permission='protected')
+def put_content(request):
+    """Modify a stored document"""
+    id = request.matchdict['id']
+    content = storage.get(id=id, submitter=request.unauthenticated_userid)
+    if content is None:
+        raise httpexceptions.HTTPNotFound()
+
+    try:
+        cstruct = request.json_body
+    except (TypeError, ValueError):
+        raise httpexceptions.HTTPBadRequest('Invalid JSON')
+
+    cstruct['submitter'] = request.unauthenticated_userid
+    for key, value in content.to_dict().items():
+        cstruct.setdefault(key, value)
+
+    try:
+        appstruct = DocumentSchema().bind().deserialize(cstruct)
+    except Exception as e:
+        raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
+
+    content.update(**appstruct)
+    storage.update(content)
+    storage.persist()
+
+    resp = request.response
+    resp.status = 200
+    resp.headers.add(
+            'Location',
+            request.route_url('get-content', id=content.id))
+    return content.to_dict()
+
+
+@view_config(route_name='search-content', request_method='GET', renderer='json', context=Site, permission='protected')
+def search_content(request):
+    """Search documents by title and contents"""
+    empty_response = {
+            u'query': {
+                u'limits': [],
+                },
+            u'results': {
+                u'items': [],
+                u'total': 0,
+                u'limits': [],
+                },
+            }
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return empty_response
+    q = structured_query(q)
+
+    result = storage.search(q, submitter=request.unauthenticated_userid)
+    items = [i.to_dict() for i in result]
+    return {
+            u'query': {
+                u'limits': [{'tag': tag, 'value': value} for tag, value in q],
+                },
+            u'results': {
+                u'items': items,
+                u'total': len(items),
+                u'limits': [],
+                },
+            }

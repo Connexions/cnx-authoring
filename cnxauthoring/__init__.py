@@ -26,12 +26,15 @@ class Site(object):
 def declare_routes(config):
     """Declaration of routing"""
     add_route = config.add_route
+    add_route('search-content', '/search', request_method='GET')
     add_route('get-content', '/contents/{id}', request_method='GET')
     add_route('get-resource', '/resources/{hash}', request_method='GET')
     add_route('post-content', '/contents', request_method='POST')
     add_route('post-resource', '/resources', request_method='POST')
+    add_route('put-content', '/contents/{id}', request_method='PUT')
     add_route('user-search', '/users/search', request_method='GET')
     add_route('profile', '/users/profile', request_method='GET')
+    add_route('user-contents', '/users/contents', request_method='GET')
 
 
 def declare_oauth_routes(config):
@@ -60,8 +63,8 @@ def main(global_config, **settings):
     #     Lookup storage factory by name and pass in '<name>.*' values,
     #     where '*' would be a keyword argument..
     from . import storage
-    from .storage.memory import MemoryStorage
-    storage_instance = MemoryStorage()
+    from .storage.pickle_storage import PickleStorage
+    storage_instance = PickleStorage(settings['pickle.filename'])
     setattr(storage, 'storage', storage_instance)
 
     config.scan(ignore='cnxauthoring.tests')
