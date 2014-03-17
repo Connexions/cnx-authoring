@@ -60,6 +60,14 @@ def profile(request):
     return request.user
 
 
+@view_config(route_name='user-contents', request_method='GET', renderer='json', context=Site, permission='protected')
+def user_contents(request):
+    """Contents that belong to the current logged in user"""
+    return [content.to_dict()
+            for content in storage.get_all(
+                submitter=request.unauthenticated_userid)]
+
+
 @view_config(route_name='get-content', request_method='GET', renderer='json', context=Site, permission='protected')
 def get_content(request):
     """Acquisition of content by id"""

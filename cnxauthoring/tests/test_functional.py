@@ -383,3 +383,34 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/users/profile', status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, FunctionalTests.profile)
+
+    def test_user_contents_403(self):
+        FunctionalTests.profile = None
+        self.testapp.get('/users/contents', status=403)
+
+    def test_user_contents(self):
+        self.testapp.post('/contents',
+                json.dumps({'title': 'document by default user'}), status=201)
+
+        # a user should not get any contents that doesn't belong to themselves
+        uid = str(uuid.uuid4())
+        FunctionalTests.profile = {'username': uid}
+        response = self.testapp.get('/users/contents', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result, [])
+
+        self.testapp.post('/contents',
+                json.dumps({'title': 'document by {}'.format(uid)}),
+                status=201)
+
+        self.testapp.post('/contents',
+                json.dumps({'title': 'another document by {}'.format(uid)}),
+                status=201)
+
+        response = self.testapp.get('/users/contents', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(len(result), 2)
+        titles = [i['title'] for i in result]
+        self.assertEqual(sorted(titles), [
+            'another document by {}'.format(uid),
+            'document by {}'.format(uid)])

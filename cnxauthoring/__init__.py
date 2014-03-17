@@ -34,6 +34,7 @@ def declare_routes(config):
     add_route('put-content', '/contents/{id}', request_method='PUT')
     add_route('user-search', '/users/search', request_method='GET')
     add_route('profile', '/users/profile', request_method='GET')
+    add_route('user-contents', '/users/contents', request_method='GET')
 
 
 def declare_oauth_routes(config):

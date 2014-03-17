@@ -17,13 +17,18 @@ class MemoryStorage(BaseStorage):
 
     def get(self, type_=Document, **kwargs):
         """Retreive ``Document`` objects from storage."""
+        for obj in self.get_all(type_=type_, **kwargs):
+            return obj
+
+    def get_all(self, type_=Document, **kwargs):
+        """Retreive ``Document`` objects from storage."""
         collection = self.storage[str(type_)]
         for item in collection:
             for k, v in kwargs.items():
                 if str(getattr(item, k)) != str(v):
                     break
             else:
-                return item
+                yield item
 
     def add(self, item_or_items):
         """Adds any item or set of items to storage."""
