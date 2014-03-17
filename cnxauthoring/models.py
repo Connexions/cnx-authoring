@@ -69,11 +69,8 @@ class Resource:
     def __init__(self, mediatype, data):
         self.mediatype = mediatype
         # ``data`` must be a buffer or file-like object.
-        self.data = data
-        self._hash = hashlib.new('sha1', self.data.read()).hexdigest()
-        # FIXME There has got to be a better way to reset position
-        #       to zero after read.
-        self.data.seek(0)
+        self.data = data.read()
+        self._hash = hashlib.new('sha1', self.data).hexdigest()
 
     @property
     def hash(self):

@@ -20,7 +20,7 @@ class MemoryStorage(BaseStorage):
         collection = self.storage[str(type_)]
         for item in collection:
             for k, v in kwargs.items():
-                if getattr(item, k) != v:
+                if str(getattr(item, k)) != str(v):
                     break
             else:
                 return item
@@ -30,7 +30,6 @@ class MemoryStorage(BaseStorage):
         if isinstance(item_or_items, list):
             raise NotImplementedError()
         item = item_or_items
-        item.id = str(item.id)
         collection = self.storage[str(item.__class__)]
         collection.append(item)
         return item

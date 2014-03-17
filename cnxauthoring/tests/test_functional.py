@@ -21,8 +21,10 @@ except ImportError:
 
 from pyramid.interfaces import IAuthenticationPolicy
 from pyramid.security import Everyone, Authenticated
+from webtest import Upload
 from zope.interface import implementer
 
+from . import test_data
 from ..models import DEFAULT_LICENSE
 
 
@@ -311,6 +313,42 @@ class FunctionalTests(unittest.TestCase):
             {'tag': 'text', 'value': 'through resonance'}])
         self.assertEqual(result['results']['total'], 1)
         self.assertEqual(result['results']['items'][0]['id'], doc_id)
+
+    def test_get_resource_403(self):
+        FunctionalTests.profile = None
+        self.testapp.get('/resources/1234abcde', status=403)
+
+    def test_get_resource_404(self):
+        self.testapp.get('/resources/1234abcde', status=404)
+
+    def test_get_resource(self):
+        with open(test_data('1x1.png'), 'rb') as data:
+            upload_data = data.read()
+
+        response = self.testapp.post('/resources',
+                {'file': Upload('1x1.png', upload_data, 'image/png')},
+                status=201)
+        redirect_url = response.headers['Location']
+        response = self.testapp.get(redirect_url, status=200)
+        self.assertEqual(response.body, upload_data)
+        self.assertEqual(response.content_type, 'image/png')
+
+        # any logged in user can retrieve any resource files
+        FunctionalTests.profile = {'username': str(uuid.uuid4())}
+        response = self.testapp.get(redirect_url, status=200)
+        self.assertEqual(response.body, upload_data)
+        self.assertEqual(response.content_type, 'image/png')
+
+    def test_post_resource_403(self):
+        FunctionalTests.profile = None
+        self.testapp.post('/resources',
+                {'file': Upload('a.txt', b'hello\n', 'text/plain')},
+                status=403)
+
+    def test_post_resource(self):
+        self.testapp.post('/resources',
+                {'file': Upload('a.txt', b'hello\n', 'text/plain')},
+                status=201)
 
     def test_user_search_no_q(self):
         response = self.testapp.get('/users/search')

@@ -78,7 +78,7 @@ class ViewsTests(unittest.TestCase):
         with mock.patch.object(self.storage_cls, 'get', return_value=expected):
             from ..views import get_resource
             response = get_resource(request)
-        self.assertEqual(b''.join(response.app_iter), data)
+        self.assertEqual(response.body, data)
         self.assertEqual(response.content_type, mediatype)
 
     def test_get_resource_404(self):
@@ -174,7 +174,6 @@ class ViewsTests(unittest.TestCase):
         self.addCleanup(delattr, self, 'resource')
         def mocked_add(item):
             self.resource = item
-            self.resource.id = uuid.uuid4()
             return self.resource
 
         self.storage_cls.add = mock.Mock(side_effect=mocked_add)

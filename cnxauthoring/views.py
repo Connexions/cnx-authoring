@@ -70,7 +70,7 @@ def get_content(request):
     return content.to_dict()
 
 
-@view_config(route_name='get-resource', request_method='GET')
+@view_config(route_name='get-resource', request_method='GET', context=Site, permission='protected')
 def get_resource(request):
     """Acquisition of a resource item"""
     hash = request.matchdict['hash']
@@ -78,7 +78,7 @@ def get_resource(request):
     if resource is None:
         raise httpexceptions.HTTPNotFound()
     resp = request.response
-    resp.body_file = resource.data
+    resp.body = resource.data
     resp.content_type = resource.mediatype
     return resp
 
@@ -110,7 +110,7 @@ def post_content(request):
     return content.to_dict()
 
 
-@view_config(route_name='post-resource', request_method='POST', renderer='json')
+@view_config(route_name='post-resource', request_method='POST', renderer='json', context=Site, permission='protected')
 def post_resource(request):
     """Accept a resource file.
     On success, the Location header is set to the resource location.
