@@ -16,7 +16,7 @@ class MemoryStorage(BaseStorage):
         self.storage = {str(Document): [], str(Resource): []}
 
     def get(self, type_=Document, **kwargs):
-        """Retreive ``Document`` objects from storage."""
+        """Retrieve ``Document`` objects from storage."""
         for obj in self.get_all(type_=type_, **kwargs):
             return obj
 

@@ -5,16 +5,15 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
-import time
 import datetime
 import hashlib
 import uuid
 
-import pytz
+import tzlocal
 
 
 # Timezone info initialized from the system timezone.
-TZINFO = pytz.timezone(time.tzname[0])
+TZINFO = tzlocal.get_localzone()
 
 DOCUMENT_MEDIATYPE = "application/vnd.org.cnx.document"
 LICENSE_PARAMETER_MARKER = object()

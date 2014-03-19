@@ -7,7 +7,7 @@ install_requires = (
         'openstax-accounts',
         'PasteDeploy',
         'pyramid',
-        'pytz',
+        'tzlocal',
         'waitress',
         )
 
