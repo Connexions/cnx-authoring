@@ -23,17 +23,27 @@ from .storage import storage
 from .utils import structured_query
 
 
-@view_config(route_name='login', context=Site, permission='protected')
+@view_config(route_name='login')
 def login(request):
-    # login must be protected so that effective_principals is called
-    pass
+    # store where we should redirect to before login
+    redirect_to = request.params.get('redirect')
+    if redirect_to == request.route_url('login'):
+        redirect_to = '/'
+    if request.unauthenticated_userid:
+        return httpexceptions.HTTPFound(location=redirect_to)
+    request.session.update({'redirect_to': redirect_to})
+    request.authenticated_userid # triggers login
 
 
 @view_config(route_name='callback', context=Site, permission='protected')
 def callback(request):
     # callback must be protected so that effective_principals is called
     # callback must redirect
-    raise httpexceptions.HTTPFound(location='/')
+    redirect_to = '/'
+    if request.session.get('redirect_to'):
+        # redirect_to in session is from require_login
+        redirect_to = request.session.pop('redirect_to')
+    raise httpexceptions.HTTPFound(location=redirect_to)
 
 
 @view_config(route_name='logout')
