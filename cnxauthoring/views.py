@@ -73,9 +73,19 @@ def profile(request):
 @view_config(route_name='user-contents', request_method='GET', renderer='json', context=Site, permission='protected')
 def user_contents(request):
     """Contents that belong to the current logged in user"""
-    return [content.to_dict()
+    items = [content.to_dict()
             for content in storage.get_all(
                 submitter=request.unauthenticated_userid)]
+    return {
+            u'query': {
+                u'limits': [],
+                },
+            u'results': {
+                u'items': items,
+                u'total': len(items),
+                u'limits': [],
+                },
+            }
 
 
 @view_config(route_name='get-content', request_method='GET', renderer='json', context=Site, permission='protected')

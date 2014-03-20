@@ -432,7 +432,16 @@ class FunctionalTests(unittest.TestCase):
         FunctionalTests.profile = {'username': uid}
         response = self.testapp.get('/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(result, [])
+        self.assertEqual(result, {
+            u'query': {
+                u'limits': [],
+                },
+            u'results': {
+                u'items': [],
+                u'total': 0,
+                u'limits': [],
+                },
+            })
 
         self.testapp.post('/contents',
                 json.dumps({'title': 'document by {}'.format(uid)}),
@@ -444,8 +453,8 @@ class FunctionalTests(unittest.TestCase):
 
         response = self.testapp.get('/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(len(result), 2)
-        titles = [i['title'] for i in result]
+        self.assertEqual(result['results']['total'], 2)
+        titles = [i['title'] for i in result['results']['items']]
         self.assertEqual(sorted(titles), [
             'another document by {}'.format(uid),
             'document by {}'.format(uid)])
