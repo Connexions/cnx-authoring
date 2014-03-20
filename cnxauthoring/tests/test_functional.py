@@ -143,17 +143,17 @@ class FunctionalTests(unittest.TestCase):
 
     def test_get_content_403(self):
         FunctionalTests.profile = None
-        self.testapp.get('/contents/1234abcde', status=403)
+        self.testapp.get('/contents/1234abcde@draft', status=403)
 
     def test_get_content_404(self):
-        self.testapp.get('/contents/1234abcde', status=404)
+        self.testapp.get('/contents/1234abcde@draft', status=404)
 
     def test_get_content_for_document(self):
         response = self.testapp.post('/contents',
                 json.dumps({'title': 'My New Document'}),
                 status=201)
         put_result = json.loads(response.body.decode('utf-8'))
-        response = self.testapp.get('/contents/{}'.format(put_result['id']),
+        response = self.testapp.get('/contents/{}@draft'.format(put_result['id']),
                 status=200)
         get_result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(get_result['title'], 'My New Document')
@@ -247,7 +247,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['language'], document['language'])
         self.assertEqual(result['contents'], update_data['contents'])
 
-        response = self.testapp.get('/contents/{}'.format(document['id']))
+        response = self.testapp.get('/contents/{}@draft'.format(document['id']))
 
     def test_search_content_403(self):
         FunctionalTests.profile = None
