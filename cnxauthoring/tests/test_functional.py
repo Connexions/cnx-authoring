@@ -9,6 +9,7 @@ try:
     import ConfigParser
 except ImportError:
     import configparser as ConfigParser
+import datetime
 import json
 import os
 import sys
@@ -72,6 +73,7 @@ def mock_openstax_accounts(config):
 class FunctionalTests(unittest.TestCase):
     profile = None
     accounts_request_return = ''
+    maxDiff = None
 
     @classmethod
     def setUpClass(self):
@@ -150,13 +152,34 @@ class FunctionalTests(unittest.TestCase):
 
     def test_get_content_for_document(self):
         response = self.testapp.post('/contents',
-                json.dumps({'title': 'My New Document'}),
+                json.dumps({
+                    'title': 'My New Document',
+                    'created': u'2014-03-13T15:21:15',
+                    'modified': u'2014-03-13T15:21:15',
+                    }),
                 status=201)
         put_result = json.loads(response.body.decode('utf-8'))
         response = self.testapp.get('/contents/{}@draft.json'.format(put_result['id']),
                 status=200)
         get_result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(get_result['title'], 'My New Document')
+        self.assertEqual(get_result, {
+            u'id': get_result['id'],
+            u'title': u'My New Document',
+            u'contents': None,
+            u'created': get_result['created'],
+            u'derived_from': None,
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
+            u'modified': get_result['modified'],
+            u'mediaType': u'Module',
+            u'language': u'en-us',
+            u'submitter': u'me',
+            u'summary': None,
+            })
         self.assertEqual(put_result, get_result)
 
     def test_post_content_403(self):
