@@ -57,14 +57,20 @@ def main(global_config, **settings):
     declare_routes(config)
     declare_oauth_routes(config)
 
-    # XXX This is not ideal.
-    #     Storage usage based on configuration would be best.
-    #     Configuration of 'storage = mongodb' with 'mongodb.*' values.
-    #     Lookup storage factory by name and pass in '<name>.*' values,
-    #     where '*' would be a keyword argument..
+    # storage is configurable. module and class for a given storage name are
+    # configured in storage __init__, settings for that storage are then
+    # passed as keyword arguments (without the prefix) i.e.  configuration of
+    # 'storage = pickle' with 'pickle.filename' values.  lookup storage
+    # factory by name and pass in 'filename = foo'
+
     from . import storage
-    from .storage.pickle_storage import PickleStorage
-    storage_instance = PickleStorage(settings['pickle.filename'])
+
+    storages = storage.storages
+    storage_name = settings.get('storage',storage.default_storage)
+    storage_modname, storage_class = storages[storage_name]
+    storage_settings = {k.split('.')[1]:settings[k] for k in settings if k.split('.')[0] == storage_name}
+    storage_mod = __import__('.'.join((storage.__name__,storage_modname)), fromlist = [storage.__name__])
+    storage_instance = getattr(storage_mod,storage_class)(**storage_settings)
     setattr(storage, 'storage', storage_instance)
 
     config.scan(ignore='cnxauthoring.tests')

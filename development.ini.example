@@ -5,6 +5,7 @@ archive.url = http://archive.cnx.org/
 cors.access_control_allow_credentials = true
 cors.access_control_allow_origin = localhost
 
+storage = pickle
 pickle.filename = dev.p
 
 openstax_accounts.server_url = https://localhost:3000/
