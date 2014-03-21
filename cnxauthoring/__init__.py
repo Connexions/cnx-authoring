@@ -68,6 +68,7 @@ def main(global_config, **settings):
     setattr(storage, 'storage', storage_instance)
 
     config.scan(ignore='cnxauthoring.tests')
+    config.include('cnxauthoring.events.main')
 
     config.include('openstax_accounts.openstax_accounts.main')
     config.include('openstax_accounts.authentication_policy.main')

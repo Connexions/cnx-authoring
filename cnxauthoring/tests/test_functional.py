@@ -127,6 +127,10 @@ class FunctionalTests(unittest.TestCase):
                 status=302)
         self.assertEqual(response.headers['Location'],
                 'http://example.com/logged_in')
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_login_redirect(self):
         FunctionalTests.profile = None
@@ -182,6 +186,10 @@ class FunctionalTests(unittest.TestCase):
             u'version': u'draft',
             })
         self.assertEqual(put_result, get_result)
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_post_content_403(self):
         FunctionalTests.profile = None
@@ -203,6 +211,10 @@ class FunctionalTests(unittest.TestCase):
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['title'], u'My document タイトル')
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_post_content(self):
         post_data = {
@@ -237,6 +249,10 @@ class FunctionalTests(unittest.TestCase):
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
             })
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_put_content_403(self):
         FunctionalTests.profile = None
@@ -273,6 +289,10 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['content'], update_data['content'])
 
         response = self.testapp.get('/contents/{}@draft.json'.format(document['id']))
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_search_content_403(self):
         FunctionalTests.profile = None
@@ -289,6 +309,10 @@ class FunctionalTests(unittest.TestCase):
                 'limits': [],
                 }
             })
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_search_content_q_empty(self):
         response = self.testapp.get('/search?q=', status=200)
@@ -301,6 +325,10 @@ class FunctionalTests(unittest.TestCase):
                 'limits': [],
                 }
             })
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_search_unbalanced_quotes(self):
         FunctionalTests.profile = {'username': str(uuid.uuid4())}
@@ -312,6 +340,10 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['query']['limits'],
                 [{'tag': 'text', 'value': 'Document'}])
         self.assertEqual(result['results']['total'], 1)
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_search_content(self):
         post_data = {'title': u"Document"}
@@ -374,6 +406,11 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['results']['total'], 1)
         self.assertEqual(result['results']['items'][0]['id'], doc_id)
 
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
+
     def test_get_resource_403(self):
         FunctionalTests.profile = None
         self.testapp.get('/resources/1234abcde', status=403)
@@ -398,6 +435,10 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get(redirect_url, status=200)
         self.assertEqual(response.body, upload_data)
         self.assertEqual(response.content_type, 'image/png')
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_post_resource_403(self):
         FunctionalTests.profile = None
@@ -414,11 +455,19 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/users/search')
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, [])
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_user_search_q_empty(self):
         response = self.testapp.get('/users/search?q=')
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, [])
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_user_search(self):
         FunctionalTests.accounts_request_return = {
@@ -433,6 +482,10 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/users/search?q=admin')
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, FunctionalTests.accounts_request_return)
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_profile_403(self):
         FunctionalTests.profile = None
@@ -443,6 +496,10 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/users/profile', status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, FunctionalTests.profile)
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_user_contents_403(self):
         FunctionalTests.profile = None
@@ -483,3 +540,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(sorted(titles), [
             'another document by {}'.format(uid),
             'document by {}'.format(uid)])
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
