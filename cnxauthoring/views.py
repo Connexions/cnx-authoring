@@ -26,7 +26,8 @@ from .utils import structured_query
 @view_config(route_name='login')
 def login(request):
     # store where we should redirect to before login
-    redirect_to = request.params.get('redirect')
+    referer = request.referer or '/'
+    redirect_to = request.params.get('redirect', referer)
     if redirect_to == request.route_url('login'):
         redirect_to = '/'
     if request.unauthenticated_userid:
@@ -41,7 +42,7 @@ def callback(request):
     # callback must redirect
     redirect_to = '/'
     if request.session.get('redirect_to'):
-        # redirect_to in session is from require_login
+        # redirect_to in session is from login
         redirect_to = request.session.pop('redirect_to')
     raise httpexceptions.HTTPFound(location=redirect_to)
 
