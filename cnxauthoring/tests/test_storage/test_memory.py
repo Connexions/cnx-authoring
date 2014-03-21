@@ -17,15 +17,15 @@ class MemoryStorageTests(unittest.TestCase):
 
     def test_add_document(self):
         d = Document('Document Title: One', id='document-one',
-                     contents='<p>Document One contents etc</p>',
-                     summary='Summary of Document One',
-                     language='en-us')
+                     content='<p>Document One contents etc</p>',
+                     abstract='Summary of Document One',
+                     language='en')
         self.storage.add(d)
 
         d2 = Document('Document Two', id='document-two',
-                      contents='<p>Document Two contents etc</p>',
-                      summary='Summary of Document Two',
-                      language='en-us')
+                      content='<p>Document Two contents etc</p>',
+                      abstract='Summary of Document Two',
+                      language='en')
         self.storage.add(d2)
 
         result = self.storage.get(id='document-one')
@@ -39,9 +39,9 @@ class MemoryStorageTests(unittest.TestCase):
         self.assertEqual(result, None)
 
         d = Document('Document Title: One', id='document-one',
-                     contents='<p>Document One content etc</p>',
-                     summary='Summary of Document One',
-                     language='en-us')
+                     content='<p>Document One content etc</p>',
+                     abstract='Summary of Document One',
+                     language='en')
         self.storage.add(d)
 
         # get by id
@@ -58,30 +58,30 @@ class MemoryStorageTests(unittest.TestCase):
         result = self.storage.get(title='Document')
         self.assertEqual(result, None)
 
-        # get by contents
-        result = self.storage.get(contents='<p>Document One content etc</p>')
+        # get by content
+        result = self.storage.get(content='<p>Document One content etc</p>')
         self.assertEqual(result, d)
 
-        result = self.storage.get(contents='<p></p>')
+        result = self.storage.get(content='<p></p>')
         self.assertEqual(result, None)
 
-        # get by summary
-        result = self.storage.get(summary='Summary of Document One')
+        # get by abstract
+        result = self.storage.get(abstract='Summary of Document One')
         self.assertEqual(result, d)
 
-        result = self.storage.get(summary='Summary')
+        result = self.storage.get(abstract='Summary')
         self.assertEqual(result, None)
 
         # get by language
-        result = self.storage.get(language='en-us')
+        result = self.storage.get(language='en')
         self.assertEqual(result, d)
 
-        result = self.storage.get(language='en')
+        result = self.storage.get(language='de')
         self.assertEqual(result, None)
 
         # get by multiple fields
-        result = self.storage.get(language='en-us', summary='Summary of Document One')
+        result = self.storage.get(language='en', abstract='Summary of Document One')
         self.assertEqual(result, d)
 
-        result = self.storage.get(language='en', summary='Summary of Document One')
+        result = self.storage.get(language='de', abstract='Summary of Document One')
         self.assertEqual(result, None)

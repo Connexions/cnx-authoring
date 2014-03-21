@@ -88,7 +88,7 @@ def user_contents(request):
             }
 
 
-@view_config(route_name='get-content', request_method='GET', renderer='json', context=Site, permission='protected')
+@view_config(route_name='get-content-json', request_method='GET', renderer='json', context=Site, permission='protected')
 def get_content(request):
     """Acquisition of content by id"""
     id = request.matchdict['id']
@@ -134,7 +134,7 @@ def post_content(request):
     resp.status = 201
     resp.headers.add(
         'Location',
-        request.route_url('get-content', id=content.id))
+        request.route_url('get-content-json', id=content.id))
     return content.to_dict()
 
 
@@ -189,7 +189,7 @@ def put_content(request):
     resp.status = 200
     resp.headers.add(
             'Location',
-            request.route_url('get-content', id=content.id))
+            request.route_url('get-content-json', id=content.id))
     return content.to_dict()
 
 

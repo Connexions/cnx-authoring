@@ -114,7 +114,7 @@ class ViewsTests(unittest.TestCase):
 
         self.assertEqual(returned_document, self.document.to_dict())
         self.assertEqual(request.response.status, '201 Created')
-        content_url = request.route_url('get-content', id=self.document.id)
+        content_url = request.route_url('get-content-json', id=self.document.id)
         self.assertIn(('Location', content_url,),
                       request.response.headerlist)
 
@@ -123,12 +123,12 @@ class ViewsTests(unittest.TestCase):
         post_data = {
             'id': str(uuid.uuid4()),
             'title': "Turning DNA through resonance",
-            'summary': "Theories on turning DNA structures",
+            'abstract': "Theories on turning DNA structures",
             'created': datetime.datetime.now().isoformat(),
             'modified': datetime.datetime.now().isoformat(),
             'license': {'url': DEFAULT_LICENSE.url},
-            'language': 'en-us',
-            'contents': "Ding dong the switch is flipped.",
+            'language': 'en',
+            'content': "Ding dong the switch is flipped.",
             }
         self.document = None
         self.addCleanup(delattr, self, 'document')
@@ -150,17 +150,17 @@ class ViewsTests(unittest.TestCase):
         returned_document = post_content(request)
 
         self.assertEqual(request.response.status, '201 Created')
-        content_url = request.route_url('get-content', id=self.document.id)
+        content_url = request.route_url('get-content-json', id=self.document.id)
         self.assertIn(('Location', content_url,),
                       request.response.headerlist)
 
         self.assertEqual(returned_document, self.document.to_dict())
         self.assertEqual(returned_document['title'], post_data['title'])
-        self.assertEqual(returned_document['summary'], post_data['summary'])
+        self.assertEqual(returned_document['abstract'], post_data['abstract'])
         # TODO Test created and modified dates.
         self.assertEqual(returned_document['license']['url'], DEFAULT_LICENSE.url)
         self.assertEqual(returned_document['language'], post_data['language'])
-        self.assertEqual(returned_document['contents'], post_data['contents'])
+        self.assertEqual(returned_document['content'], post_data['content'])
 
     def test_post_resource(self):
         # Set up a resource

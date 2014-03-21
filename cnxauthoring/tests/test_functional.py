@@ -9,6 +9,7 @@ try:
     import ConfigParser
 except ImportError:
     import configparser as ConfigParser
+import datetime
 import json
 import os
 import sys
@@ -72,6 +73,7 @@ def mock_openstax_accounts(config):
 class FunctionalTests(unittest.TestCase):
     profile = None
     accounts_request_return = ''
+    maxDiff = None
 
     @classmethod
     def setUpClass(self):
@@ -125,6 +127,10 @@ class FunctionalTests(unittest.TestCase):
                 status=302)
         self.assertEqual(response.headers['Location'],
                 'http://example.com/logged_in')
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_login_redirect(self):
         FunctionalTests.profile = None
@@ -143,21 +149,47 @@ class FunctionalTests(unittest.TestCase):
 
     def test_get_content_403(self):
         FunctionalTests.profile = None
-        self.testapp.get('/contents/1234abcde@draft', status=403)
+        self.testapp.get('/contents/1234abcde@draft.json', status=403)
 
     def test_get_content_404(self):
-        self.testapp.get('/contents/1234abcde@draft', status=404)
+        self.testapp.get('/contents/1234abcde@draft.json', status=404)
 
     def test_get_content_for_document(self):
         response = self.testapp.post('/contents',
-                json.dumps({'title': 'My New Document'}),
+                json.dumps({
+                    'title': 'My New Document',
+                    'created': u'2014-03-13T15:21:15',
+                    'modified': u'2014-03-13T15:21:15',
+                    }),
                 status=201)
         put_result = json.loads(response.body.decode('utf-8'))
-        response = self.testapp.get('/contents/{}@draft'.format(put_result['id']),
+        response = self.testapp.get('/contents/{}@draft.json'.format(put_result['id']),
                 status=200)
         get_result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(get_result['title'], 'My New Document')
+        self.assertEqual(get_result, {
+            u'id': get_result['id'],
+            u'title': u'My New Document',
+            u'content': None,
+            u'created': get_result['created'],
+            u'derived_from': None,
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
+            u'modified': get_result['modified'],
+            u'mediaType': u'application/vnd.org.cnx.module',
+            u'language': u'en',
+            u'submitter': u'me',
+            u'abstract': None,
+            u'version': u'draft',
+            })
         self.assertEqual(put_result, get_result)
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_post_content_403(self):
         FunctionalTests.profile = None
@@ -179,16 +211,20 @@ class FunctionalTests(unittest.TestCase):
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['title'], u'My document タイトル')
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_post_content(self):
         post_data = {
             'title': u"Turning DNA through resonance",
-            'summary': u"Theories on turning DNA structures",
+            'abstract': u"Theories on turning DNA structures",
             'created': u'2014-03-13T15:21:15.677617',
             'modified': u'2014-03-13T15:21:15.677617',
             'license': {'url': DEFAULT_LICENSE.url},
-            'language': u'en-us',
-            'contents': u"Ding dong the switch is flipped.",
+            'language': u'en',
+            'content': u"Ding dong the switch is flipped.",
             }
 
         response = self.testapp.post('/contents',
@@ -207,11 +243,16 @@ class FunctionalTests(unittest.TestCase):
             u'id': result['id'],
             u'derived_from': None,
             u'title': post_data['title'],
-            u'summary': post_data['summary'],
+            u'abstract': post_data['abstract'],
             u'language': post_data['language'],
-            u'contents': post_data['contents'],
-            u'mediaType': u'Module',
+            u'content': post_data['content'],
+            u'mediaType': u'application/vnd.org.cnx.module',
+            u'version': u'draft',
             })
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_put_content_403(self):
         FunctionalTests.profile = None
@@ -226,15 +267,15 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.post('/contents', 
                 json.dumps({
                     'title': u'My document タイトル',
-                    'summary': u'My document summary',
-                    'language': u'en-us'}),
+                    'abstract': u'My document abstract',
+                    'language': u'en'}),
                 status=201)
         document = json.loads(response.body.decode('utf-8'))
 
         update_data = {
             'title': u"Turning DNA through resonance",
-            'summary': u"Theories on turning DNA structures",
-            'contents': u"Ding dong the switch is flipped.",
+            'abstract': u"Theories on turning DNA structures",
+            'content': u"Ding dong the switch is flipped.",
             }
 
         response = self.testapp.put('/contents/{}'.format(document['id']),
@@ -243,11 +284,15 @@ class FunctionalTests(unittest.TestCase):
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['id'], document['id'])
         self.assertEqual(result['title'], update_data['title'])
-        self.assertEqual(result['summary'], update_data['summary'])
+        self.assertEqual(result['abstract'], update_data['abstract'])
         self.assertEqual(result['language'], document['language'])
-        self.assertEqual(result['contents'], update_data['contents'])
+        self.assertEqual(result['content'], update_data['content'])
 
-        response = self.testapp.get('/contents/{}@draft'.format(document['id']))
+        response = self.testapp.get('/contents/{}@draft.json'.format(document['id']))
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_search_content_403(self):
         FunctionalTests.profile = None
@@ -264,6 +309,10 @@ class FunctionalTests(unittest.TestCase):
                 'limits': [],
                 }
             })
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_search_content_q_empty(self):
         response = self.testapp.get('/search?q=', status=200)
@@ -276,6 +325,10 @@ class FunctionalTests(unittest.TestCase):
                 'limits': [],
                 }
             })
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_search_unbalanced_quotes(self):
         FunctionalTests.profile = {'username': str(uuid.uuid4())}
@@ -287,6 +340,10 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['query']['limits'],
                 [{'tag': 'text', 'value': 'Document'}])
         self.assertEqual(result['results']['total'], 1)
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_search_content(self):
         post_data = {'title': u"Document"}
@@ -295,11 +352,11 @@ class FunctionalTests(unittest.TestCase):
         FunctionalTests.profile = {'username': 'a_new_user'}
         post_data = {
             'title': u"Turning DNA through resonance",
-            'summary': u"Theories on turning DNA structures",
+            'abstract': u"Theories on turning DNA structures",
             'created': u'2014-03-13T15:21:15.677617',
             'modified': u'2014-03-13T15:21:15.677617',
             'license': {'url': DEFAULT_LICENSE.url},
-            'language': u'en-us',
+            'language': u'en',
             'contents': u"Ding dong the switch is flipped.",
             }
         response = self.testapp.post('/contents', json.dumps(post_data),
@@ -349,6 +406,11 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['results']['total'], 1)
         self.assertEqual(result['results']['items'][0]['id'], doc_id)
 
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
+
     def test_get_resource_403(self):
         FunctionalTests.profile = None
         self.testapp.get('/resources/1234abcde', status=403)
@@ -373,6 +435,10 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get(redirect_url, status=200)
         self.assertEqual(response.body, upload_data)
         self.assertEqual(response.content_type, 'image/png')
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_post_resource_403(self):
         FunctionalTests.profile = None
@@ -389,11 +455,19 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/users/search')
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, [])
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_user_search_q_empty(self):
         response = self.testapp.get('/users/search?q=')
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, [])
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_user_search(self):
         FunctionalTests.accounts_request_return = {
@@ -408,6 +482,10 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/users/search?q=admin')
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, FunctionalTests.accounts_request_return)
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_profile_403(self):
         FunctionalTests.profile = None
@@ -418,6 +496,10 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/users/profile', status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, FunctionalTests.profile)
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
 
     def test_user_contents_403(self):
         FunctionalTests.profile = None
@@ -458,3 +540,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(sorted(titles), [
             'another document by {}'.format(uid),
             'document by {}'.format(uid)])
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')

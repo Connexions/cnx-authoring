@@ -17,7 +17,7 @@ TZINFO = tzlocal.get_localzone()
 
 DOCUMENT_MEDIATYPE = "application/vnd.org.cnx.document"
 LICENSE_PARAMETER_MARKER = object()
-DEFAULT_LANGUAGE = 'en-us'
+DEFAULT_LANGUAGE = 'en'
 
 
 class License:
@@ -83,14 +83,15 @@ class Document:
     mediatype = DOCUMENT_MEDIATYPE
 
     def __init__(self, title, id=None,
-                 contents=None, summary=None,
+                 content=None, abstract=None,
                  created=None, modified=None,
                  license=LICENSE_PARAMETER_MARKER,
                  language=None, derived_from=None, submitter=None):
         self.title = title
+        self.version = 'draft'
         self.id = id or uuid.uuid4()
-        self.contents = contents
-        self.summary = summary is None and '' or summary
+        self.content = content
+        self.abstract = abstract is None and '' or abstract
         now = datetime.datetime.now(tz=TZINFO)
         self.created = created is None and now or created
         self.modified = modified is None and now or modified
@@ -116,7 +117,7 @@ class Document:
         c['created'] = str(c['created'])
         c['modified'] = str(c['modified'])
         c['license'] = c['license'].__dict__
-        c['mediaType'] = 'Module'
+        c['mediaType'] = 'application/vnd.org.cnx.module'
         return c
 
 

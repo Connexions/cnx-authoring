@@ -27,7 +27,7 @@ def declare_routes(config):
     """Declaration of routing"""
     add_route = config.add_route
     add_route('search-content', '/search', request_method='GET')
-    add_route('get-content', '/contents/{id}@draft', request_method='GET')
+    add_route('get-content-json', '/contents/{id}@draft.json', request_method='GET')
     add_route('get-resource', '/resources/{hash}', request_method='GET')
     add_route('post-content', '/contents', request_method='POST')
     add_route('post-resource', '/resources', request_method='POST')
@@ -68,6 +68,7 @@ def main(global_config, **settings):
     setattr(storage, 'storage', storage_instance)
 
     config.scan(ignore='cnxauthoring.tests')
+    config.include('cnxauthoring.events.main')
 
     config.include('openstax_accounts.openstax_accounts.main')
     config.include('openstax_accounts.authentication_policy.main')

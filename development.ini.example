@@ -1,6 +1,9 @@
 [app:main]
 use = egg:cnx-authoring
 
+cors.access_control_allow_credentials = true
+cors.access_control_allow_origin = localhost
+
 pickle.filename = dev.p
 
 openstax_accounts.server_url = https://localhost:3000/
