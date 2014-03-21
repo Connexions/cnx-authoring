@@ -75,7 +75,7 @@ class DocumentSchema(colander.MappingSchema):
     #     missing=colander.drop,
     #     validator=colander.url,
     #     )
-    contents = colander.SchemaNode(
+    content = colander.SchemaNode(
         colander.String(),
         missing=colander.drop,
         )

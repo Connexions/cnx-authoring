@@ -128,7 +128,7 @@ class ViewsTests(unittest.TestCase):
             'modified': datetime.datetime.now().isoformat(),
             'license': {'url': DEFAULT_LICENSE.url},
             'language': 'en-us',
-            'contents': "Ding dong the switch is flipped.",
+            'content': "Ding dong the switch is flipped.",
             }
         self.document = None
         self.addCleanup(delattr, self, 'document')
@@ -160,7 +160,7 @@ class ViewsTests(unittest.TestCase):
         # TODO Test created and modified dates.
         self.assertEqual(returned_document['license']['url'], DEFAULT_LICENSE.url)
         self.assertEqual(returned_document['language'], post_data['language'])
-        self.assertEqual(returned_document['contents'], post_data['contents'])
+        self.assertEqual(returned_document['content'], post_data['content'])
 
     def test_post_resource(self):
         # Set up a resource

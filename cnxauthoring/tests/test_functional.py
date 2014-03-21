@@ -165,7 +165,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(get_result, {
             u'id': get_result['id'],
             u'title': u'My New Document',
-            u'contents': None,
+            u'content': None,
             u'created': get_result['created'],
             u'derived_from': None,
             u'license': {
@@ -212,7 +212,7 @@ class FunctionalTests(unittest.TestCase):
             'modified': u'2014-03-13T15:21:15.677617',
             'license': {'url': DEFAULT_LICENSE.url},
             'language': u'en-us',
-            'contents': u"Ding dong the switch is flipped.",
+            'content': u"Ding dong the switch is flipped.",
             }
 
         response = self.testapp.post('/contents',
@@ -233,7 +233,7 @@ class FunctionalTests(unittest.TestCase):
             u'title': post_data['title'],
             u'summary': post_data['summary'],
             u'language': post_data['language'],
-            u'contents': post_data['contents'],
+            u'content': post_data['content'],
             u'mediaType': u'Module',
             u'version': u'draft',
             })
@@ -259,7 +259,7 @@ class FunctionalTests(unittest.TestCase):
         update_data = {
             'title': u"Turning DNA through resonance",
             'summary': u"Theories on turning DNA structures",
-            'contents': u"Ding dong the switch is flipped.",
+            'content': u"Ding dong the switch is flipped.",
             }
 
         response = self.testapp.put('/contents/{}'.format(document['id']),
@@ -270,7 +270,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['title'], update_data['title'])
         self.assertEqual(result['summary'], update_data['summary'])
         self.assertEqual(result['language'], document['language'])
-        self.assertEqual(result['contents'], update_data['contents'])
+        self.assertEqual(result['content'], update_data['content'])
 
         response = self.testapp.get('/contents/{}@draft.json'.format(document['id']))
 

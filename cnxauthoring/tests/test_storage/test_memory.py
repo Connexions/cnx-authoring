@@ -17,13 +17,13 @@ class MemoryStorageTests(unittest.TestCase):
 
     def test_add_document(self):
         d = Document('Document Title: One', id='document-one',
-                     contents='<p>Document One contents etc</p>',
+                     content='<p>Document One contents etc</p>',
                      summary='Summary of Document One',
                      language='en-us')
         self.storage.add(d)
 
         d2 = Document('Document Two', id='document-two',
-                      contents='<p>Document Two contents etc</p>',
+                      content='<p>Document Two contents etc</p>',
                       summary='Summary of Document Two',
                       language='en-us')
         self.storage.add(d2)
@@ -39,7 +39,7 @@ class MemoryStorageTests(unittest.TestCase):
         self.assertEqual(result, None)
 
         d = Document('Document Title: One', id='document-one',
-                     contents='<p>Document One content etc</p>',
+                     content='<p>Document One content etc</p>',
                      summary='Summary of Document One',
                      language='en-us')
         self.storage.add(d)
@@ -58,11 +58,11 @@ class MemoryStorageTests(unittest.TestCase):
         result = self.storage.get(title='Document')
         self.assertEqual(result, None)
 
-        # get by contents
-        result = self.storage.get(contents='<p>Document One content etc</p>')
+        # get by content
+        result = self.storage.get(content='<p>Document One content etc</p>')
         self.assertEqual(result, d)
 
-        result = self.storage.get(contents='<p></p>')
+        result = self.storage.get(content='<p></p>')
         self.assertEqual(result, None)
 
         # get by summary

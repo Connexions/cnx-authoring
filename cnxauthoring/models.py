@@ -83,14 +83,14 @@ class Document:
     mediatype = DOCUMENT_MEDIATYPE
 
     def __init__(self, title, id=None,
-                 contents=None, summary=None,
+                 content=None, summary=None,
                  created=None, modified=None,
                  license=LICENSE_PARAMETER_MARKER,
                  language=None, derived_from=None, submitter=None):
         self.title = title
         self.version = 'draft'
         self.id = id or uuid.uuid4()
-        self.contents = contents
+        self.content = content
         self.summary = summary is None and '' or summary
         now = datetime.datetime.now(tz=TZINFO)
         self.created = created is None and now or created
