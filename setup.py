@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 install_requires = (
         'cnx-query-grammar',
         'colander',
-        'openstax-accounts',
+        'openstax-accounts>=0.5',
         'PasteDeploy',
         'pyramid',
         'tzlocal',
