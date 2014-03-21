@@ -178,7 +178,7 @@ class FunctionalTests(unittest.TestCase):
             u'mediaType': u'Module',
             u'language': u'en',
             u'submitter': u'me',
-            u'summary': None,
+            u'abstract': None,
             u'version': u'draft',
             })
         self.assertEqual(put_result, get_result)
@@ -207,7 +207,7 @@ class FunctionalTests(unittest.TestCase):
     def test_post_content(self):
         post_data = {
             'title': u"Turning DNA through resonance",
-            'summary': u"Theories on turning DNA structures",
+            'abstract': u"Theories on turning DNA structures",
             'created': u'2014-03-13T15:21:15.677617',
             'modified': u'2014-03-13T15:21:15.677617',
             'license': {'url': DEFAULT_LICENSE.url},
@@ -231,7 +231,7 @@ class FunctionalTests(unittest.TestCase):
             u'id': result['id'],
             u'derived_from': None,
             u'title': post_data['title'],
-            u'summary': post_data['summary'],
+            u'abstract': post_data['abstract'],
             u'language': post_data['language'],
             u'content': post_data['content'],
             u'mediaType': u'Module',
@@ -251,14 +251,14 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.post('/contents', 
                 json.dumps({
                     'title': u'My document タイトル',
-                    'summary': u'My document summary',
+                    'abstract': u'My document abstract',
                     'language': u'en'}),
                 status=201)
         document = json.loads(response.body.decode('utf-8'))
 
         update_data = {
             'title': u"Turning DNA through resonance",
-            'summary': u"Theories on turning DNA structures",
+            'abstract': u"Theories on turning DNA structures",
             'content': u"Ding dong the switch is flipped.",
             }
 
@@ -268,7 +268,7 @@ class FunctionalTests(unittest.TestCase):
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['id'], document['id'])
         self.assertEqual(result['title'], update_data['title'])
-        self.assertEqual(result['summary'], update_data['summary'])
+        self.assertEqual(result['abstract'], update_data['abstract'])
         self.assertEqual(result['language'], document['language'])
         self.assertEqual(result['content'], update_data['content'])
 
@@ -320,7 +320,7 @@ class FunctionalTests(unittest.TestCase):
         FunctionalTests.profile = {'username': 'a_new_user'}
         post_data = {
             'title': u"Turning DNA through resonance",
-            'summary': u"Theories on turning DNA structures",
+            'abstract': u"Theories on turning DNA structures",
             'created': u'2014-03-13T15:21:15.677617',
             'modified': u'2014-03-13T15:21:15.677617',
             'license': {'url': DEFAULT_LICENSE.url},

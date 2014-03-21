@@ -18,13 +18,13 @@ class MemoryStorageTests(unittest.TestCase):
     def test_add_document(self):
         d = Document('Document Title: One', id='document-one',
                      content='<p>Document One contents etc</p>',
-                     summary='Summary of Document One',
+                     abstract='Summary of Document One',
                      language='en')
         self.storage.add(d)
 
         d2 = Document('Document Two', id='document-two',
                       content='<p>Document Two contents etc</p>',
-                      summary='Summary of Document Two',
+                      abstract='Summary of Document Two',
                       language='en')
         self.storage.add(d2)
 
@@ -40,7 +40,7 @@ class MemoryStorageTests(unittest.TestCase):
 
         d = Document('Document Title: One', id='document-one',
                      content='<p>Document One content etc</p>',
-                     summary='Summary of Document One',
+                     abstract='Summary of Document One',
                      language='en')
         self.storage.add(d)
 
@@ -65,11 +65,11 @@ class MemoryStorageTests(unittest.TestCase):
         result = self.storage.get(content='<p></p>')
         self.assertEqual(result, None)
 
-        # get by summary
-        result = self.storage.get(summary='Summary of Document One')
+        # get by abstract
+        result = self.storage.get(abstract='Summary of Document One')
         self.assertEqual(result, d)
 
-        result = self.storage.get(summary='Summary')
+        result = self.storage.get(abstract='Summary')
         self.assertEqual(result, None)
 
         # get by language
@@ -80,8 +80,8 @@ class MemoryStorageTests(unittest.TestCase):
         self.assertEqual(result, None)
 
         # get by multiple fields
-        result = self.storage.get(language='en', summary='Summary of Document One')
+        result = self.storage.get(language='en', abstract='Summary of Document One')
         self.assertEqual(result, d)
 
-        result = self.storage.get(language='de', summary='Summary of Document One')
+        result = self.storage.get(language='de', abstract='Summary of Document One')
         self.assertEqual(result, None)

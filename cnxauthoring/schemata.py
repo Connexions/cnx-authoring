@@ -51,7 +51,7 @@ class DocumentSchema(colander.MappingSchema):
     title = colander.SchemaNode(
         colander.String(),
         )
-    summary = colander.SchemaNode(
+    abstract = colander.SchemaNode(
         colander.String(),
         missing=colander.drop,
         )

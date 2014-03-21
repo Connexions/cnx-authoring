@@ -123,7 +123,7 @@ class ViewsTests(unittest.TestCase):
         post_data = {
             'id': str(uuid.uuid4()),
             'title': "Turning DNA through resonance",
-            'summary': "Theories on turning DNA structures",
+            'abstract': "Theories on turning DNA structures",
             'created': datetime.datetime.now().isoformat(),
             'modified': datetime.datetime.now().isoformat(),
             'license': {'url': DEFAULT_LICENSE.url},
@@ -156,7 +156,7 @@ class ViewsTests(unittest.TestCase):
 
         self.assertEqual(returned_document, self.document.to_dict())
         self.assertEqual(returned_document['title'], post_data['title'])
-        self.assertEqual(returned_document['summary'], post_data['summary'])
+        self.assertEqual(returned_document['abstract'], post_data['abstract'])
         # TODO Test created and modified dates.
         self.assertEqual(returned_document['license']['url'], DEFAULT_LICENSE.url)
         self.assertEqual(returned_document['language'], post_data['language'])
