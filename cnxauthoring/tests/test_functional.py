@@ -385,7 +385,8 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/search?q=DNA', status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['results']['total'], 1)
-        self.assertEqual(result['results']['items'][0]['id'], doc_id)
+        self.assertEqual(result['results']['items'][0]['id'],
+                '{}@draft'.format(doc_id))
 
         # should be able to search multiple terms
         response = self.testapp.get('/search?q=new+resonance', status=200)
@@ -395,7 +396,8 @@ class FunctionalTests(unittest.TestCase):
             {'tag': 'text', 'value': 'resonance'}])
         self.assertEqual(result['results']['total'], 2)
         self.assertEqual(sorted([i['id'] for i in result['results']['items']]),
-                sorted([doc_id, new_doc_id]))
+                sorted(['{}@draft'.format(doc_id),
+                    '{}@draft'.format(new_doc_id)]))
 
         # should be able to search with double quotes
         response = self.testapp.get('/search?q="through resonance"',
@@ -404,7 +406,8 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['query']['limits'], [
             {'tag': 'text', 'value': 'through resonance'}])
         self.assertEqual(result['results']['total'], 1)
-        self.assertEqual(result['results']['items'][0]['id'], doc_id)
+        self.assertEqual(result['results']['items'][0]['id'],
+                '{}@draft'.format(doc_id))
 
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
@@ -536,6 +539,8 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['results']['total'], 2)
+        self.assertTrue(result['results']['items'][0]['id'].endswith('@draft'))
+        self.assertTrue(result['results']['items'][1]['id'].endswith('@draft'))
         titles = [i['title'] for i in result['results']['items']]
         self.assertEqual(sorted(titles), [
             'another document by {}'.format(uid),

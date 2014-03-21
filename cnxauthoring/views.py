@@ -73,9 +73,11 @@ def profile(request):
 @view_config(route_name='user-contents', request_method='GET', renderer='json', context=Site, permission='protected')
 def user_contents(request):
     """Contents that belong to the current logged in user"""
-    items = [content.to_dict()
-            for content in storage.get_all(
-                submitter=request.unauthenticated_userid)]
+    items = []
+    for content in storage.get_all(submitter=request.unauthenticated_userid):
+        document = content.to_dict()
+        document['id'] = '@'.join([document['id'], document['version']])
+        items.append(document)
     return {
             u'query': {
                 u'limits': [],
@@ -212,7 +214,11 @@ def search_content(request):
     q = structured_query(q)
 
     result = storage.search(q, submitter=request.unauthenticated_userid)
-    items = [i.to_dict() for i in result]
+    items = []
+    for content in result:
+        document = content.to_dict()
+        document['id'] = '@'.join([document['id'], document['version']])
+        items.append(document)
     return {
             u'query': {
                 u'limits': [{'tag': tag, 'value': value} for tag, value in q],
