@@ -175,7 +175,7 @@ class FunctionalTests(unittest.TestCase):
                 u'version': u'4.0',
                 },
             u'modified': get_result['modified'],
-            u'mediaType': u'Module',
+            u'mediaType': u'application/vnd.org.cnx.module',
             u'language': u'en',
             u'submitter': u'me',
             u'abstract': None,
@@ -234,7 +234,7 @@ class FunctionalTests(unittest.TestCase):
             u'abstract': post_data['abstract'],
             u'language': post_data['language'],
             u'content': post_data['content'],
-            u'mediaType': u'Module',
+            u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
             })
 
