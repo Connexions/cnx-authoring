@@ -49,7 +49,11 @@ def callback(request):
 @view_config(route_name='logout')
 def logout(request):
     forget(request)
-    raise httpexceptions.HTTPFound(location='/')
+    referer = request.referer or '/'
+    redirect_to = request.params.get('redirect', referer)
+    if redirect_to == request.route_url('logout'):
+        redirect_to = '/'
+    raise httpexceptions.HTTPFound(location=redirect_to)
 
 
 @view_config(route_name='user-search', request_method='GET', renderer='json', context=Site, permission='protected')
