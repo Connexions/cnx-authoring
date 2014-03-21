@@ -179,6 +179,7 @@ class FunctionalTests(unittest.TestCase):
             u'language': u'en-us',
             u'submitter': u'me',
             u'summary': None,
+            u'version': u'draft',
             })
         self.assertEqual(put_result, get_result)
 
@@ -234,6 +235,7 @@ class FunctionalTests(unittest.TestCase):
             u'language': post_data['language'],
             u'contents': post_data['contents'],
             u'mediaType': u'Module',
+            u'version': u'draft',
             })
 
     def test_put_content_403(self):

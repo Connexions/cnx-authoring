@@ -88,6 +88,7 @@ class Document:
                  license=LICENSE_PARAMETER_MARKER,
                  language=None, derived_from=None, submitter=None):
         self.title = title
+        self.version = 'draft'
         self.id = id or uuid.uuid4()
         self.contents = contents
         self.summary = summary is None and '' or summary
