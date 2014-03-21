@@ -7,6 +7,7 @@
 # ###
 import pickle
 import sys
+import os
 
 from .memory import MemoryStorage
 
@@ -23,5 +24,8 @@ class PickleStorage(MemoryStorage):
             pass
 
     def persist(self):
-        with open(self.filename, 'wb') as f:
-            pickle.dump(self.storage, f)
+        fdir = os.path.dirname(self.filename) or '.'
+        gerkin, gname = tempfile.mkstemp(dir=fdir)
+        pickle.dump(self.storage, gerkin)
+        gerkin.close()
+        os.rename(gname,self.filename)
