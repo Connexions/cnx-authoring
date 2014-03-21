@@ -114,7 +114,7 @@ class ViewsTests(unittest.TestCase):
 
         self.assertEqual(returned_document, self.document.to_dict())
         self.assertEqual(request.response.status, '201 Created')
-        content_url = request.route_url('get-content', id=self.document.id)
+        content_url = request.route_url('get-content-json', id=self.document.id)
         self.assertIn(('Location', content_url,),
                       request.response.headerlist)
 
@@ -150,7 +150,7 @@ class ViewsTests(unittest.TestCase):
         returned_document = post_content(request)
 
         self.assertEqual(request.response.status, '201 Created')
-        content_url = request.route_url('get-content', id=self.document.id)
+        content_url = request.route_url('get-content-json', id=self.document.id)
         self.assertIn(('Location', content_url,),
                       request.response.headerlist)
 
