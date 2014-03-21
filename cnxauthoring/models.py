@@ -17,7 +17,7 @@ TZINFO = tzlocal.get_localzone()
 
 DOCUMENT_MEDIATYPE = "application/vnd.org.cnx.document"
 LICENSE_PARAMETER_MARKER = object()
-DEFAULT_LANGUAGE = 'en-us'
+DEFAULT_LANGUAGE = 'en'
 
 
 class License:

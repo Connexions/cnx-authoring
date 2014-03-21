@@ -19,13 +19,13 @@ class MemoryStorageTests(unittest.TestCase):
         d = Document('Document Title: One', id='document-one',
                      content='<p>Document One contents etc</p>',
                      summary='Summary of Document One',
-                     language='en-us')
+                     language='en')
         self.storage.add(d)
 
         d2 = Document('Document Two', id='document-two',
                       content='<p>Document Two contents etc</p>',
                       summary='Summary of Document Two',
-                      language='en-us')
+                      language='en')
         self.storage.add(d2)
 
         result = self.storage.get(id='document-one')
@@ -41,7 +41,7 @@ class MemoryStorageTests(unittest.TestCase):
         d = Document('Document Title: One', id='document-one',
                      content='<p>Document One content etc</p>',
                      summary='Summary of Document One',
-                     language='en-us')
+                     language='en')
         self.storage.add(d)
 
         # get by id
@@ -73,15 +73,15 @@ class MemoryStorageTests(unittest.TestCase):
         self.assertEqual(result, None)
 
         # get by language
-        result = self.storage.get(language='en-us')
+        result = self.storage.get(language='en')
         self.assertEqual(result, d)
 
-        result = self.storage.get(language='en')
+        result = self.storage.get(language='de')
         self.assertEqual(result, None)
 
         # get by multiple fields
-        result = self.storage.get(language='en-us', summary='Summary of Document One')
+        result = self.storage.get(language='en', summary='Summary of Document One')
         self.assertEqual(result, d)
 
-        result = self.storage.get(language='en', summary='Summary of Document One')
+        result = self.storage.get(language='de', summary='Summary of Document One')
         self.assertEqual(result, None)

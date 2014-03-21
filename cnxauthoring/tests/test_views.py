@@ -127,7 +127,7 @@ class ViewsTests(unittest.TestCase):
             'created': datetime.datetime.now().isoformat(),
             'modified': datetime.datetime.now().isoformat(),
             'license': {'url': DEFAULT_LICENSE.url},
-            'language': 'en-us',
+            'language': 'en',
             'content': "Ding dong the switch is flipped.",
             }
         self.document = None

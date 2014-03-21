@@ -176,7 +176,7 @@ class FunctionalTests(unittest.TestCase):
                 },
             u'modified': get_result['modified'],
             u'mediaType': u'Module',
-            u'language': u'en-us',
+            u'language': u'en',
             u'submitter': u'me',
             u'summary': None,
             u'version': u'draft',
@@ -211,7 +211,7 @@ class FunctionalTests(unittest.TestCase):
             'created': u'2014-03-13T15:21:15.677617',
             'modified': u'2014-03-13T15:21:15.677617',
             'license': {'url': DEFAULT_LICENSE.url},
-            'language': u'en-us',
+            'language': u'en',
             'content': u"Ding dong the switch is flipped.",
             }
 
@@ -252,7 +252,7 @@ class FunctionalTests(unittest.TestCase):
                 json.dumps({
                     'title': u'My document タイトル',
                     'summary': u'My document summary',
-                    'language': u'en-us'}),
+                    'language': u'en'}),
                 status=201)
         document = json.loads(response.body.decode('utf-8'))
 
@@ -324,7 +324,7 @@ class FunctionalTests(unittest.TestCase):
             'created': u'2014-03-13T15:21:15.677617',
             'modified': u'2014-03-13T15:21:15.677617',
             'license': {'url': DEFAULT_LICENSE.url},
-            'language': u'en-us',
+            'language': u'en',
             'contents': u"Ding dong the switch is flipped.",
             }
         response = self.testapp.post('/contents', json.dumps(post_data),
