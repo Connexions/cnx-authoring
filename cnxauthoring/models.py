@@ -15,7 +15,7 @@ import tzlocal
 # Timezone info initialized from the system timezone.
 TZINFO = tzlocal.get_localzone()
 
-DOCUMENT_MEDIATYPE = "application/vnd.org.cnx.document"
+DOCUMENT_MEDIATYPE = "application/vnd.org.cnx.module"
 LICENSE_PARAMETER_MARKER = object()
 DEFAULT_LANGUAGE = 'en'
 
@@ -117,7 +117,7 @@ class Document:
         c['created'] = str(c['created'])
         c['modified'] = str(c['modified'])
         c['license'] = c['license'].__dict__
-        c['mediaType'] = 'application/vnd.org.cnx.module'
+        c['mediaType'] = self.mediatype
         return c
 
 
