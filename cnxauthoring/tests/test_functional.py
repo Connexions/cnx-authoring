@@ -278,6 +278,9 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
                 'localhost')
 
+        self.testapp.get('/contents/{}@draft.json'.format(result['id']),
+                status=200)
+
     def test_post_content_multiple(self):
         post_data = [
                 {'title': u'My document タイトル 1'},
@@ -294,9 +297,14 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
                 'localhost')
 
+        self.testapp.get('/contents/{}@draft.json'.format(result[0]['id']),
+                status=200)
+        self.testapp.get('/contents/{}@draft.json'.format(result[1]['id']),
+                status=200)
+
     def test_post_content_derived_from_not_found(self):
         post_data = {
-                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1.json',
+                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             }
         try:
             import urllib2 # python2
@@ -317,7 +325,7 @@ class FunctionalTests(unittest.TestCase):
 
     def test_post_content_derived_from_not_json(self):
         post_data = {
-                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1.json',
+                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             }
         def patched_urlopen(*args, **kwargs):
             return io.BytesIO(b'invalid json')
@@ -336,11 +344,11 @@ class FunctionalTests(unittest.TestCase):
 
     def test_post_content_derived_from(self):
         post_data = {
-                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1.json',
+                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             }
 
         def patched_urlopen(*args, **kwargs):
-            with open(test_data(post_data['derivedFrom'])) as f:
+            with open(test_data('{}.json'.format(post_data['derivedFrom']))) as f:
                 return io.BytesIO(f.read().encode('utf-8'))
         try:
             import urllib2 # python2
@@ -378,6 +386,131 @@ class FunctionalTests(unittest.TestCase):
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
                 'localhost')
+
+        self.testapp.get('/contents/{}@draft.json'.format(result['id']),
+                status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertTrue(u'Lav en madplan for den kommende uge'
+                in result.pop('content'))
+        self.assertTrue(result.pop('created') is not None)
+        self.assertTrue(result.pop('modified') is not None)
+        self.assertEqual(result, {
+            u'submitter': FunctionalTests.profile['username'],
+            u'id': result['id'],
+            u'derivedFrom': post_data['derivedFrom'],
+            u'title': u'Copy of Indkøb',
+            u'abstract': None,
+            u'language': u'da',
+            u'mediaType': u'application/vnd.org.cnx.module',
+            u'version': u'draft',
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0'},
+            })
+
+    def test_post_content_derived_from_binder(self):
+        post_data = {
+                'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+            }
+
+        def patched_urlopen(*args, **kwargs):
+            with open(test_data('{}.json'.format(post_data['derivedFrom']))) as f:
+                return io.BytesIO(f.read().encode('utf-8'))
+        try:
+            import urllib2 # python2
+        except ImportError:
+            import urllib.request as urllib2 # renamed in python3
+        urlopen = urllib2.urlopen
+        urllib2.urlopen = patched_urlopen
+        self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
+
+        response = self.testapp.post('/contents',
+                json.dumps(post_data),
+                status=201)
+        result = json.loads(response.body.decode('utf-8'))
+        self.maxDiff = None
+        self.assertFalse('2011-10-12' in result.pop('created'))
+        self.assertTrue(result.pop('modified') is not None)
+        self.assertEqual(result, {
+            u'submitter': FunctionalTests.profile['username'],
+            u'id': result['id'],
+            u'derivedFrom': post_data['derivedFrom'],
+            u'title': u'Copy of Madlavning',
+            u'abstract': None,
+            u'content': None,
+            u'language': u'da',
+            u'mediaType': u'application/vnd.org.cnx.collection',
+            u'version': u'draft',
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0'},
+            u'tree': {
+                u'id': u'{}@draft'.format(result['id']),
+                u'title': u'Copy of Madlavning',
+                u'contents': [
+                    {u'id': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
+                        u'title': u'Indkøb'},
+                    {u'id': u'subcol',
+                        u'contents': [
+                            {u'id': u'f6b979cb-8904-4265-bf2d-f059cc362217@1',
+                                u'title': u'Fødevarer'},
+                            {u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
+                                u'title': u'Hygiejne'},
+                            ],
+                        u'title': u'Fødevarer og Hygiejne'},
+                    {u'id': u'b0db72d9-fac3-4b43-9926-7e6e801663fb@1',
+                        u'title': u'Tilberedning'}
+                    ],
+                },
+            })
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
+
+        response = self.testapp.get(
+                '/contents/{}@draft.json'.format(result['id']), status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertTrue(result.pop('created') is not None)
+        self.assertTrue(result.pop('modified') is not None)
+        self.assertEqual(result, {
+            u'submitter': FunctionalTests.profile['username'],
+            u'id': result['id'],
+            u'derivedFrom': post_data['derivedFrom'],
+            u'title': u'Copy of Madlavning',
+            u'abstract': None,
+            u'content': None,
+            u'language': u'da',
+            u'mediaType': u'application/vnd.org.cnx.collection',
+            u'version': u'draft',
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0'},
+            u'tree': {
+                u'id': u'{}@draft'.format(result['id']),
+                u'title': u'Copy of Madlavning',
+                u'contents': [
+                    {u'id': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
+                        u'title': u'Indkøb'},
+                    {u'id': u'subcol',
+                        u'contents': [
+                            {u'id': u'f6b979cb-8904-4265-bf2d-f059cc362217@1',
+                                u'title': u'Fødevarer'},
+                            {u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
+                                u'title': u'Hygiejne'},
+                            ],
+                        u'title': u'Fødevarer og Hygiejne'},
+                    {u'id': u'b0db72d9-fac3-4b43-9926-7e6e801663fb@1',
+                        u'title': u'Tilberedning'}
+                    ],
+                },
+            })
 
     def test_post_content(self):
         post_data = {

@@ -8,6 +8,9 @@ before_install:
   # Install cnx-query-grammar
   - git clone https://github.com/Connexions/cnx-query-grammar.git
   - cd cnx-query-grammar && python setup.py install && cd ..
+  # Install cnx-epub
+  - git clone https://github.com/Connexions/cnx-epub.git
+  - cd cnx-epub && python setup.py install && cd ..
 
   # Set up postgres roles
   - sudo -u postgres psql -d postgres -c "CREATE USER cnxauthoring WITH SUPERUSER PASSWORD 'cnxauthoring';"

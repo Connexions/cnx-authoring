@@ -17,8 +17,9 @@ from pyramid import httpexceptions
 from openstax_accounts.interfaces import *
 
 from . import Site
-from .models import create_content, derive_content, Document, Resource
-from .schemata import DocumentSchema
+from .models import (create_content, derive_content, Document, Resource,
+        BINDER_MEDIATYPE)
+from .schemata import DocumentSchema, BinderSchema
 from .storage import storage
 from . import utils
 
@@ -130,8 +131,12 @@ def post_content_single(request, cstruct):
             raise httpexceptions.HTTPBadRequest(
                     'Derive failed: {}'.format(derived_from))
     cstruct['submitter'] = request.unauthenticated_userid
+    if cstruct.get('media_type') == BINDER_MEDIATYPE:
+        schema = BinderSchema()
+    else:
+        schema = DocumentSchema()
     try:
-        appstruct = DocumentSchema().bind().deserialize(cstruct)
+        appstruct = schema.bind().deserialize(cstruct)
     except Exception as e:
         raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
     appstruct['derived_from'] = derived_from
