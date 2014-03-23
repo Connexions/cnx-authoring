@@ -225,7 +225,7 @@ class FunctionalTests(unittest.TestCase):
             u'title': u'My New Document',
             u'content': None,
             u'created': get_result['created'],
-            u'derived_from': None,
+            u'derivedFrom': None,
             u'license': {
                 u'abbr': u'by',
                 u'name': u'Attribution',
@@ -311,7 +311,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result, {
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
-            u'derived_from': None,
+            u'derivedFrom': None,
             u'title': post_data['title'],
             u'abstract': post_data['abstract'],
             u'language': post_data['language'],

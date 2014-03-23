@@ -119,6 +119,7 @@ def get_resource(request):
 
 
 def post_content_single(request, cstruct):
+    utils.change_dict_keys(cstruct, utils.camelcase_to_underscore)
     cstruct['submitter'] = request.unauthenticated_userid
     try:
         appstruct = DocumentSchema().bind().deserialize(cstruct)

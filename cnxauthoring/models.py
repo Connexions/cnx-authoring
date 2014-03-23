@@ -11,6 +11,8 @@ import uuid
 
 import tzlocal
 
+from . import utils
+
 
 # Timezone info initialized from the system timezone.
 TZINFO = tzlocal.get_localzone()
@@ -116,8 +118,9 @@ class Document:
         c['id'] = str(c['id'])
         c['created'] = str(c['created'])
         c['modified'] = str(c['modified'])
-        c['license'] = c['license'].__dict__
+        c['license'] = c['license'].__dict__.copy()
         c['mediaType'] = self.mediatype
+        utils.change_dict_keys(c, utils.underscore_to_camelcase)
         return c
 
 
