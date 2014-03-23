@@ -80,7 +80,7 @@ def user_contents(request):
     """Contents that belong to the current logged in user"""
     items = []
     for content in storage.get_all(submitter=request.unauthenticated_userid):
-        document = content.to_dict()
+        document = content.__json__()
         document['id'] = '@'.join([document['id'], document['version']])
         items.append(document)
     return {
@@ -102,7 +102,7 @@ def get_content(request):
     content = storage.get(id=id, submitter=request.unauthenticated_userid)
     if content is None:
         raise httpexceptions.HTTPNotFound()
-    return content.to_dict()
+    return content
 
 
 @view_config(route_name='get-resource', request_method='GET', context=Site, permission='protected')
@@ -154,7 +154,7 @@ def post_content(request):
     content = None
     if isinstance(cstruct, list):
         for item in cstruct:
-            contents.append(post_content_single(request, item).to_dict())
+            contents.append(post_content_single(request, item).__json__())
     else:
         content = post_content_single(request, cstruct)
 
@@ -164,7 +164,7 @@ def post_content(request):
         resp.headers.add(
             'Location',
             request.route_url('get-content-json', id=content.id))
-        return content.to_dict()
+        return content
     return contents
 
 
@@ -220,7 +220,7 @@ def put_content(request):
     resp.headers.add(
             'Location',
             request.route_url('get-content-json', id=content.id))
-    return content.to_dict()
+    return content
 
 
 @view_config(route_name='search-content', request_method='GET', renderer='json', context=Site, permission='protected')
@@ -244,7 +244,7 @@ def search_content(request):
     result = storage.search(q, submitter=request.unauthenticated_userid)
     items = []
     for content in result:
-        document = content.to_dict()
+        document = content.__json__()
         document['id'] = '@'.join([document['id'], document['version']])
         items.append(document)
     return {

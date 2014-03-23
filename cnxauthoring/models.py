@@ -129,8 +129,12 @@ class Document:
         c['modified'] = c['modified'].isoformat()
         c['license'] = c['license'].__dict__.copy()
         c['mediaType'] = self.mediatype
-        utils.change_dict_keys(c, utils.underscore_to_camelcase)
         return c
+
+    def __json__(self, request=None):
+        result = self.to_dict()
+        utils.change_dict_keys(result, utils.underscore_to_camelcase)
+        return result
 
 
 def create_content(**appstruct):
