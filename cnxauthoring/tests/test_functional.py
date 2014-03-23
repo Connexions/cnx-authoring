@@ -49,7 +49,7 @@ class MockAuthenticationPolicy(object):
         pass
 
     def forget(self, request):
-        pass
+        FunctionalTests.profile = None
 
 
 def get_user(request):
@@ -132,6 +132,36 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
                 'localhost')
 
+    def test_login_redirect_loop(self):
+        FunctionalTests.profile = None
+        def authenticated_userid(*args):
+            raise httpexceptions.HTTPFound(
+                    location='http://example.com/login_form')
+        with mock.patch.object(MockAuthenticationPolicy, 'authenticated_userid',
+                side_effect=authenticated_userid):
+            response = self.testapp.get('/login',
+                    headers={'REFERER': 'http://localhost/login'},
+                    status=302)
+        # user logs in successfully
+        FunctionalTests.profile = {'username': 'me'}
+        response = self.testapp.get('/callback', status=302)
+        self.assertEqual(response.headers['Location'], 'http://localhost/')
+
+    def test_login_redirect_referer(self):
+        FunctionalTests.profile = None
+        def authenticated_userid(*args):
+            raise httpexceptions.HTTPFound(
+                    location='http://example.com/login_form')
+        with mock.patch.object(MockAuthenticationPolicy, 'authenticated_userid',
+                side_effect=authenticated_userid):
+            response = self.testapp.get('/login',
+                    headers={'REFERER': 'http://example.com/'},
+                    status=302)
+        # user logs in successfully
+        FunctionalTests.profile = {'username': 'me'}
+        response = self.testapp.get('/callback', status=302)
+        self.assertEqual(response.headers['Location'], 'http://example.com/')
+
     def test_login_redirect(self):
         FunctionalTests.profile = None
         def authenticated_userid(*args):
@@ -146,6 +176,30 @@ class FunctionalTests(unittest.TestCase):
         FunctionalTests.profile = {'username': 'me'}
         response = self.testapp.get('/callback', status=302)
         self.assertEqual(response.headers['Location'], 'http://example.com/logged_in')
+
+    def test_logout_redirect_loop(self):
+        response = self.testapp.get('/logout',
+                headers={'REFERER': 'http://localhost/logout'},
+                status=302)
+        self.assertEqual(response.headers['Location'], 'http://localhost/')
+        self.assertEqual(FunctionalTests.profile, None)
+
+    def test_logout_redirect_referer(self):
+        response = self.testapp.get('/logout',
+                headers={'REFERER': 'http://example.com/logged_out'},
+                status=302)
+        self.assertEqual(response.headers['Location'],
+                'http://example.com/logged_out')
+        self.assertEqual(FunctionalTests.profile, None)
+
+    def test_logout_redirect(self):
+        response = self.testapp.get(
+                '/logout?redirect=http://example.com/logged_out',
+                headers={'REFERER': 'http://example.com/'},
+                status=302)
+        self.assertEqual(response.headers['Location'],
+                'http://example.com/logged_out')
+        self.assertEqual(FunctionalTests.profile, None)
 
     def test_get_content_403(self):
         FunctionalTests.profile = None

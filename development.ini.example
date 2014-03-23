@@ -12,6 +12,7 @@ openstax_accounts.application_secret = 9bbe5046b799ce150218417493cfb014894b43c07
 openstax_accounts.application_url = http://localhost:8080/
 openstax_accounts.login_path = /login
 openstax_accounts.callback_path = /callback
+openstax_accounts.logout_path = /logout
 
 ###
 # wsgi server configuration
