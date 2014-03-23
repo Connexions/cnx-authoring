@@ -7,6 +7,7 @@ install_requires = (
         'openstax-accounts>=0.5',
         'PasteDeploy',
         'pyramid',
+        'psycopg2>=2.5',
         'tzlocal',
         'waitress',
         )
@@ -27,11 +28,17 @@ setup(
         packages=find_packages(),
         install_requires=install_requires,
         tests_require=tests_require,
+        package_data={
+            'cnxauthoring.storage': ['sql/*.sql', 'sql/*/*.sql'],
+            },
         include_package_data=True,
         entry_points={
             'paste.app_factory': [
                 'main = cnxauthoring:main',
                 ],
+            'console_scripts': [
+                'cnx-authoring-initialize_db = cnxauthoring.scripts.initializedb:main'
+                ]
             },
         test_suite='cnxauthoring.tests',
         zip_safe=False,

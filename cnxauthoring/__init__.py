@@ -65,6 +65,7 @@ def main(global_config, **settings):
 
     from . import storage
 
+    
     storages = storage.storages
     storage_name = settings.get('storage',storage.default_storage)
     storage_modname, storage_class = storages[storage_name]
