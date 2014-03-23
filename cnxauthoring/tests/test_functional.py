@@ -310,12 +310,26 @@ class FunctionalTests(unittest.TestCase):
 
     def test_put_content_403(self):
         FunctionalTests.profile = None
-        self.testapp.put('/contents/1234abcde', status=403)
+        self.testapp.put('/contents/1234abcde@draft.json', status=403)
 
     def test_put_content_not_found(self):
-        self.testapp.put('/contents/1234abcde',
+        self.testapp.put('/contents/1234abcde@draft.json',
                 json.dumps({'title': u'Update document title'}),
                 status=404)
+
+    def test_put_content_invalid_json(self):
+        response = self.testapp.post('/contents', 
+                json.dumps({
+                    'title': u'My document タイトル',
+                    'abstract': u'My document abstract',
+                    'language': u'en'}),
+                status=201)
+        document = json.loads(response.body.decode('utf-8'))
+
+        response = self.testapp.put(
+                '/contents/{}@draft.json'.format(document['id']),
+                'invalid json', status=400)
+        self.assertTrue('Invalid JSON' in response.body.decode('utf-8'))
 
     def test_put_content(self):
         response = self.testapp.post('/contents', 
@@ -332,7 +346,7 @@ class FunctionalTests(unittest.TestCase):
             'content': u"Ding dong the switch is flipped.",
             }
 
-        response = self.testapp.put('/contents/{}'.format(document['id']),
+        response = self.testapp.put('/contents/{}@draft.json'.format(document['id']),
                 json.dumps(update_data),
                 status=200)
         result = json.loads(response.body.decode('utf-8'))
