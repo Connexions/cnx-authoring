@@ -305,9 +305,9 @@ class FunctionalTests(unittest.TestCase):
         license = result.pop('license')
         self.assertEqual(license['url'], post_data['license']['url'])
         created = result.pop('created')
-        self.assertTrue(created.startswith('2014-03-13 15:21:15.677617'))
+        self.assertTrue(created.startswith('2014-03-13T15:21:15.677617'))
         modified = result.pop('modified')
-        self.assertTrue(modified.startswith('2014-03-13 15:21:15.677617'))
+        self.assertTrue(modified.startswith('2014-03-13T15:21:15.677617'))
         self.assertEqual(result, {
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],

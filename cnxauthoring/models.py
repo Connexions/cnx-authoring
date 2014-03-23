@@ -116,8 +116,8 @@ class Document:
     def to_dict(self):
         c = self.__dict__.copy()
         c['id'] = str(c['id'])
-        c['created'] = str(c['created'])
-        c['modified'] = str(c['modified'])
+        c['created'] = c['created'].isoformat()
+        c['modified'] = c['modified'].isoformat()
         c['license'] = c['license'].__dict__.copy()
         c['mediaType'] = self.mediatype
         utils.change_dict_keys(c, utils.underscore_to_camelcase)
