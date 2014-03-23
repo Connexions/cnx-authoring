@@ -39,7 +39,7 @@ class PostgresqlStorage(BaseStorage):
         type_name = type_.__name__.lower()
         
         # if ID is not a well formed uuid, there's no need to even hit the db 
-        if kwargs.has_key('id') and type(kwargs['id']) != UUID:
+        if 'id' in kwargs and type(kwargs['id']) != UUID:
             try:
                 kwargs['id'] = UUID(kwargs['id'])
             except ValueError:
@@ -52,7 +52,7 @@ class PostgresqlStorage(BaseStorage):
         if res:
             results = []
             for r in res:
-                if r.has_key('license'):
+                if 'license' in r:
                     r['license'] = eval(r['license'])
                     results.append(create_content(**dict(r)))
                 else:
@@ -127,7 +127,7 @@ class PostgresqlStorage(BaseStorage):
         if res:
             results = []
             for item in res:
-                if item.has_key('license'):
+                if 'license' in item:
                     item['license'] = eval(item['license'])
                     results.append(create_content(**dict(item)))
 

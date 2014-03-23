@@ -28,7 +28,6 @@ class PickleStorage(MemoryStorage):
     def persist(self):
         fdir = os.path.dirname(self.filename) or '.'
         gfd, gname = tempfile.mkstemp(dir=fdir)
-        gerkin = os.fdopen(gfd,'w')
-        pickle.dump(self.storage, gerkin)
-        gerkin.close()
+        with os.fdopen(gfd, 'wb') as gerkin:
+            pickle.dump(self.storage, gerkin)
         os.rename(gname,self.filename)
