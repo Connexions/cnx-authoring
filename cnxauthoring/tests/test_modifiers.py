@@ -38,11 +38,25 @@ class ModelJSONRendering(unittest.TestCase):
         from ..models import Document
         document = Document(title, id=id)
 
+        self.maxDiff = None
         expected_json = {
             'id': str(id),
             'title': title,
             'created': document.created.isoformat(),
             'modified': document.modified.isoformat(),
+            'mediaType': Document.mediatype,
+            'language': 'en',
+            'version': 'draft',
+            'submitter': None,
+            'derivedFrom': None,
+            'abstract': None,
+            'content': None,
+            'license': {
+                'url': 'http://creativecommons.org/licenses/by/4.0/',
+                'abbr': 'by',
+                'name': 'Attribution',
+                'version': '4.0',
+                },
             }
         expected_json = json.dumps(expected_json)
 
@@ -50,4 +64,4 @@ class ModelJSONRendering(unittest.TestCase):
         from ..modifiers import JSON_RENDERERS
         json_document = self.render(document, adapters=JSON_RENDERERS)
 
-        self.assertEqual(json_document, expected_json)
+        self.assertEqual(json.loads(json_document), json.loads(expected_json))
