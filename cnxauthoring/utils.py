@@ -10,6 +10,26 @@ import re
 from cnxquerygrammar.query_parser import grammar, DictFormater
 from parsimonious.exceptions import IncompleteParseError
 
+def change_dict_keys(data, func):
+    for k in data.keys():
+        _k = func(k)
+        if _k != k:
+            data[_k] = data.pop(k)
+        if isinstance(data[_k], dict):
+            change_dict_keys(data[_k], func)
+
+def camelcase_to_underscore(camelcase):
+    def replace(match):
+        char = match.group(1)
+        return '_{}'.format(char.lower())
+    return re.sub('([A-Z])', replace, camelcase)
+
+def underscore_to_camelcase(underscore):
+    def replace(match):
+        char = match.group(1)
+        return '{}'.format(char.upper())
+    return re.sub('_([a-z])', replace, underscore)
+
 def structured_query(query_string):
     try:
         node_tree = grammar.parse(query_string)

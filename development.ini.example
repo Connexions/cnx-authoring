@@ -1,6 +1,7 @@
 [app:main]
 use = egg:cnx-authoring
 
+archive.url = http://archive.cnx.org/
 cors.access_control_allow_credentials = true
 cors.access_control_allow_origin = localhost
 

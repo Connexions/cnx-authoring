@@ -17,10 +17,10 @@ from pyramid import httpexceptions
 from openstax_accounts.interfaces import *
 
 from . import Site
-from .models import create_content, Document, Resource
+from .models import create_content, derive_content, Document, Resource
 from .schemata import DocumentSchema
 from .storage import storage
-from .utils import structured_query
+from . import utils
 
 
 @view_config(route_name='login')
@@ -118,6 +118,28 @@ def get_resource(request):
     return resp
 
 
+def post_content_single(request, cstruct):
+    utils.change_dict_keys(cstruct, utils.camelcase_to_underscore)
+    derived_from = cstruct.get('derived_from')
+    if derived_from:
+        cstruct = derive_content(request, **cstruct)
+        if not cstruct:
+            raise httpexceptions.HTTPBadRequest(
+                    'Derive failed: {}'.format(derived_from))
+    cstruct['submitter'] = request.unauthenticated_userid
+    try:
+        appstruct = DocumentSchema().bind().deserialize(cstruct)
+    except Exception as e:
+        raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
+    appstruct['derived_from'] = derived_from
+    content = create_content(**appstruct)
+
+    content = storage.add(content)
+    storage.persist()
+
+    return content
+
+
 @view_config(route_name='post-content', request_method='POST', renderer='json', context=Site, permission='protected')
 def post_content(request):
     """Create content.
@@ -127,22 +149,23 @@ def post_content(request):
         cstruct = request.json_body
     except (TypeError, ValueError):
         raise httpexceptions.HTTPBadRequest('Invalid JSON')
-    cstruct['submitter'] = request.unauthenticated_userid
-    try:
-        appstruct = DocumentSchema().bind().deserialize(cstruct)
-    except Exception as e:
-        raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
-    content = create_content(**appstruct)
 
-    content = storage.add(content)
-    storage.persist()
+    contents = []
+    content = None
+    if isinstance(cstruct, list):
+        for item in cstruct:
+            contents.append(post_content_single(request, item).to_dict())
+    else:
+        content = post_content_single(request, cstruct)
 
     resp = request.response
     resp.status = 201
-    resp.headers.add(
-        'Location',
-        request.route_url('get-content-json', id=content.id))
-    return content.to_dict()
+    if content:
+        resp.headers.add(
+            'Location',
+            request.route_url('get-content-json', id=content.id))
+        return content.to_dict()
+    return contents
 
 
 @view_config(route_name='post-resource', request_method='POST', renderer='json', context=Site, permission='protected')
@@ -216,7 +239,7 @@ def search_content(request):
     q = request.GET.get('q', '').strip()
     if not q:
         return empty_response
-    q = structured_query(q)
+    q = utils.structured_query(q)
 
     result = storage.search(q, submitter=request.unauthenticated_userid)
     items = []
