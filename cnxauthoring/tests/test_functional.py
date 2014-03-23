@@ -270,6 +270,22 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
                 'localhost')
 
+    def test_post_content_multiple(self):
+        post_data = [
+                {'title': u'My document タイトル 1'},
+                {'title': u'My document タイトル 2'},
+                ]
+        response = self.testapp.post('/contents', 
+                json.dumps(post_data), status=201)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]['title'], u'My document タイトル 1')
+        self.assertEqual(result[1]['title'], u'My document タイトル 2')
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
+
     def test_post_content(self):
         post_data = {
             'title': u"Turning DNA through resonance",

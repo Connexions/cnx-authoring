@@ -20,7 +20,7 @@ from . import Site
 from .models import create_content, Document, Resource
 from .schemata import DocumentSchema
 from .storage import storage
-from .utils import structured_query
+from . import utils
 
 
 @view_config(route_name='login')
@@ -118,15 +118,7 @@ def get_resource(request):
     return resp
 
 
-@view_config(route_name='post-content', request_method='POST', renderer='json', context=Site, permission='protected')
-def post_content(request):
-    """Create content.
-    Returns the content location and a copy of the newly created content.
-    """
-    try:
-        cstruct = request.json_body
-    except (TypeError, ValueError):
-        raise httpexceptions.HTTPBadRequest('Invalid JSON')
+def post_content_single(request, cstruct):
     cstruct['submitter'] = request.unauthenticated_userid
     try:
         appstruct = DocumentSchema().bind().deserialize(cstruct)
@@ -137,12 +129,35 @@ def post_content(request):
     content = storage.add(content)
     storage.persist()
 
+    return content
+
+
+@view_config(route_name='post-content', request_method='POST', renderer='json', context=Site, permission='protected')
+def post_content(request):
+    """Create content.
+    Returns the content location and a copy of the newly created content.
+    """
+    try:
+        cstruct = request.json_body
+    except (TypeError, ValueError):
+        raise httpexceptions.HTTPBadRequest('Invalid JSON')
+
+    contents = []
+    content = None
+    if isinstance(cstruct, list):
+        for item in cstruct:
+            contents.append(post_content_single(request, item).to_dict())
+    else:
+        content = post_content_single(request, cstruct)
+
     resp = request.response
     resp.status = 201
-    resp.headers.add(
-        'Location',
-        request.route_url('get-content-json', id=content.id))
-    return content.to_dict()
+    if content:
+        resp.headers.add(
+            'Location',
+            request.route_url('get-content-json', id=content.id))
+        return content.to_dict()
+    return contents
 
 
 @view_config(route_name='post-resource', request_method='POST', renderer='json', context=Site, permission='protected')
@@ -216,7 +231,7 @@ def search_content(request):
     q = request.GET.get('q', '').strip()
     if not q:
         return empty_response
-    q = structured_query(q)
+    q = utils.structured_query(q)
 
     result = storage.search(q, submitter=request.unauthenticated_userid)
     items = []
