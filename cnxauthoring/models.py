@@ -6,8 +6,17 @@
 # See LICENCE.txt for details.
 # ###
 import datetime
+import json
 import hashlib
 import uuid
+try:
+    import urllib2 # python2
+except ImportError:
+    import urllib.request as urllib2 # renamed in python3
+try:
+    import urlparse # python2
+except ImportError:
+    import urllib.parse as urlparse # renamed in python3
 
 import tzlocal
 
@@ -133,3 +142,21 @@ def create_content(**appstruct):
                    if l.url == appstruct['license']['url']][0]
         kwargs['license'] = license
     return Document(**kwargs)
+
+
+def derive_content(request, **kwargs):
+    derived_from = kwargs['derived_from']
+    settings = request.registry.settings
+    archive_url = settings['archive.url']
+    content_url = urlparse.urljoin(archive_url,
+            '/contents/{}.json'.format(derived_from))
+    response = urllib2.urlopen(content_url).read()
+    try:
+        document = json.loads(response.decode('utf-8'))
+    except (TypeError, ValueError):
+        return
+    document['title'] = u'Copy of {}'.format(document['title'])
+    document['created'] = None
+    document['modified'] = None
+    document['license'] = {'url': DEFAULT_LICENSE.url}
+    return document

@@ -9,7 +9,7 @@ import datetime
 
 import colander
 
-from .models import TZINFO
+from .models import TZINFO, DEFAULT_LANGUAGE
 
 
 @colander.deferred
@@ -66,15 +66,15 @@ class DocumentSchema(colander.MappingSchema):
     license = LicenseSchema(
         missing=colander.drop,
         )
-    # language = colander.SchemaNode(
-    #     colander.String(),
-    #     default=DEFAULT_LANGUAGE,
-    #     )
-    # derived_from = colander.SchemaNode(
-    #     colander.String(),
-    #     missing=colander.drop,
-    #     validator=colander.url,
-    #     )
+    language = colander.SchemaNode(
+        colander.String(),
+        default=DEFAULT_LANGUAGE,
+        missing=colander.drop,
+        )
+    derived_from = colander.SchemaNode(
+        colander.String(),
+        missing=colander.drop,
+        )
     content = colander.SchemaNode(
         colander.String(),
         missing=colander.drop,

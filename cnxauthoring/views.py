@@ -17,7 +17,7 @@ from pyramid import httpexceptions
 from openstax_accounts.interfaces import *
 
 from . import Site
-from .models import create_content, Document, Resource
+from .models import create_content, derive_content, Document, Resource
 from .schemata import DocumentSchema
 from .storage import storage
 from . import utils
@@ -120,11 +120,18 @@ def get_resource(request):
 
 def post_content_single(request, cstruct):
     utils.change_dict_keys(cstruct, utils.camelcase_to_underscore)
+    derived_from = cstruct.get('derived_from')
+    if derived_from:
+        cstruct = derive_content(request, **cstruct)
+        if not cstruct:
+            raise httpexceptions.HTTPBadRequest(
+                    'Derive failed: {}'.format(derived_from))
     cstruct['submitter'] = request.unauthenticated_userid
     try:
         appstruct = DocumentSchema().bind().deserialize(cstruct)
     except Exception as e:
         raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
+    appstruct['derived_from'] = derived_from
     content = create_content(**appstruct)
 
     content = storage.add(content)

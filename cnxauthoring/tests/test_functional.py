@@ -11,6 +11,7 @@ except ImportError:
     import configparser as ConfigParser
 import datetime
 import json
+import io
 import os
 import sys
 import unittest
@@ -265,6 +266,7 @@ class FunctionalTests(unittest.TestCase):
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['title'], u'My document タイトル')
+        self.assertEqual(result['language'], u'en')
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
@@ -281,6 +283,51 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0]['title'], u'My document タイトル 1')
         self.assertEqual(result[1]['title'], u'My document タイトル 2')
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
+
+    def test_post_content_derived_from(self):
+        post_data = {
+                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1.json',
+            }
+
+        def patched_urlopen(*args, **kwargs):
+            with open(test_data(post_data['derivedFrom'])) as f:
+                return io.BytesIO(f.read().encode('utf-8'))
+        try:
+            import urllib2 # python2
+        except ImportError:
+            import urllib.request as urllib2 # renamed in python3
+        urlopen = urllib2.urlopen
+        urllib2.urlopen = patched_urlopen
+        self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
+
+        response = self.testapp.post('/contents',
+                json.dumps(post_data),
+                status=201)
+        result = json.loads(response.body.decode('utf-8'))
+        self.maxDiff = None
+        self.assertTrue(u'Lav en madplan for den kommende uge'
+                in result.pop('content'))
+        self.assertFalse('2011-10-05' in result.pop('created'))
+        self.assertTrue(result.pop('modified') is not None)
+        self.assertEqual(result, {
+            u'submitter': FunctionalTests.profile['username'],
+            u'id': result['id'],
+            u'derivedFrom': post_data['derivedFrom'],
+            u'title': u'Copy of Indkøb',
+            u'abstract': None,
+            u'language': u'da',
+            u'mediaType': u'application/vnd.org.cnx.module',
+            u'version': u'draft',
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0'},
+            })
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
