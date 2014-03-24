@@ -7,21 +7,27 @@
 # ###
 import pickle
 import sys
+import os
+import tempfile
 
 from .memory import MemoryStorage
 
 class PickleStorage(MemoryStorage):
 
-    def __init__(self, storage_filename):
+    def __init__(self, filename, empty=None):
         MemoryStorage.__init__(self)
-        self.filename = storage_filename
-        try:
-            with open(self.filename, 'rb') as f:
-                self.storage.update(pickle.load(f))
-        except (IOError, EOFError):
-            # file doesn't exist or is empty
-            pass
+        self.filename = filename
+        if not empty:
+            try:
+                with open(self.filename, 'rb') as f:
+                    self.storage.update(pickle.load(f))
+            except (IOError, EOFError):
+                # file doesn't exist or is empty
+                pass
 
     def persist(self):
-        with open(self.filename, 'wb') as f:
-            pickle.dump(self.storage, f)
+        fdir = os.path.dirname(self.filename) or '.'
+        gfd, gname = tempfile.mkstemp(dir=fdir)
+        with os.fdopen(gfd, 'wb') as gerkin:
+            pickle.dump(self.storage, gerkin)
+        os.rename(gname,self.filename)

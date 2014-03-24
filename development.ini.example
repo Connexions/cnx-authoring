@@ -5,7 +5,9 @@ archive.url = http://archive.cnx.org/
 cors.access_control_allow_credentials = true
 cors.access_control_allow_origin = localhost
 
+storage = pickle
 pickle.filename = dev.p
+postgresql.db-connection-string = dbname=authoring user=cnxauthoring
 
 openstax_accounts.server_url = https://localhost:3000/
 openstax_accounts.application_id = a86119f2635afb0c2f1b89fc914e65e09688451168b639a18fd054f2e4b15670

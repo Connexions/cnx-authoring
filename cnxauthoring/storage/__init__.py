@@ -7,3 +7,8 @@
 # ###
 
 storage = None
+storages = {'memory':('memory','MemoryStorage'),
+            'pickle':('pickle_storage','PickleStorage'),
+            'postgresql':('postgresql','PostgresqlStorage'),
+            }
+default_storage = 'memory'

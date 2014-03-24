@@ -107,6 +107,12 @@ class FunctionalTests(unittest.TestCase):
         from webtest import TestApp
         self.testapp = TestApp(app)
 
+    @classmethod
+    def tearDownClass(self):
+        from ..storage import storage
+        if hasattr(storage, 'conn'):
+            storage.conn.close()
+
     def setUp(self):
         FunctionalTests.profile = {u'username': u'me'}
 

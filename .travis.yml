@@ -2,16 +2,24 @@ language: python
 python:
   - "2.7"
   - "3.3"
+addons:
+  postgresql: 9.3
 before_install:
   # Install cnx-query-grammar
   - git clone https://github.com/Connexions/cnx-query-grammar.git
   - cd cnx-query-grammar && python setup.py install && cd ..
+
+  # Set up postgres roles
+  - sudo -u postgres psql -d postgres -c "CREATE USER cnxauthoring WITH SUPERUSER PASSWORD 'cnxauthoring';"
+  # Set up the database
+  - sudo -u postgres createdb -O cnxauthoring authoring
 
   # Install coverage
   - pip install coverage
   - pip install coveralls
 install:
   - python setup.py install
+  - cnx-authoring-initialize_db  testing.ini
 script:
   - coverage run --source=cnxauthoring setup.py test
 after_success:

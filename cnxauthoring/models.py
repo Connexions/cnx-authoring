@@ -79,7 +79,10 @@ class Resource:
     def __init__(self, mediatype, data):
         self.mediatype = mediatype
         # ``data`` must be a buffer or file-like object.
-        self.data = data.read()
+        try:
+            self.data = data.read()
+        except AttributeError:
+            self.data = data[:]
         self._hash = hashlib.new('sha1', self.data).hexdigest()
 
     @property

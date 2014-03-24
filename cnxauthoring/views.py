@@ -113,7 +113,10 @@ def get_resource(request):
     if resource is None:
         raise httpexceptions.HTTPNotFound()
     resp = request.response
-    resp.body = resource.data
+    if isinstance(resource.data, memoryview):
+        resp.body = resource.data.tobytes()
+    else:
+        resp.body = resource.data
     resp.content_type = resource.mediatype
     return resp
 
