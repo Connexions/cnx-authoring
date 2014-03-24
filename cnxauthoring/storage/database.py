@@ -12,7 +12,7 @@ import psycopg2
 import re
 
 
-CONNECTION_SETTINGS_KEY = 'postgresql.db_connection_string'
+CONNECTION_SETTINGS_KEY = 'postgresql.db-connection-string'
 
 here = os.path.abspath(os.path.dirname(__file__))
 SQL_DIRECTORY = os.path.join(here, 'sql')

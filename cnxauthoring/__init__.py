@@ -69,7 +69,7 @@ def main(global_config, **settings):
     storages = storage.storages
     storage_name = settings.get('storage',storage.default_storage)
     storage_modname, storage_class = storages[storage_name]
-    storage_settings = {k.split('.')[1]:settings[k] for k in settings if k.split('.')[0] == storage_name}
+    storage_settings = {k.split('.')[1].replace('-','_'):settings[k] for k in settings if k.split('.')[0] == storage_name}
     storage_mod = __import__('.'.join((storage.__name__,storage_modname)), fromlist = [storage.__name__])
     storage_instance = getattr(storage_mod,storage_class)(**storage_settings)
     setattr(storage, 'storage', storage_instance)
