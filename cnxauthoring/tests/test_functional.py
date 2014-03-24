@@ -294,6 +294,46 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
                 'localhost')
 
+    def test_post_content_derived_from_not_found(self):
+        post_data = {
+                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1.json',
+            }
+        try:
+            import urllib2 # python2
+        except ImportError:
+            import urllib.request as urllib2 # renamed in python3
+
+        def patched_urlopen(*args, **kwargs):
+            raise urllib2.HTTPError(args[0], 404, 'Not Found', None, None)
+
+        urlopen = urllib2.urlopen
+        urllib2.urlopen = patched_urlopen
+        self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
+
+        response = self.testapp.post('/contents',
+                json.dumps(post_data),
+                status=400)
+        self.assertTrue(b'Derive failed' in response.body)
+
+    def test_post_content_derived_from_not_json(self):
+        post_data = {
+                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1.json',
+            }
+        def patched_urlopen(*args, **kwargs):
+            return io.BytesIO(b'invalid json')
+        try:
+            import urllib2 # python2
+        except ImportError:
+            import urllib.request as urllib2 # renamed in python3
+        urlopen = urllib2.urlopen
+        urllib2.urlopen = patched_urlopen
+        self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
+
+        response = self.testapp.post('/contents',
+                json.dumps(post_data),
+                status=400)
+        self.assertTrue(b'Derive failed' in response.body)
+
     def test_post_content_derived_from(self):
         post_data = {
                 'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1.json',

@@ -157,7 +157,10 @@ def derive_content(request, **kwargs):
     archive_url = settings['archive.url']
     content_url = urlparse.urljoin(archive_url,
             '/contents/{}.json'.format(derived_from))
-    response = urllib2.urlopen(content_url).read()
+    try:
+        response = urllib2.urlopen(content_url).read()
+    except urllib2.HTTPError:
+        return
     try:
         document = json.loads(response.decode('utf-8'))
     except (TypeError, ValueError):
