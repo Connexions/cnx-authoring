@@ -266,6 +266,16 @@ class FunctionalTests(unittest.TestCase):
             u'title': u'Required',
             })
 
+    def test_post_content_empty_binder(self):
+        response = self.testapp.post('/contents',
+                json.dumps({
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    }), status=400)
+        self.assertEqual(json.loads(response.body.decode('utf-8')), {
+            u'title': u'Required',
+            u'tree': u'Required',
+            })
+
     def test_post_content_minimal(self):
         response = self.testapp.post('/contents', 
                 json.dumps({'title': u'My document タイトル'}),
@@ -280,6 +290,40 @@ class FunctionalTests(unittest.TestCase):
 
         self.testapp.get('/contents/{}@draft.json'.format(result['id']),
                 status=200)
+
+    def test_post_content_minimal_binder(self):
+        response = self.testapp.post('/contents',
+                json.dumps({
+                    'title': u'My book タイトル',
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    'tree': {
+                        'contents': [],
+                        },
+                    }), status=201)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['title'], u'My book タイトル')
+        self.assertEqual(result['language'], u'en')
+        self.assertEqual(result['tree'], {
+            u'contents': [],
+            u'id': '{}@draft'.format(result['id']),
+            u'title': result['title'],
+            })
+
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'localhost')
+
+        response = self.testapp.get(
+                '/contents/{}@draft.json'.format(result['id']), status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['title'], u'My book タイトル')
+        self.assertEqual(result['language'], u'en')
+        self.assertEqual(result['tree'], {
+            u'contents': [],
+            u'id': '{}@draft'.format(result['id']),
+            u'title': result['title'],
+            })
 
     def test_post_content_multiple(self):
         post_data = [
@@ -549,6 +593,84 @@ class FunctionalTests(unittest.TestCase):
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
                 'localhost')
+
+    def test_post_content_binder(self):
+        response = self.testapp.post('/contents',
+                json.dumps({'title': 'Page one'}), status=201)
+        page1 = json.loads(response.body.decode('utf-8'))
+
+        response = self.testapp.post('/contents',
+                json.dumps({'title': 'Page two'}), status=201)
+        page2 = json.loads(response.body.decode('utf-8'))
+
+        response = self.testapp.post('/contents',
+                json.dumps({
+                    'title': 'Book',
+                    'abstract': 'Book abstract',
+                    'language': 'de',
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    'tree': {
+                        'contents': [
+                            {
+                                'id': '{}@draft'.format(page1['id']),
+                                'title': 'Page one',
+                                },
+                            {
+                                'id': 'subcol',
+                                'title': 'New section',
+                                'contents': [
+                                    {
+                                        'id': '{}@draft'.format(page2['id']),
+                                        'title': 'Page two',
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    }), status=201)
+        book = json.loads(response.body.decode('utf-8'))
+
+        response = self.testapp.get(
+                '/contents/{}@draft.json'.format(book['id']), status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertTrue(result.pop('created') is not None)
+        self.assertTrue(result.pop('modified') is not None)
+        self.assertEqual(result, {
+            u'id': book['id'],
+            u'title': u'Book',
+            u'abstract': u'Book abstract',
+            u'content': None,
+            u'mediaType': u'application/vnd.org.cnx.collection',
+            u'derivedFrom': None,
+            u'language': u'de',
+            u'version': u'draft',
+            u'submitter': u'me',
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0'},
+            u'tree': {
+                u'id': u'{}@draft'.format(book['id']),
+                u'title': u'Book',
+                u'contents': [
+                    {
+                        u'id': u'{}@draft'.format(page1['id']),
+                        u'title': u'Page one',
+                        },
+                    {
+                        u'id': u'subcol',
+                        u'title': u'New section',
+                        u'contents': [
+                            {
+                                u'id': u'{}@draft'.format(page2['id']),
+                                u'title': u'Page two',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            })
 
     def test_put_content_403(self):
         FunctionalTests.profile = None
