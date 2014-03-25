@@ -210,12 +210,17 @@ def put_content(request):
     except (TypeError, ValueError):
         raise httpexceptions.HTTPBadRequest('Invalid JSON')
 
+    utils.change_dict_keys(cstruct, utils.camelcase_to_underscore)
     cstruct['submitter'] = request.unauthenticated_userid
     for key, value in content.to_dict().items():
         cstruct.setdefault(key, value)
 
+    if cstruct.get('media_type') == BINDER_MEDIATYPE:
+        schema = BinderSchema()
+    else:
+        schema = DocumentSchema()
     try:
-        appstruct = DocumentSchema().bind().deserialize(cstruct)
+        appstruct = schema.bind().deserialize(cstruct)
     except Exception as e:
         raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
 

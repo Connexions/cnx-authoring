@@ -133,7 +133,7 @@ class Document:
         c['created'] = c['created'].isoformat()
         c['modified'] = c['modified'].isoformat()
         c['license'] = c['license'].__dict__.copy()
-        c['mediaType'] = self.mediatype
+        c['media_type'] = self.mediatype
         return c
 
     def __json__(self, request=None):
@@ -173,6 +173,11 @@ class Binder(Document):
         self._binder = cnxepub.Binder('{}@draft'.format(self.id),
                 metadata={'title': self.title},
                 nodes=nodes)
+
+    def update(self, **kwargs):
+        Document.update(self, **kwargs)
+        if 'tree' in kwargs:
+            self.build_tree(kwargs['tree'])
 
     def to_dict(self):
         result = Document.to_dict(self)

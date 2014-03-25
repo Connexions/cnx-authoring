@@ -573,6 +573,98 @@ class FunctionalTests(unittest.TestCase):
                 'invalid json', status=400)
         self.assertTrue('Invalid JSON' in response.body.decode('utf-8'))
 
+    def test_put_content_binder(self):
+        post_data = {
+                'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+            }
+
+        def patched_urlopen(*args, **kwargs):
+            with open(test_data('{}.json'.format(post_data['derivedFrom']))) as f:
+                return io.BytesIO(f.read().encode('utf-8'))
+        try:
+            import urllib2 # python2
+        except ImportError:
+            import urllib.request as urllib2 # renamed in python3
+        urlopen = urllib2.urlopen
+        urllib2.urlopen = patched_urlopen
+        self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
+
+        response = self.testapp.post('/contents',
+                json.dumps(post_data),
+                status=201)
+        result = json.loads(response.body.decode('utf-8'))
+
+        update_data = {
+                'title': u'...',
+                'tree': {
+                    'contents': [{
+                        u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
+                        u'title': u'Hygiene',
+                        }],
+                    },
+                }
+        response = self.testapp.put(
+                '/contents/{}@draft.json'.format(result['id']),
+                json.dumps(update_data), status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertTrue(result.pop('created') is not None)
+        self.assertTrue(result.pop('modified') is not None)
+        self.assertEqual(result, {
+            u'submitter': FunctionalTests.profile['username'],
+            u'id': result['id'],
+            u'derivedFrom': post_data['derivedFrom'],
+            u'abstract': None,
+            u'content': None,
+            u'language': u'da',
+            u'mediaType': u'application/vnd.org.cnx.collection',
+            u'version': u'draft',
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0'},
+            u'title': u'...',
+            u'tree': {
+                    u'id': u'{}@draft'.format(result['id']),
+                    u'title': u'...',
+                    u'contents': [{
+                        u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
+                        u'title': u'Hygiene',
+                        }],
+                    },
+            })
+
+        response = self.testapp.get(
+                '/contents/{}@draft.json'.format(result['id']),
+                status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertTrue(result.pop('created') is not None)
+        self.assertTrue(result.pop('modified') is not None)
+        self.assertEqual(result, {
+            u'submitter': FunctionalTests.profile['username'],
+            u'id': result['id'],
+            u'derivedFrom': post_data['derivedFrom'],
+            u'abstract': None,
+            u'content': None,
+            u'language': u'da',
+            u'mediaType': u'application/vnd.org.cnx.collection',
+            u'version': u'draft',
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0'},
+            u'title': u'...',
+            u'tree': {
+                    u'id': u'{}@draft'.format(result['id']),
+                    u'title': u'...',
+                    u'contents': [{
+                        u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
+                        u'title': u'Hygiene',
+                        }],
+                    },
+            })
+
     def test_put_content(self):
         response = self.testapp.post('/contents', 
                 json.dumps({
