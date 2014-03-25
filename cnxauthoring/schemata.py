@@ -9,7 +9,8 @@ import datetime
 
 import colander
 
-from .models import TZINFO, DEFAULT_LANGUAGE
+from .models import (TZINFO, DEFAULT_LANGUAGE, DOCUMENT_MEDIATYPE,
+        BINDER_MEDIATYPE)
 
 
 @colander.deferred
@@ -82,5 +83,24 @@ class DocumentSchema(colander.MappingSchema):
     submitter = colander.SchemaNode(
         colander.String(),
         )
+    media_type = colander.SchemaNode(
+        colander.String(),
+        default=DOCUMENT_MEDIATYPE,
+        missing=colander.drop,
+        validator=colander.OneOf([DOCUMENT_MEDIATYPE, BINDER_MEDIATYPE]),
+        )
 
 document_schema = DocumentSchema()
+
+
+class Tree(colander.MappingSchema):
+    id = colander.SchemaNode(
+        colander.String(),
+        missing=colander.drop,
+        )
+    contents = colander.SchemaNode(
+        colander.List(),
+        )
+
+class BinderSchema(DocumentSchema):
+    tree = Tree()

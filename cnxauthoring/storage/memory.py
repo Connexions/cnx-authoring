@@ -7,13 +7,15 @@
 # ###
 
 from .main import BaseStorage
-from ..models import Document, Resource
+from ..models import Document, Resource, Binder
 
 class MemoryStorage(BaseStorage):
     """Utility for managing and interfacing with the the storage medium."""
 
     def __init__(self):
         self.storage = {str(Document): [], str(Resource): []}
+        # share the same list between Documents and Binders
+        self.storage[str(Binder)] = self.storage[str(Document)]
 
     def get(self, type_=Document, **kwargs):
         """Retrieve ``Document`` objects from storage."""

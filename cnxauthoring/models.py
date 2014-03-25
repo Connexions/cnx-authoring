@@ -19,6 +19,7 @@ except ImportError:
     import urllib.parse as urlparse # renamed in python3
 
 import tzlocal
+import cnxepub.models as cnxepub
 
 from . import utils
 
@@ -27,6 +28,7 @@ from . import utils
 TZINFO = tzlocal.get_localzone()
 
 DOCUMENT_MEDIATYPE = "application/vnd.org.cnx.module"
+BINDER_MEDIATYPE = "application/vnd.org.cnx.collection"
 LICENSE_PARAMETER_MARKER = object()
 DEFAULT_LANGUAGE = 'en'
 
@@ -131,13 +133,66 @@ class Document:
         c['created'] = c['created'].isoformat()
         c['modified'] = c['modified'].isoformat()
         c['license'] = c['license'].__dict__.copy()
-        c['mediaType'] = self.mediatype
+        c['media_type'] = self.mediatype
         return c
 
     def __json__(self, request=None):
         result = self.to_dict()
         utils.change_dict_keys(result, utils.underscore_to_camelcase)
         return result
+
+
+class Binder(Document):
+    """A collection of documents
+    """
+    mediatype = BINDER_MEDIATYPE
+
+    def __init__(self, title, tree, **kwargs):
+        Document.__init__(self, title, **kwargs)
+        self.id = str(self.id)
+        self.build_tree(tree)
+
+    def build_tree(self, tree):
+        def get_nodes(tree, nodes):
+            for i in tree['contents']:
+                if 'contents' in i:
+                    contents_nodes = []
+                    get_nodes(i, contents_nodes)
+                    if i['id'] == 'subcol':
+                        nodes.append(cnxepub.TranslucentBinder(
+                            metadata={'title': i['title']},
+                            nodes=contents_nodes))
+                    else:
+                        nodes.append(cnxepub.Binder(i['id'],
+                            metadata={'title': i['title']},
+                            nodes=contents_nodes))
+                else:
+                    nodes.append(DocumentPointer(i['id'], i['title']))
+        nodes = []
+        get_nodes(tree, nodes)
+        self._binder = cnxepub.Binder('{}@draft'.format(self.id),
+                metadata={'title': self.title},
+                nodes=nodes)
+
+    def update(self, **kwargs):
+        Document.update(self, **kwargs)
+        if 'tree' in kwargs:
+            self.build_tree(kwargs['tree'])
+
+    def to_dict(self):
+        result = Document.to_dict(self)
+        for k in list(result.keys()):
+            if k.startswith('_'):
+                result.pop(k)
+        result['tree'] = cnxepub.model_to_tree(self._binder)
+        return result
+
+
+class DocumentPointer:
+    def __init__(self, ident_hash, title):
+        self.ident_hash = ident_hash
+        self.title = title
+        self.metadata = {'title': title}
 
 
 def create_content(**appstruct):
@@ -148,6 +203,9 @@ def create_content(**appstruct):
         license = [l for l in LICENSES
                    if l.url == appstruct['license']['url']][0]
         kwargs['license'] = license
+    media_type = 'media_type' in kwargs and kwargs.pop('media_type')
+    if media_type == BINDER_MEDIATYPE:
+        return Binder(**kwargs)
     return Document(**kwargs)
 
 
@@ -157,11 +215,15 @@ def derive_content(request, **kwargs):
     archive_url = settings['archive.url']
     content_url = urlparse.urljoin(archive_url,
             '/contents/{}.json'.format(derived_from))
-    response = urllib2.urlopen(content_url).read()
+    try:
+        response = urllib2.urlopen(content_url).read()
+    except urllib2.HTTPError:
+        return
     try:
         document = json.loads(response.decode('utf-8'))
     except (TypeError, ValueError):
         return
+    utils.change_dict_keys(document, utils.camelcase_to_underscore)
     document['title'] = u'Copy of {}'.format(document['title'])
     document['created'] = None
     document['modified'] = None
