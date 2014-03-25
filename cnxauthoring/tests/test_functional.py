@@ -974,9 +974,16 @@ class FunctionalTests(unittest.TestCase):
                 status=403)
 
     def test_post_resource(self):
-        self.testapp.post('/resources',
+        response = self.testapp.post('/resources',
                 {'file': Upload('a.txt', b'hello\n', 'text/plain')},
                 status=201)
+        self.assertEqual(response.content_type, 'text/plain')
+        self.assertEqual(response.headers['Location'],
+                'http://localhost/resources/'
+                'f572d396fae9206628714fb2ce00f72e94f2258f')
+        self.assertEqual(response.body,
+                b'http://localhost/resources/'
+                b'f572d396fae9206628714fb2ce00f72e94f2258f')
 
     def test_user_search_no_q(self):
         response = self.testapp.get('/users/search')

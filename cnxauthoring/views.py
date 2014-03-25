@@ -176,7 +176,7 @@ def post_content(request):
     return contents
 
 
-@view_config(route_name='post-resource', request_method='POST', renderer='json', context=Site, permission='protected')
+@view_config(route_name='post-resource', request_method='POST', renderer='string', context=Site, permission='protected')
 def post_resource(request):
     """Accept a resource file.
     On success, the Location header is set to the resource location.
