@@ -7,7 +7,7 @@
 
 -- arguments: hash:string; mediatype:string, data:bytea
 
-INSERT INTO document (license, language, created, abstract,
+INSERT INTO document (license, language, created, abstract, media_type,
                       title, modified, content, derived_from, submitter, id) 
-        VALUES(%(license)s, %(language)s, %(created)s, %(abstract)s,
+        VALUES(%(license)s, %(language)s, %(created)s, %(abstract)s, %(media_type)s,
                %(title)s, %(modified)s, %(content)s, %(derived_from)s, %(submitter)s, %(id)s);

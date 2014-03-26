@@ -9,9 +9,10 @@ import psycopg2
 import psycopg2.extras
 from psycopg2 import Binary
 from uuid import UUID
+import json
 
 from .main import BaseStorage
-from ..models import Document, Resource, create_content
+from ..models import Document, Resource, create_content, MEDIATYPES
 from .database import SQL
 
 psycopg2.extras.register_uuid()
@@ -54,7 +55,11 @@ class PostgresqlStorage(BaseStorage):
             for r in res:
                 if 'license' in r:
                     r['license'] = eval(r['license'])
-                    results.append(create_content(**dict(r)))
+                    rd = dict(r)
+                    if rd['media_type'] == MEDIATYPES['binder']:
+                        rd['tree'] = json.loads(rd.pop('content'))
+                    item = create_content(**rd)
+                    results.append(item)
                 else:
                     rd = dict(r)
                     rd.pop('hash')
@@ -74,10 +79,15 @@ class PostgresqlStorage(BaseStorage):
         if type_name== 'resource':
             cursor.execute(SQL['add-resource'], 
                         {'hash':item._hash,'mediatype':item.mediatype,'data':Binary(item.data)})
-        elif type_name== 'document':
+        elif type_name in ['document','binder']:
             args = item.to_dict()
             args['license'] = repr(args['license'])
+            args['media_type'] = MEDIATYPES[type_name]
+            if 'tree' in args:
+                    args['content'] = json.dumps(args.pop('tree'))
             cursor.execute(SQL['add-document'], args)
+        else:
+            raise NotImplementedError(type_name)
         return item
 
     def remove(self, item_or_items):
@@ -94,9 +104,11 @@ class PostgresqlStorage(BaseStorage):
         if type_name== 'resource':
             cursor.execute(SQL['update-resource'], 
                         {'hash':item._hash,'mediatype':item.mediatype,'data':Binary(item.data)})
-        elif type_name== 'document':
+        elif type_name in ['document', 'binder']:
             args = item.to_dict()
             args['license'] = repr(args['license'])
+            if 'tree' in args:
+                args['content'] = json.dumps(args.pop('tree'))
             cursor.execute(SQL['update-document'], args)
         return item
 
