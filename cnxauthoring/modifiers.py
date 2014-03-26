@@ -22,7 +22,7 @@ def json_document_adapter(obj, request):
         'id': obj.id,
         'title': obj.title,
         'created': obj.created,
-        'modified': obj.modified,
+        'revised': obj.revised,
         }
 
 

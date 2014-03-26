@@ -220,7 +220,7 @@ class FunctionalTests(unittest.TestCase):
                 json.dumps({
                     'title': 'My New Document',
                     'created': u'2014-03-13T15:21:15',
-                    'modified': u'2014-03-13T15:21:15',
+                    'revised': u'2014-03-13T15:21:15',
                     }),
                 status=201)
         put_result = json.loads(response.body.decode('utf-8'))
@@ -239,7 +239,7 @@ class FunctionalTests(unittest.TestCase):
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0',
                 },
-            u'modified': get_result['modified'],
+            u'revised': get_result['revised'],
             u'mediaType': u'application/vnd.org.cnx.module',
             u'language': u'en',
             u'submitter': u'me',
@@ -410,7 +410,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(u'Lav en madplan for den kommende uge'
                 in result.pop('content'))
         self.assertFalse('2011-10-05' in result.pop('created'))
-        self.assertTrue(result.pop('modified') is not None)
+        self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
@@ -437,7 +437,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(u'Lav en madplan for den kommende uge'
                 in result.pop('content'))
         self.assertTrue(result.pop('created') is not None)
-        self.assertTrue(result.pop('modified') is not None)
+        self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
@@ -476,7 +476,7 @@ class FunctionalTests(unittest.TestCase):
         result = json.loads(response.body.decode('utf-8'))
         self.maxDiff = None
         self.assertFalse('2011-10-12' in result.pop('created'))
-        self.assertTrue(result.pop('modified') is not None)
+        self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
@@ -520,7 +520,7 @@ class FunctionalTests(unittest.TestCase):
                 '/contents/{}@draft.json'.format(result['id']), status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertTrue(result.pop('created') is not None)
-        self.assertTrue(result.pop('modified') is not None)
+        self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
@@ -561,7 +561,7 @@ class FunctionalTests(unittest.TestCase):
             'title': u"Turning DNA through resonance",
             'abstract': u"Theories on turning DNA structures",
             'created': u'2014-03-13T15:21:15.677617',
-            'modified': u'2014-03-13T15:21:15.677617',
+            'revised': u'2014-03-13T15:21:15.677617',
             'license': {'url': DEFAULT_LICENSE.url},
             'language': u'en',
             'content': u"Ding dong the switch is flipped.",
@@ -576,8 +576,8 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(license['url'], post_data['license']['url'])
         created = result.pop('created')
         self.assertTrue(created.startswith('2014-03-13T15:21:15.677617'))
-        modified = result.pop('modified')
-        self.assertTrue(modified.startswith('2014-03-13T15:21:15.677617'))
+        revised = result.pop('revised')
+        self.assertTrue(revised.startswith('2014-03-13T15:21:15.677617'))
         self.assertEqual(result, {
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
@@ -634,7 +634,7 @@ class FunctionalTests(unittest.TestCase):
                 '/contents/{}@draft.json'.format(book['id']), status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertTrue(result.pop('created') is not None)
-        self.assertTrue(result.pop('modified') is not None)
+        self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'id': book['id'],
             u'title': u'Book',
@@ -730,7 +730,7 @@ class FunctionalTests(unittest.TestCase):
                 json.dumps(update_data), status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertTrue(result.pop('created') is not None)
-        self.assertTrue(result.pop('modified') is not None)
+        self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
@@ -761,7 +761,7 @@ class FunctionalTests(unittest.TestCase):
                 status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertTrue(result.pop('created') is not None)
-        self.assertTrue(result.pop('modified') is not None)
+        self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
@@ -878,7 +878,7 @@ class FunctionalTests(unittest.TestCase):
             'title': u"Turning DNA through resonance",
             'abstract': u"Theories on turning DNA structures",
             'created': u'2014-03-13T15:21:15.677617',
-            'modified': u'2014-03-13T15:21:15.677617',
+            'revised': u'2014-03-13T15:21:15.677617',
             'license': {'url': DEFAULT_LICENSE.url},
             'language': u'en',
             'contents': u"Ding dong the switch is flipped.",

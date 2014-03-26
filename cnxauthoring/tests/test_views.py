@@ -125,7 +125,7 @@ class ViewsTests(unittest.TestCase):
             'title': "Turning DNA through resonance",
             'abstract': "Theories on turning DNA structures",
             'created': datetime.datetime.now().isoformat(),
-            'modified': datetime.datetime.now().isoformat(),
+            'revised': datetime.datetime.now().isoformat(),
             'license': {'url': DEFAULT_LICENSE.url},
             'language': 'en',
             'content': "Ding dong the switch is flipped.",
@@ -157,7 +157,7 @@ class ViewsTests(unittest.TestCase):
         self.assertEqual(returned_document, self.document)
         self.assertEqual(returned_document.title, post_data['title'])
         self.assertEqual(returned_document.abstract, post_data['abstract'])
-        # TODO Test created and modified dates.
+        # TODO Test created and revised dates.
         self.assertEqual(returned_document.license.url, DEFAULT_LICENSE.url)
         self.assertEqual(returned_document.language, post_data['language'])
         self.assertEqual(returned_document.content, post_data['content'])

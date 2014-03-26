@@ -60,7 +60,7 @@ class DocumentSchema(colander.MappingSchema):
         colander.DateTime(default_tzinfo=TZINFO),
         missing=deferred_datetime_missing,
         )
-    modified = colander.SchemaNode(
+    revised = colander.SchemaNode(
         colander.DateTime(default_tzinfo=TZINFO),
         missing=deferred_datetime_missing,
         )

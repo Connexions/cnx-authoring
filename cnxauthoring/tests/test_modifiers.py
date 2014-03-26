@@ -43,7 +43,7 @@ class ModelJSONRendering(unittest.TestCase):
             'id': str(id),
             'title': title,
             'created': document.created.isoformat(),
-            'modified': document.modified.isoformat(),
+            'revised': document.revised.isoformat(),
             'mediaType': Document.mediatype,
             'language': 'en',
             'version': 'draft',
