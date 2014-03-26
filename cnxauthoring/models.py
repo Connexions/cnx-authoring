@@ -29,6 +29,9 @@ TZINFO = tzlocal.get_localzone()
 
 DOCUMENT_MEDIATYPE = "application/vnd.org.cnx.module"
 BINDER_MEDIATYPE = "application/vnd.org.cnx.collection"
+MEDIATYPES = { 'document' : DOCUMENT_MEDIATYPE,
+               'binder' : BINDER_MEDIATYPE }
+
 LICENSE_PARAMETER_MARKER = object()
 DEFAULT_LANGUAGE = 'en'
 
