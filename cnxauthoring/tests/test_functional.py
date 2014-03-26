@@ -982,7 +982,7 @@ class FunctionalTests(unittest.TestCase):
                 'http://localhost/resources/'
                 'f572d396fae9206628714fb2ce00f72e94f2258f')
         self.assertEqual(response.body,
-                b'http://localhost/resources/'
+                b'/resources/'
                 b'f572d396fae9206628714fb2ce00f72e94f2258f')
 
     def test_user_search_no_q(self):

@@ -192,7 +192,7 @@ def post_resource(request):
 
     resp = request.response
     resp.status = 201
-    location = request.route_url('get-resource', hash=resource.hash)
+    location = request.route_path('get-resource', hash=resource.hash)
     resp.headers.add('Location', location)
     return location
 
