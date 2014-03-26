@@ -191,7 +191,7 @@ class ViewsTests(unittest.TestCase):
         location = post_resource(request)
 
         self.assertEqual(request.response.status, '201 Created')
-        expected_location = request.route_url('get-resource',
+        expected_location = request.route_path('get-resource',
                                               hash=self.resource.hash)
         self.assertIn(('Location', expected_location,),
                       request.response.headerlist)

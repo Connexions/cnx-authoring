@@ -979,7 +979,7 @@ class FunctionalTests(unittest.TestCase):
                 status=201)
         self.assertEqual(response.content_type, 'text/plain')
         self.assertEqual(response.headers['Location'],
-                '/resources/'
+                'http://localhost/resources/'
                 'f572d396fae9206628714fb2ce00f72e94f2258f')
         self.assertEqual(response.body,
                 b'/resources/'
