@@ -979,10 +979,10 @@ class FunctionalTests(unittest.TestCase):
                 status=201)
         self.assertEqual(response.content_type, 'text/plain')
         self.assertEqual(response.headers['Location'],
-                'http://localhost/resources/'
+                '/resources/'
                 'f572d396fae9206628714fb2ce00f72e94f2258f')
         self.assertEqual(response.body,
-                b'http://localhost/resources/'
+                b'/resources/'
                 b'f572d396fae9206628714fb2ce00f72e94f2258f')
 
     def test_user_search_no_q(self):
