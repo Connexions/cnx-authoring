@@ -10,6 +10,16 @@ import re
 from cnxquerygrammar.query_parser import grammar, DictFormater
 from parsimonious.exceptions import IncompleteParseError
 
+def utf8(item):
+    if isinstance(item, list):
+        return [utf8(i) for i in item]
+    if isinstance(item, dict):
+        return {utf8(k): utf8(v) for k, v in item.items()}
+    try:
+        return item.decode('utf-8')
+    except:
+        return item
+
 def change_dict_keys(data, func):
     for k in data.keys():
         _k = func(k)

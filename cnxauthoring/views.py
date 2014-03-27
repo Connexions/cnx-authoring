@@ -227,7 +227,7 @@ def put_content(request):
 
     utils.change_dict_keys(cstruct, utils.camelcase_to_underscore)
     cstruct['submitter'] = request.unauthenticated_userid
-    for key, value in content.to_dict().items():
+    for key, value in utils.utf8(content.to_dict()).items():
         cstruct.setdefault(key, value)
 
     if cstruct.get('media_type') == BINDER_MEDIATYPE:

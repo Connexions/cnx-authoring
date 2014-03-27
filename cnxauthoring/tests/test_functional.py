@@ -719,6 +719,26 @@ class FunctionalTests(unittest.TestCase):
                 'invalid json', status=400)
         self.assertTrue('Invalid JSON' in response.body.decode('utf-8'))
 
+    def test_put_content_derived_from(self):
+        post_data = {
+                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
+            }
+        self.derived_from()
+
+        response = self.testapp.post('/users/contents',
+                json.dumps(post_data),
+                status=201)
+        page = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+                'content': '<html><body><p>Page content</p></body></html>',
+                }
+        response = self.testapp.put(
+                '/contents/{}@draft.json'.format(page['id']),
+                json.dumps(post_data), status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['content'], post_data['content'])
+
     def test_put_content_binder(self):
         post_data = {
                 'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
