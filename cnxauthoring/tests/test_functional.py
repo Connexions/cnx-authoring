@@ -214,6 +214,10 @@ class FunctionalTests(unittest.TestCase):
                     'true')
             self.assertEqual(response.headers['Access-Control-Allow-Origin'],
                     'localhost')
+            self.assertEqual(response.headers['Access-Control-Allow-Headers'],
+                    'Origin, Content-Type')
+            self.assertEqual(response.headers['Access-Control-Allow-Methods'],
+                    'GET, OPTIONS, PUT, POST')
             self.assertEqual(response.headers['Content-Length'], '0')
 
         self.testapp.options('/', status=404)

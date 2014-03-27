@@ -4,6 +4,8 @@ use = egg:cnx-authoring
 archive.url = http://archive.cnx.org/
 cors.access_control_allow_credentials = true
 cors.access_control_allow_origin = localhost
+cors.access_control_allow_headers = Origin, Content-Type
+cors.access_control_allow_methods = GET, OPTIONS, PUT, POST
 
 storage = pickle
 pickle.filename = dev.p
