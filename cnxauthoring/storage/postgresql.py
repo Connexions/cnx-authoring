@@ -50,6 +50,7 @@ class PostgresqlStorage(BaseStorage):
             
         cursor.execute(SQL['get'].format(tablename = type_name, where_clause = ' AND '.join(match_clauses)), kwargs)
         res = cursor.fetchall()
+        self.conn.rollback() # Frees the connection
         if res:
             results = []
             for r in res:
@@ -142,6 +143,7 @@ class PostgresqlStorage(BaseStorage):
 
         cursor.execute(SQL['search-title'].format(where_clause=where_clause), sqlargs)
         res = cursor.fetchall()
+        self.conn.rollback() # Frees the connection
         if res:
             results = []
             for item in res:
