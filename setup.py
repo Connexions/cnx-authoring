@@ -9,6 +9,7 @@ install_requires = (
         'PasteDeploy',
         'pyramid',
         'psycopg2>=2.5',
+        'requests',
         'tzlocal',
         'waitress',
         )

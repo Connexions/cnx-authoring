@@ -21,7 +21,12 @@ try:
     from unittest import mock
 except ImportError:
     import mock
+try:
+    import urllib2 # python2
+except ImportError:
+    import urllib.request as urllib2 # renamed in python3
 
+import cnxepub
 from pyramid import httpexceptions
 from pyramid.interfaces import IAuthenticationPolicy
 from pyramid.security import Everyone, Authenticated
@@ -139,10 +144,7 @@ class FunctionalTests(unittest.TestCase):
                     pass
             response.read = mock.Mock(side_effect=io.BytesIO(data).read)
             return response
-        try:
-            import urllib2 # python2
-        except ImportError:
-            import urllib.request as urllib2 # renamed in python3
+
         urlopen = urllib2.urlopen
         urllib2.urlopen = patched_urlopen
         self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
@@ -1340,3 +1342,187 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
                 'http://localhost:8000')
         self.assert_cors_headers(response)
+
+    def test_publish_401(self):
+        FunctionalTests.profile = None
+        response = self.testapp.post('/publish', '{}', status=401)
+        self.assert_cors_headers(response)
+
+    def test_publish_service_not_available(self):
+        post_data = {
+                'title': 'Page one',
+                'content': '<html><body><p>Contents of Page one</p></body></html>',
+                }
+        response = self.testapp.post('/users/contents', json.dumps(post_data),
+                status=201)
+        page = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+                'submitlog': 'Publishing is working!',
+                'items': [
+                    page['id'],
+                    ],
+                }
+        with mock.patch('requests.post') as patched_post:
+            patched_post.return_value = mock.Mock(status_code=404)
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    status=400)
+            self.assertEqual(patched_post.call_count, 1)
+        self.assertTrue('Unable to publish: response status code: 404'
+                in response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+    def test_publish_response_not_json(self):
+        post_data = {
+                'title': 'Page one',
+                'content': '<html><body><p>Contents of Page one</p></body></html>',
+                }
+        response = self.testapp.post('/users/contents', json.dumps(post_data),
+                status=201)
+        page = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+                'submitlog': 'Publishing is working!',
+                'items': [
+                    page['id'],
+                    ],
+                }
+        with mock.patch('requests.post') as patched_post:
+            patched_post.return_value = mock.Mock(status_code=200, content=b'not json')
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    status=400)
+            self.assertEqual(patched_post.call_count, 1)
+        self.assertTrue('Unable to publish: response body: not json'
+                in response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+    def test_publish_single_pages(self):
+        post_data = {
+                'title': 'Page one',
+                'content': '<html><body><p>Contents of Page one</p></body></html>',
+                }
+        response = self.testapp.post('/users/contents', json.dumps(post_data),
+                status=201)
+        page_one = json.loads(response.body.decode('utf-8'))
+        post_data = {
+                'title': u'Página dos',
+                'content': u'<html><body><p>Contents of Página dos</p></body></html>',
+                'language': 'es',
+                }
+        response = self.testapp.post('/users/contents', json.dumps(post_data),
+                status=201)
+        page_two = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+                'submitlog': u'Nueva versión!',
+                'items': [
+                    page_one['id'],
+                    page_two['id'],
+                    ],
+                }
+        mock_output = json.dumps({u'state': u'Processing', u'publication': 143,
+            u'mapping': {
+                page_one['id']: '{}@1'.format(page_one['id']),
+                page_two['id']: '{}@1'.format(page_two['id']),
+                },
+            }).encode('utf-8')
+        with mock.patch('requests.post') as patched_post:
+            patched_post.return_value = mock.Mock(status_code=200, content=mock_output)
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    status=200)
+            self.assertEqual(patched_post.call_count, 1)
+            args, kwargs = patched_post.call_args
+        self.assertEqual(args, ('http://localhost:6543/publications',))
+
+        filename, epub, content_type = kwargs['files']['epub']
+        self.assertEqual(filename, 'contents.epub')
+        self.assertEqual(content_type, 'application/epub+zip')
+        parsed_epub = cnxepub.EPUB.from_file(io.BytesIO(epub))
+        package = parsed_epub[0]
+        binder = cnxepub.adapt_package(package)
+        self.assertEqual(binder.metadata, {'title': 'Publications binder'})
+        self.assertEqual(package.metadata['publication_message'],
+            u'Nueva versión!')
+
+        documents = list(cnxepub.flatten_to_documents(binder))
+        self.assertEqual(documents[0].id, page_one['id'])
+        self.assertEqual(documents[0].metadata['title'], u'Page one')
+        self.assertEqual(documents[0].metadata['language'], u'en')
+
+        self.assertEqual(documents[1].id, page_two['id'])
+        self.assertEqual(documents[1].metadata['title'], u'Página dos')
+        self.assertEqual(documents[1].metadata['language'], u'es')
+
+        self.assertEqual(json.loads(response.body.decode('utf-8')),
+                json.loads(mock_output.decode('utf-8')))
+
+        self.assert_cors_headers(response)
+
+        with mock.patch('requests.get') as patched_get:
+            patched_get.return_value = mock.Mock(status_code=200, content=mock_output)
+            response = self.testapp.get('/contents/{}@draft.json'
+                    .format(page_one['id']))
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['state'], 'Processing')
+        self.assertEqual(result['publication'], '143')
+
+        with mock.patch('requests.get') as patched_get:
+            patched_get.return_value = mock.Mock(status_code=200, content=mock_output)
+            response = self.testapp.get('/contents/{}@draft.json'
+                    .format(page_two['id']))
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['state'], 'Processing')
+        self.assertEqual(result['publication'], '143')
+
+    def test_publish_derived_from_single_page(self):
+        post_data = {
+                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
+                }
+        self.derived_from(content_type='image/jpeg')
+        response = self.testapp.post('/users/contents', json.dumps(post_data),
+                status=201)
+        page = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+                'submitlog': 'Publishing is working!',
+                'items': [
+                    page['id'],
+                    ],
+                }
+        mock_output = json.dumps({u'state': u'Processing', u'publication': 144,
+            u'mapping': {page['id']: '{}@1'.format(page['id'])}}).encode('utf-8')
+        with mock.patch('requests.post') as patched_post:
+            patched_post.return_value = mock.Mock(status_code=200, content=mock_output)
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    status=200)
+            self.assertEqual(patched_post.call_count, 1)
+            args, kwargs = patched_post.call_args
+        self.assertEqual(args, ('http://localhost:6543/publications',))
+        filename, epub, content_type = kwargs['files']['epub']
+        self.assertEqual(filename, 'contents.epub')
+        self.assertEqual(content_type, 'application/epub+zip')
+        parsed_epub = cnxepub.EPUB.from_file(io.BytesIO(epub))
+        package = parsed_epub[0]
+        binder = cnxepub.adapt_package(package)
+        self.assertEqual(binder.metadata, {'title': 'Publications binder'})
+        self.assertEqual(package.metadata['publication_message'],
+                u'Publishing is working!')
+        documents = list(cnxepub.flatten_to_documents(binder))
+        self.assertEqual(documents[0].id, page['id'])
+        self.assertEqual(documents[0].metadata['title'], u'Copy of Indkøb')
+        self.assertEqual(documents[0].metadata['language'], u'da')
+
+        self.assertEqual(json.loads(response.body.decode('utf-8')),
+                json.loads(mock_output.decode('utf-8')))
+
+        self.assert_cors_headers(response)
+
+        with mock.patch('requests.get') as patched_get:
+            patched_get.return_value = mock.Mock(status_code=200,
+                    content=mock_output.replace(b'Processing', b'Publishing'))
+            response = self.testapp.get('/contents/{}@draft.json'
+                    .format(page['id']))
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['state'], 'Publishing')
+        self.assertEqual(result['publication'], '144')
+

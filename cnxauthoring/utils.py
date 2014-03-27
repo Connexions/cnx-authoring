@@ -5,10 +5,14 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
+import datetime
+import io
 import re
 
+import cnxepub.models
 from cnxquerygrammar.query_parser import grammar, DictFormater
 from parsimonious.exceptions import IncompleteParseError
+
 
 def utf8(item):
     if isinstance(item, list):
@@ -65,3 +69,25 @@ def fix_quotes(query_string):
     terms = re.sub(r'[^\s:]*:("[^"]*"|[^\s]*)', f, query_string)
     query_string = '{}" {}'.format(terms.strip(), ' '.join(fields))
     return query_string
+
+def build_epub(contents, submitter, submitlog):
+    from .models import DEFAULT_LICENSE
+
+    epub = io.BytesIO()
+    for content in contents:
+        content.publish()
+    license_text = ' '.join([DEFAULT_LICENSE.name, DEFAULT_LICENSE.abbr,
+        DEFAULT_LICENSE.version])
+    binder = cnxepub.models.TranslucentBinder(
+            metadata={
+                'title': 'Publications binder',
+                'created': datetime.datetime.now(),
+                'revised': datetime.datetime.now(),
+                'license_text': license_text,
+                'license_url': DEFAULT_LICENSE.url,
+                },
+            nodes=contents)
+    cnxepub.adapters.make_publication_epub(
+            binder, submitter, submitlog, epub)
+    epub.seek(0)
+    return epub

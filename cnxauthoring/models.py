@@ -128,6 +128,24 @@ class Document(cnxepub.Document):
         utils.change_dict_keys(result, utils.underscore_to_camelcase)
         return result
 
+    def publish(self):
+        license = self.metadata['license']
+        self.metadata['license_url'] = license.url
+        self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
+        self.set_uri('cnx-archive', self.id)
+        self.add_resources()
+
+    def add_resources(self):
+        from .storage import storage
+        resources = {}
+        for ref in self.references:
+            if ref.uri.startswith('/resources'):
+                resource = resources.get(ref.uri)
+                if not resource:
+                    hash = ref.uri.strip('/resources/')
+                    resource = storage.get(type_=Resource, hash=hash)
+                    self.resources.append(resource)
+
 
 def build_tree(tree):
     from .storage import storage
@@ -218,6 +236,12 @@ class Binder(cnxepub.Binder):
         for key, value in kwargs.items():
             if key in self.metadata:
                 self.metadata[key] = value
+
+    def publish(self):
+        license = self.metadata['license']
+        self.metadata['license_url'] = license.url
+        self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
+        self.set_uri('cnx-archive', self.id)
 
     def to_dict(self):
         result = to_dict(self.metadata)
