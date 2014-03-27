@@ -208,6 +208,26 @@ class FunctionalTests(unittest.TestCase):
                 'http://example.com/logged_out')
         self.assertEqual(FunctionalTests.profile, None)
 
+    def test_options(self):
+        def assert_headers(response):
+            self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                    'true')
+            self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                    'localhost')
+            self.assertEqual(response.headers['Content-Length'], '0')
+
+        self.testapp.options('/', status=404)
+        self.testapp.options('/some-random.html', status=404)
+
+        urls = ['/*', '/login', '/logout', '/callback', '/search',
+                '/contents/uuid@draft.json', '/resources/hash',
+                '/contents', '/resources', '/users/search',
+                '/users/profile', '/users/contents']
+
+        for url in urls:
+            response = self.testapp.options(url, status=200)
+            assert_headers(response)
+
     def test_get_content_403(self):
         FunctionalTests.profile = None
         self.testapp.get('/contents/1234abcde@draft.json', status=403)
