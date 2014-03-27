@@ -64,6 +64,10 @@ class MemoryStorage(BaseStorage):
         """Persist/commit the changes."""
         pass
 
+    def abort(self):
+        """Persist/commit the changes."""
+        pass
+
     def search(self, limits, type_=Document, submitter=None):
         """Retrieve any ``Document`` objects from storage that matches the
         search terms."""

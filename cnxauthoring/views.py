@@ -142,8 +142,12 @@ def post_content_single(request, cstruct):
     appstruct['derived_from'] = derived_from
     content = create_content(**appstruct)
 
-    content = storage.add(content)
-    storage.persist()
+    try:
+        content = storage.add(content)
+    except:
+        storage.abort()
+    finally:
+        storage.persist()
 
     return content
 
@@ -187,8 +191,12 @@ def post_resource(request):
     data = file_form_field.file
 
     resource = Resource(mediatype, data)
-    resource = storage.add(resource)
-    storage.persist()
+    try:
+        resource = storage.add(resource)
+    except:
+        storage.abort()
+    finally:
+        storage.persist()
 
     resp = request.response
     resp.status = 201
