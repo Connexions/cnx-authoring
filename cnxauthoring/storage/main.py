@@ -28,6 +28,10 @@ class BaseStorage:
         """Persist/commit the changes."""
         raise NotImplementedError()
 
+    def abort(self):
+        """Clear any persistent error state"""
+        raise NotImplementedError()
+
     def search(self, **kwargs):
         """Retrieve any ``Document`` objects from storage that matches the
         search terms."""

@@ -985,6 +985,28 @@ class FunctionalTests(unittest.TestCase):
                 b'/resources/'
                 b'f572d396fae9206628714fb2ce00f72e94f2258f')
 
+    def test_post_duplicate_resource(self):
+        response = self.testapp.post('/resources',
+                {'file': Upload('a.txt', b'hello\n', 'text/plain')},
+                status=201)
+        self.assertEqual(response.content_type, 'text/plain')
+        self.assertEqual(response.headers['Location'],
+                'http://localhost/resources/'
+                'f572d396fae9206628714fb2ce00f72e94f2258f')
+        self.assertEqual(response.body,
+                b'/resources/'
+                b'f572d396fae9206628714fb2ce00f72e94f2258f')
+        response = self.testapp.post('/resources',
+                {'file': Upload('a.txt', b'hello\n', 'text/plain')},
+                status=201)
+        self.assertEqual(response.content_type, 'text/plain')
+        self.assertEqual(response.headers['Location'],
+                'http://localhost/resources/'
+                'f572d396fae9206628714fb2ce00f72e94f2258f')
+        self.assertEqual(response.body,
+                b'/resources/'
+                b'f572d396fae9206628714fb2ce00f72e94f2258f')
+
     def test_user_search_no_q(self):
         response = self.testapp.get('/users/search')
         result = json.loads(response.body.decode('utf-8'))

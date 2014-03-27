@@ -77,8 +77,10 @@ class PostgresqlStorage(BaseStorage):
         type_name= item.__class__.__name__.lower()
         cursor = self.conn.cursor()
         if type_name== 'resource':
-            cursor.execute(SQL['add-resource'], 
-                        {'hash':item._hash,'mediatype':item.mediatype,'data':Binary(item.data)})
+            exists = self.get(type_=Resource, hash=item._hash)
+            if not exists:
+                cursor.execute(SQL['add-resource'], 
+                            {'hash':item._hash,'mediatype':item.mediatype,'data':Binary(item.data)})
         elif type_name in ['document','binder']:
             args = item.to_dict()
             args['license'] = repr(args['license'])
@@ -115,6 +117,10 @@ class PostgresqlStorage(BaseStorage):
     def persist(self):
         """Persist/commit the changes."""
         self.conn.commit()
+
+    def abort(self):
+        """Persist/commit the changes."""
+        self.conn.rollback()
 
     def search(self, limits, type_=Document, submitter=None):
         """Retrieve any ``Document`` objects from storage that matches the
