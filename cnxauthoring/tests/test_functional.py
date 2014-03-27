@@ -137,7 +137,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_login_redirect_loop(self):
         FunctionalTests.profile = None
@@ -213,7 +213,7 @@ class FunctionalTests(unittest.TestCase):
             self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                     'true')
             self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                    'localhost')
+                    'http://localhost:8000')
             self.assertEqual(response.headers['Access-Control-Allow-Headers'],
                     'Origin, Content-Type')
             self.assertEqual(response.headers['Access-Control-Allow-Methods'],
@@ -274,7 +274,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_post_content_403(self):
         FunctionalTests.profile = None
@@ -311,7 +311,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
         self.testapp.get('/contents/{}@draft.json'.format(result['id']),
                 status=200)
@@ -337,7 +337,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(result['id']), status=200)
@@ -364,7 +364,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
         self.testapp.get('/contents/{}@draft.json'.format(result[0]['id']),
                 status=200)
@@ -454,7 +454,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
         self.testapp.get('/contents/{}@draft.json'.format(result['id']),
                 status=200)
@@ -539,7 +539,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(result['id']), status=200)
@@ -617,7 +617,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_post_content_binder(self):
         response = self.testapp.post('/users/contents',
@@ -841,7 +841,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_search_content_403(self):
         FunctionalTests.profile = None
@@ -861,7 +861,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_search_content_q_empty(self):
         response = self.testapp.get('/search?q=', status=200)
@@ -877,7 +877,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_search_unbalanced_quotes(self):
         FunctionalTests.profile = {'username': str(uuid.uuid4())}
@@ -892,7 +892,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_search_content(self):
         post_data = {'title': u"Document"}
@@ -961,7 +961,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_get_resource_403(self):
         FunctionalTests.profile = None
@@ -990,7 +990,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_post_resource_403(self):
         FunctionalTests.profile = None
@@ -1039,7 +1039,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_user_search_q_empty(self):
         response = self.testapp.get('/users/search?q=')
@@ -1048,7 +1048,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_user_search(self):
         FunctionalTests.accounts_request_return = {
@@ -1066,7 +1066,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_profile_403(self):
         FunctionalTests.profile = None
@@ -1080,7 +1080,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_user_contents_403(self):
         FunctionalTests.profile = None
@@ -1126,4 +1126,4 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
