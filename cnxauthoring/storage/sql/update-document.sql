@@ -10,7 +10,7 @@
 UPDATE document 
         SET license = %(license)s, language = %(language)s, 
             created = %(created)s, abstract = %(abstract)s,
-            title = %(title)s, modified = %(modified)s, 
+            title = %(title)s, revised = %(revised)s, 
             content = %(content)s, derived_from = %(derived_from)s,
             submitter = %(submitter)s
 WHERE id  = %(id)s

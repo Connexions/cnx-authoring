@@ -103,7 +103,7 @@ class Document:
 
     def __init__(self, title, id=None,
                  content=None, abstract=None,
-                 created=None, modified=None,
+                 created=None, revised=None,
                  license=LICENSE_PARAMETER_MARKER,
                  language=None, derived_from=None, submitter=None):
         self.title = title
@@ -113,7 +113,7 @@ class Document:
         self.abstract = abstract is None and '' or abstract
         now = datetime.datetime.now(tz=TZINFO)
         self.created = created is None and now or created
-        self.modified = modified is None and now or modified
+        self.revised = revised is None and now or revised
         # license is a reserved name that will never be None.
         if license is LICENSE_PARAMETER_MARKER:
             self.license = DEFAULT_LICENSE
@@ -134,7 +134,7 @@ class Document:
         c = self.__dict__.copy()
         c['id'] = str(c['id'])
         c['created'] = c['created'].isoformat()
-        c['modified'] = c['modified'].isoformat()
+        c['revised'] = c['revised'].isoformat()
         c['license'] = c['license'].__dict__.copy()
         c['media_type'] = self.mediatype
         return c
@@ -229,6 +229,6 @@ def derive_content(request, **kwargs):
     utils.change_dict_keys(document, utils.camelcase_to_underscore)
     document['title'] = u'Copy of {}'.format(document['title'])
     document['created'] = None
-    document['modified'] = None
+    document['revised'] = None
     document['license'] = {'url': DEFAULT_LICENSE.url}
     return document
