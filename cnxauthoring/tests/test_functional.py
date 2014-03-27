@@ -216,7 +216,7 @@ class FunctionalTests(unittest.TestCase):
         self.testapp.get('/contents/1234abcde@draft.json', status=404)
 
     def test_get_content_for_document(self):
-        response = self.testapp.post('/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps({
                     'title': 'My New Document',
                     'created': u'2014-03-13T15:21:15',
@@ -254,20 +254,21 @@ class FunctionalTests(unittest.TestCase):
 
     def test_post_content_403(self):
         FunctionalTests.profile = None
-        self.testapp.post('/contents', status=403)
+        self.testapp.post('/users/contents', status=403)
 
     def test_post_content_invalid_json(self):
-        response = self.testapp.post('/contents', 'invalid json', status=400)
+        response = self.testapp.post('/users/contents',
+                'invalid json', status=400)
         self.assertTrue('Invalid JSON' in response.body.decode('utf-8'))
 
     def test_post_content_empty(self):
-        response = self.testapp.post('/contents', '{}', status=400)
+        response = self.testapp.post('/users/contents', '{}', status=400)
         self.assertEqual(json.loads(response.body.decode('utf-8')), {
             u'title': u'Required',
             })
 
     def test_post_content_empty_binder(self):
-        response = self.testapp.post('/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps({
                     'mediaType': 'application/vnd.org.cnx.collection',
                     }), status=400)
@@ -277,7 +278,7 @@ class FunctionalTests(unittest.TestCase):
             })
 
     def test_post_content_minimal(self):
-        response = self.testapp.post('/contents', 
+        response = self.testapp.post('/users/contents', 
                 json.dumps({'title': u'My document タイトル'}),
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
@@ -292,7 +293,7 @@ class FunctionalTests(unittest.TestCase):
                 status=200)
 
     def test_post_content_minimal_binder(self):
-        response = self.testapp.post('/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps({
                     'title': u'My book タイトル',
                     'mediaType': 'application/vnd.org.cnx.collection',
@@ -330,7 +331,7 @@ class FunctionalTests(unittest.TestCase):
                 {'title': u'My document タイトル 1'},
                 {'title': u'My document タイトル 2'},
                 ]
-        response = self.testapp.post('/contents', 
+        response = self.testapp.post('/users/contents', 
                 json.dumps(post_data), status=201)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(len(result), 2)
@@ -362,7 +363,7 @@ class FunctionalTests(unittest.TestCase):
         urllib2.urlopen = patched_urlopen
         self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
 
-        response = self.testapp.post('/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
                 status=400)
         self.assertTrue(b'Derive failed' in response.body)
@@ -381,7 +382,7 @@ class FunctionalTests(unittest.TestCase):
         urllib2.urlopen = patched_urlopen
         self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
 
-        response = self.testapp.post('/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
                 status=400)
         self.assertTrue(b'Derive failed' in response.body)
@@ -402,7 +403,7 @@ class FunctionalTests(unittest.TestCase):
         urllib2.urlopen = patched_urlopen
         self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
 
-        response = self.testapp.post('/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
@@ -470,7 +471,7 @@ class FunctionalTests(unittest.TestCase):
         urllib2.urlopen = patched_urlopen
         self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
 
-        response = self.testapp.post('/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
@@ -567,7 +568,7 @@ class FunctionalTests(unittest.TestCase):
             'content': u"Ding dong the switch is flipped.",
             }
 
-        response = self.testapp.post('/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
@@ -595,15 +596,15 @@ class FunctionalTests(unittest.TestCase):
                 'localhost')
 
     def test_post_content_binder(self):
-        response = self.testapp.post('/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps({'title': 'Page one'}), status=201)
         page1 = json.loads(response.body.decode('utf-8'))
 
-        response = self.testapp.post('/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps({'title': 'Page two'}), status=201)
         page2 = json.loads(response.body.decode('utf-8'))
 
-        response = self.testapp.post('/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps({
                     'title': 'Book',
                     'abstract': 'Book abstract',
@@ -682,7 +683,7 @@ class FunctionalTests(unittest.TestCase):
                 status=404)
 
     def test_put_content_invalid_json(self):
-        response = self.testapp.post('/contents', 
+        response = self.testapp.post('/users/contents', 
                 json.dumps({
                     'title': u'My document タイトル',
                     'abstract': u'My document abstract',
@@ -711,7 +712,7 @@ class FunctionalTests(unittest.TestCase):
         urllib2.urlopen = patched_urlopen
         self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
 
-        response = self.testapp.post('/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
@@ -788,7 +789,7 @@ class FunctionalTests(unittest.TestCase):
             })
 
     def test_put_content(self):
-        response = self.testapp.post('/contents', 
+        response = self.testapp.post('/users/contents', 
                 json.dumps({
                     'title': u'My document タイトル',
                     'abstract': u'My document abstract',
@@ -857,7 +858,7 @@ class FunctionalTests(unittest.TestCase):
     def test_search_unbalanced_quotes(self):
         FunctionalTests.profile = {'username': str(uuid.uuid4())}
         post_data = {'title': u'Document'}
-        self.testapp.post('/contents', json.dumps(post_data), status=201)
+        self.testapp.post('/users/contents', json.dumps(post_data), status=201)
 
         response = self.testapp.get('/search?q="Document', status=200)
         result = json.loads(response.body.decode('utf-8'))
@@ -871,7 +872,7 @@ class FunctionalTests(unittest.TestCase):
 
     def test_search_content(self):
         post_data = {'title': u"Document"}
-        self.testapp.post('/contents', json.dumps(post_data), status=201)
+        self.testapp.post('/users/contents', json.dumps(post_data), status=201)
 
         FunctionalTests.profile = {'username': 'a_new_user'}
         post_data = {
@@ -883,13 +884,13 @@ class FunctionalTests(unittest.TestCase):
             'language': u'en',
             'contents': u"Ding dong the switch is flipped.",
             }
-        response = self.testapp.post('/contents', json.dumps(post_data),
+        response = self.testapp.post('/users/contents', json.dumps(post_data),
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
         doc_id = result['id']
 
         post_data = {'title': u'New stuff'}
-        response = self.testapp.post('/contents', json.dumps(post_data),
+        response = self.testapp.post('/users/contents', json.dumps(post_data),
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
         new_doc_id = result['id']
@@ -1059,16 +1060,16 @@ class FunctionalTests(unittest.TestCase):
 
     def test_user_contents_403(self):
         FunctionalTests.profile = None
-        self.testapp.get('/contents', status=403)
+        self.testapp.get('/users/contents', status=403)
 
     def test_user_contents(self):
-        self.testapp.post('/contents',
+        self.testapp.post('/users/contents',
                 json.dumps({'title': 'document by default user'}), status=201)
 
         # a user should not get any contents that doesn't belong to themselves
         uid = str(uuid.uuid4())
         FunctionalTests.profile = {'username': uid}
-        response = self.testapp.get('/contents', status=200)
+        response = self.testapp.get('/users/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, {
             u'query': {
@@ -1081,15 +1082,15 @@ class FunctionalTests(unittest.TestCase):
                 },
             })
 
-        self.testapp.post('/contents',
+        self.testapp.post('/users/contents',
                 json.dumps({'title': 'document by {}'.format(uid)}),
                 status=201)
 
-        self.testapp.post('/contents',
+        self.testapp.post('/users/contents',
                 json.dumps({'title': 'another document by {}'.format(uid)}),
                 status=201)
 
-        response = self.testapp.get('/contents', status=200)
+        response = self.testapp.get('/users/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['results']['total'], 2)
         self.assertTrue(result['results']['items'][0]['id'].endswith('@draft'))
