@@ -137,7 +137,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_login_redirect_loop(self):
         FunctionalTests.profile = None
@@ -208,6 +208,30 @@ class FunctionalTests(unittest.TestCase):
                 'http://example.com/logged_out')
         self.assertEqual(FunctionalTests.profile, None)
 
+    def test_options(self):
+        def assert_headers(response):
+            self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                    'true')
+            self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                    'http://localhost:8000')
+            self.assertEqual(response.headers['Access-Control-Allow-Headers'],
+                    'Origin, Content-Type')
+            self.assertEqual(response.headers['Access-Control-Allow-Methods'],
+                    'GET, OPTIONS, PUT, POST')
+            self.assertEqual(response.headers['Content-Length'], '0')
+
+        self.testapp.options('/', status=404)
+        self.testapp.options('/some-random.html', status=404)
+
+        urls = ['/*', '/login', '/logout', '/callback', '/search',
+                '/contents/uuid@draft.json', '/resources/hash',
+                '/contents', '/resources', '/users/search',
+                '/users/profile', '/users/contents']
+
+        for url in urls:
+            response = self.testapp.options(url, status=200)
+            assert_headers(response)
+
     def test_get_content_403(self):
         FunctionalTests.profile = None
         self.testapp.get('/contents/1234abcde@draft.json', status=403)
@@ -250,7 +274,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_post_content_403(self):
         FunctionalTests.profile = None
@@ -287,7 +311,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
         self.testapp.get('/contents/{}@draft.json'.format(result['id']),
                 status=200)
@@ -313,7 +337,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(result['id']), status=200)
@@ -340,7 +364,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
         self.testapp.get('/contents/{}@draft.json'.format(result[0]['id']),
                 status=200)
@@ -430,7 +454,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
         self.testapp.get('/contents/{}@draft.json'.format(result['id']),
                 status=200)
@@ -515,7 +539,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(result['id']), status=200)
@@ -593,7 +617,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_post_content_binder(self):
         response = self.testapp.post('/users/contents',
@@ -817,7 +841,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_search_content_403(self):
         FunctionalTests.profile = None
@@ -837,7 +861,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_search_content_q_empty(self):
         response = self.testapp.get('/search?q=', status=200)
@@ -853,7 +877,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_search_unbalanced_quotes(self):
         FunctionalTests.profile = {'username': str(uuid.uuid4())}
@@ -868,7 +892,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_search_content(self):
         post_data = {'title': u"Document"}
@@ -937,7 +961,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_get_resource_403(self):
         FunctionalTests.profile = None
@@ -966,7 +990,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_post_resource_403(self):
         FunctionalTests.profile = None
@@ -1015,7 +1039,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_user_search_q_empty(self):
         response = self.testapp.get('/users/search?q=')
@@ -1024,7 +1048,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_user_search(self):
         FunctionalTests.accounts_request_return = {
@@ -1042,7 +1066,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_profile_403(self):
         FunctionalTests.profile = None
@@ -1056,7 +1080,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')
 
     def test_user_contents_403(self):
         FunctionalTests.profile = None
@@ -1102,4 +1126,4 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'localhost')
+                'http://localhost:8000')

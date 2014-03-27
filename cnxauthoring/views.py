@@ -58,6 +58,11 @@ def logout(request):
     raise httpexceptions.HTTPFound(location=redirect_to)
 
 
+@view_config(route_name='options', request_method='OPTIONS', renderer='string')
+def options(request):
+    return ''
+
+
 @view_config(route_name='user-search', request_method='GET', renderer='json', context=Site, permission='protected')
 def user_search(request):
     """Search for openstax accounts users"""
