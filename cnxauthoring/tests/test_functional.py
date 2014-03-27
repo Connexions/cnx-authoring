@@ -116,6 +116,33 @@ class FunctionalTests(unittest.TestCase):
     def setUp(self):
         FunctionalTests.profile = {u'username': u'me'}
 
+    def derived_from(self, return_value=None):
+        response = mock.Mock()
+        # for derived from
+        def patched_urlopen(url, *args, **kwargs):
+            if return_value:
+                response.read = mock.Mock(
+                        side_effect=io.BytesIO(return_value).read)
+                return response
+            filename = test_data(url.rsplit('/', 1)[-1])
+            if not os.path.exists(filename):
+                raise urllib2.HTTPError(url, 404, 'Not Found', None, None)
+            with open(filename, 'rb') as f:
+                data = f.read()
+                try:
+                    data = data.encode('utf-8')
+                except:
+                    pass
+            response.read = mock.Mock(side_effect=io.BytesIO(data).read)
+            return response
+        try:
+            import urllib2 # python2
+        except ImportError:
+            import urllib.request as urllib2 # renamed in python3
+        urlopen = urllib2.urlopen
+        urllib2.urlopen = patched_urlopen
+        self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
+
     def test_login(self):
         FunctionalTests.profile = None
         def authenticated_userid(*args):
@@ -373,19 +400,9 @@ class FunctionalTests(unittest.TestCase):
 
     def test_post_content_derived_from_not_found(self):
         post_data = {
-                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
+                'derivedFrom': u'notfound@1',
             }
-        try:
-            import urllib2 # python2
-        except ImportError:
-            import urllib.request as urllib2 # renamed in python3
-
-        def patched_urlopen(*args, **kwargs):
-            raise urllib2.HTTPError(args[0], 404, 'Not Found', None, None)
-
-        urlopen = urllib2.urlopen
-        urllib2.urlopen = patched_urlopen
-        self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
+        self.derived_from()
 
         response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
@@ -393,18 +410,10 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(b'Derive failed' in response.body)
 
     def test_post_content_derived_from_not_json(self):
+        self.derived_from(return_value=b'invalid json')
         post_data = {
                 'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             }
-        def patched_urlopen(*args, **kwargs):
-            return io.BytesIO(b'invalid json')
-        try:
-            import urllib2 # python2
-        except ImportError:
-            import urllib.request as urllib2 # renamed in python3
-        urlopen = urllib2.urlopen
-        urllib2.urlopen = patched_urlopen
-        self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
 
         response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
@@ -415,17 +424,7 @@ class FunctionalTests(unittest.TestCase):
         post_data = {
                 'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             }
-
-        def patched_urlopen(*args, **kwargs):
-            with open(test_data('{}.json'.format(post_data['derivedFrom']))) as f:
-                return io.BytesIO(f.read().encode('utf-8'))
-        try:
-            import urllib2 # python2
-        except ImportError:
-            import urllib.request as urllib2 # renamed in python3
-        urlopen = urllib2.urlopen
-        urllib2.urlopen = patched_urlopen
-        self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
+        self.derived_from()
 
         response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
@@ -724,17 +723,7 @@ class FunctionalTests(unittest.TestCase):
         post_data = {
                 'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
             }
-
-        def patched_urlopen(*args, **kwargs):
-            with open(test_data('{}.json'.format(post_data['derivedFrom']))) as f:
-                return io.BytesIO(f.read().encode('utf-8'))
-        try:
-            import urllib2 # python2
-        except ImportError:
-            import urllib.request as urllib2 # renamed in python3
-        urlopen = urllib2.urlopen
-        urllib2.urlopen = patched_urlopen
-        self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
+        self.derived_from()
 
         response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
