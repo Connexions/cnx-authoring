@@ -89,6 +89,14 @@ class DocumentSchema(colander.MappingSchema):
         missing=colander.drop,
         validator=colander.OneOf([DOCUMENT_MEDIATYPE, BINDER_MEDIATYPE]),
         )
+    subjects = colander.SchemaNode(
+        colander.List(),
+        missing=colander.drop,
+        )
+    keywords = colander.SchemaNode(
+        colander.List(),
+        missing=colander.drop,
+        )
 
 document_schema = DocumentSchema()
 

@@ -8,5 +8,7 @@ CREATE TABLE document ( id              uuid primary key,
                         derived_from    text,
                         content         text,
                         abstract        text,
-                        submitter       text not null
+                        submitter       text not null,
+                        subjects        text[],
+                        keywords        text[]
                     );
