@@ -93,6 +93,7 @@ def user_contents(request):
         document['id'] = '@'.join([document['id'], document['version']])
         document['pubDate'] = document.pop('revised')
         items.append(document)
+    items.sort(lambda x,y: cmp(y['revised'],x['revised']))
     return {
             u'query': {
                 u'limits': [],
