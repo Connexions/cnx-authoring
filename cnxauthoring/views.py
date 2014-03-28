@@ -84,12 +84,14 @@ def profile(request):
 @view_config(route_name='user-contents', request_method='GET', renderer='json', context=Site, permission='protected')
 def user_contents(request):
     """Extract of the contents that belong to the current logged in user"""
+    
     items = []
     for content in storage.get_all(submitter=request.unauthenticated_userid):
         item = content.__json__()
         document = {k: item[k] for k in  
                ['mediaType', 'title', 'id', 'version', 'revised']}
         document['id'] = '@'.join([document['id'], document['version']])
+        document['pubDate'] = document.pop('revised')
         items.append(document)
     return {
             u'query': {
