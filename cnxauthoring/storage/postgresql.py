@@ -8,6 +8,7 @@
 import psycopg2
 import psycopg2.extras
 from psycopg2 import Binary
+from psycopg2.extensions import STATUS_READY
 from uuid import UUID
 import json
 
@@ -34,6 +35,8 @@ class PostgresqlStorage(BaseStorage):
         # all kwargs are expected to match attributes of the stored Document.
         # We're trusting the names of the args to match table column names, but not
         # trusting the values
+
+        in_progress = ( self.conn.status != STATUS_READY )
         
         cursor = self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
@@ -50,7 +53,8 @@ class PostgresqlStorage(BaseStorage):
             
         cursor.execute(SQL['get'].format(tablename = type_name, where_clause = ' AND '.join(match_clauses)), kwargs)
         res = cursor.fetchall()
-        self.conn.rollback() # Frees the connection
+        if not in_progress:
+            self.conn.rollback() # Frees the connection
         if res:
             results = []
             for r in res:
@@ -129,6 +133,8 @@ class PostgresqlStorage(BaseStorage):
         if type_ != Document:
             raise NotImplementedError()
 
+        in_progress = ( self.conn.status != STATUS_READY )
+
         cursor = self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
         search_terms = []
@@ -143,7 +149,8 @@ class PostgresqlStorage(BaseStorage):
 
         cursor.execute(SQL['search-title'].format(where_clause=where_clause), sqlargs)
         res = cursor.fetchall()
-        self.conn.rollback() # Frees the connection
+        if not in_progress:
+            self.conn.rollback() # Frees the connection
         if res:
             results = []
             for item in res:
