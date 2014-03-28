@@ -12,5 +12,6 @@ UPDATE document
             created = %(created)s, abstract = %(abstract)s,
             title = %(title)s, revised = %(revised)s, 
             content = %(content)s, derived_from = %(derived_from)s,
-            submitter = %(submitter)s
+            submitter = %(submitter)s, subjects = %(subjects)s,
+            keywords = %(keywords)s
 WHERE id  = %(id)s

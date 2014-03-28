@@ -57,6 +57,8 @@ class ModelJSONRendering(unittest.TestCase):
                 'name': 'Attribution',
                 'version': '4.0',
                 },
+            'subjects': [],
+            'keywords': [],
             }
         expected_json = json.dumps(expected_json)
 

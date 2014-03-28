@@ -104,6 +104,7 @@ class Document:
     def __init__(self, title, id=None,
                  content=None, abstract=None,
                  created=None, revised=None,
+                 subjects=None, keywords=None,
                  license=LICENSE_PARAMETER_MARKER,
                  language=None, derived_from=None, submitter=None):
         self.title = title
@@ -122,6 +123,8 @@ class Document:
         self.language = language is None and DEFAULT_LANGUAGE or language
         self.derived_from = derived_from
         self.submitter = submitter
+        self.subjects = subjects or []
+        self.keywords = keywords or []
 
     def update(self, **kwargs):
         if 'license' in kwargs:

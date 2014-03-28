@@ -300,6 +300,8 @@ class FunctionalTests(unittest.TestCase):
             u'submitter': u'me',
             u'abstract': None,
             u'version': u'draft',
+            u'subjects': [],
+            u'keywords': [],
             })
         self.assertEqual(put_result, get_result)
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
@@ -466,6 +468,8 @@ class FunctionalTests(unittest.TestCase):
                 u'name': u'Attribution',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'subjects': [],
+            u'keywords': [],
             })
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
@@ -494,6 +498,8 @@ class FunctionalTests(unittest.TestCase):
                 u'name': u'Attribution',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'subjects': [],
+            u'keywords': [],
             })
 
         # Check that resources are saved
@@ -531,6 +537,8 @@ class FunctionalTests(unittest.TestCase):
                 u'name': u'Attribution',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'subjects': [u'Arts'],
+            u'keywords': [],
             })
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
@@ -559,6 +567,8 @@ class FunctionalTests(unittest.TestCase):
                 u'name': u'Attribution',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'subjects': [u'Arts'],
+            u'keywords': [],
             })
 
     def test_post_content_derived_from_binder(self):
@@ -617,6 +627,8 @@ class FunctionalTests(unittest.TestCase):
                         u'title': u'Tilberedning'}
                     ],
                 },
+            u'subjects': [u'Arts'],
+            u'keywords': [u'køkken', u'Madlavning'],
             })
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
@@ -661,6 +673,8 @@ class FunctionalTests(unittest.TestCase):
                         u'title': u'Tilberedning'}
                     ],
                 },
+            u'subjects': [u'Arts'],
+            u'keywords': [u'køkken', u'Madlavning'],
             })
 
     def test_post_content(self):
@@ -672,6 +686,8 @@ class FunctionalTests(unittest.TestCase):
             'license': {'url': DEFAULT_LICENSE.url},
             'language': u'en',
             'content': u"Ding dong the switch is flipped.",
+            'subjects': [u'Science and Technology'],
+            'keywords': [u'DNA', u'resonance'],
             }
 
         response = self.testapp.post('/users/contents',
@@ -695,6 +711,8 @@ class FunctionalTests(unittest.TestCase):
             u'content': post_data['content'],
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
+            u'subjects': post_data['subjects'],
+            u'keywords': post_data['keywords'],
             })
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
@@ -777,6 +795,8 @@ class FunctionalTests(unittest.TestCase):
                         },
                     ],
                 },
+            u'subjects': [],
+            u'keywords': [],
             })
 
     def test_put_content_403(self):
@@ -871,6 +891,8 @@ class FunctionalTests(unittest.TestCase):
                         u'title': u'Hygiene',
                         }],
                     },
+            u'subjects': [u'Arts',],
+            u'keywords': [u'køkken', u'Madlavning'],
             })
 
         response = self.testapp.get(
@@ -902,6 +924,8 @@ class FunctionalTests(unittest.TestCase):
                         u'title': u'Hygiene',
                         }],
                     },
+            u'subjects': [u'Arts'],
+            u'keywords': [u'køkken', u'Madlavning'],
             })
 
     def test_put_content(self):
@@ -917,6 +941,8 @@ class FunctionalTests(unittest.TestCase):
             'title': u"Turning DNA through resonance",
             'abstract': u"Theories on turning DNA structures",
             'content': u"Ding dong the switch is flipped.",
+            'keywords': ['DNA', 'resonance'],
+            'subjects': ['Science and Technology'],
             }
 
         response = self.testapp.put('/contents/{}@draft.json'.format(document['id']),
@@ -928,8 +954,18 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['abstract'], update_data['abstract'])
         self.assertEqual(result['language'], document['language'])
         self.assertEqual(result['content'], update_data['content'])
+        self.assertEqual(result['keywords'], update_data['keywords'])
+        self.assertEqual(result['subjects'], update_data['subjects'])
 
         response = self.testapp.get('/contents/{}@draft.json'.format(document['id']))
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['id'], document['id'])
+        self.assertEqual(result['title'], update_data['title'])
+        self.assertEqual(result['abstract'], update_data['abstract'])
+        self.assertEqual(result['language'], document['language'])
+        self.assertEqual(result['content'], update_data['content'])
+        self.assertEqual(result['keywords'], update_data['keywords'])
+        self.assertEqual(result['subjects'], update_data['subjects'])
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
