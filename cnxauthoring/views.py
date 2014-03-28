@@ -18,7 +18,7 @@ from openstax_accounts.interfaces import *
 
 from . import Site
 from .models import (create_content, derive_content, Document, Resource,
-        BINDER_MEDIATYPE)
+        BINDER_MEDIATYPE, derive_resources)
 from .schemata import DocumentSchema, BinderSchema
 from .storage import storage
 from . import utils
@@ -148,6 +148,15 @@ def post_content_single(request, cstruct):
         raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
     appstruct['derived_from'] = derived_from
     content = create_content(**appstruct)
+    resources = []
+    if content.mediatype != BINDER_MEDIATYPE and content.derived_from:
+        resources = derive_resources(request, content)
+
+    for r in resources:
+        try:
+            storage.add(r)
+        except:
+            storage.abort()
 
     try:
         content = storage.add(content)

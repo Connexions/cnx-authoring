@@ -209,7 +209,8 @@ def create_content(**appstruct):
     media_type = 'media_type' in kwargs and kwargs.pop('media_type')
     if media_type == BINDER_MEDIATYPE:
         return Binder(**kwargs)
-    return Document(**kwargs)
+    document = Document(**kwargs)
+    return document
 
 
 def derive_content(request, **kwargs):
@@ -232,3 +233,49 @@ def derive_content(request, **kwargs):
     document['revised'] = None
     document['license'] = {'url': DEFAULT_LICENSE.url}
     return document
+
+
+def derive_resources(request, document):
+    epubdoc = EPUBDocument(document, None)
+    settings = request.registry.settings
+    archive_url = settings['archive.url']
+    for r in epubdoc.references():
+        if r.uri.startswith('/resources'):
+            try:
+                response = urllib2.urlopen(urlparse.urljoin(archive_url, r.uri))
+                content_type = response.info().getheader('Content-Type')
+                resource = Resource(content_type, response)
+                r.uri = request.route_path('get-resource', hash=resource.hash)
+                yield resource
+            except urllib2.HTTPError:
+                pass
+    document.content = epubdoc.content()
+
+
+class EPUBDocument(object):
+    def __init__(self, document, submitlog):
+        self.document = document
+        self.submitlog = submitlog
+        self.epubdoc = cnxepub.Document(
+                str(self.document.id),
+                self.document.content,
+                metadata=self.metadata())
+
+    def __call__(self):
+        return self.epubdoc
+
+    def metadata(self):
+        m = self.document.to_dict()
+        m['publisher'] = m.pop('submitter')
+        m['publication_message'] = self.submitlog
+        m.pop('content')
+        license = m.pop('license')
+        m['license_url'] = license['url']
+        m['license_text'] = ' '.join([license['name'], license['abbr'], license['version']])
+        return m
+
+    def references(self):
+        return self.epubdoc.references
+
+    def content(self):
+        return self.epubdoc.html

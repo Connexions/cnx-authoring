@@ -14,6 +14,7 @@ import json
 import io
 import os
 import sys
+import re
 import unittest
 import uuid
 try:
@@ -116,8 +117,11 @@ class FunctionalTests(unittest.TestCase):
     def setUp(self):
         FunctionalTests.profile = {u'username': u'me'}
 
-    def derived_from(self, return_value=None):
+    def derived_from(self, return_value=None, content_type=None):
         response = mock.Mock()
+        response.info = mock.Mock()
+        response.info().getheader = mock.Mock(side_effect={
+            'Content-Type': content_type}.get)
         # for derived from
         def patched_urlopen(url, *args, **kwargs):
             if return_value:
@@ -424,15 +428,16 @@ class FunctionalTests(unittest.TestCase):
         post_data = {
                 'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             }
-        self.derived_from()
+        self.derived_from(content_type='image/jpeg')
 
         response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
         self.maxDiff = None
-        self.assertTrue(u'Lav en madplan for den kommende uge'
-                in result.pop('content'))
+        content = result.pop('content')
+        self.assertTrue(content.startswith('<html'))
+        self.assertTrue(u'Lav en madplan for den kommende uge' in content)
         self.assertFalse('2011-10-05' in result.pop('created'))
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
@@ -458,8 +463,9 @@ class FunctionalTests(unittest.TestCase):
         self.testapp.get('/contents/{}@draft.json'.format(result['id']),
                 status=200)
         result = json.loads(response.body.decode('utf-8'))
-        self.assertTrue(u'Lav en madplan for den kommende uge'
-                in result.pop('content'))
+        content = result.pop('content')
+        self.assertTrue(u'Lav en madplan for den kommende uge' in content)
+        self.assertTrue(content.startswith('<html'))
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
@@ -467,6 +473,71 @@ class FunctionalTests(unittest.TestCase):
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'title': u'Copy of Indkøb',
+            u'abstract': None,
+            u'language': u'da',
+            u'mediaType': u'application/vnd.org.cnx.module',
+            u'version': u'draft',
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0'},
+            })
+
+        # Check that resources are saved
+        resource_path = re.search('(/resources/[^"]*)"', content).group(1)
+        response = self.testapp.get(resource_path, status=200)
+        self.assertEqual(response.content_type, 'image/jpeg')
+
+    def test_post_content_derived_from_w_missing_resource(self):
+        post_data = {
+                'derivedFrom': u'b0db72d9-fac3-4b43-9926-7e6e801663fb@1',
+            }
+        self.derived_from()
+
+        response = self.testapp.post('/users/contents',
+                json.dumps(post_data),
+                status=201)
+        result = json.loads(response.body.decode('utf-8'))
+        self.maxDiff = None
+        content = result.pop('content')
+        self.assertTrue(u'Ingredienser (4 personer):' in content)
+        self.assertTrue(content.startswith('<html'))
+        self.assertFalse('2011-10-12' in result.pop('created'))
+        self.assertTrue(result.pop('revised') is not None)
+        self.assertEqual(result, {
+            u'submitter': FunctionalTests.profile['username'],
+            u'id': result['id'],
+            u'derivedFrom': post_data['derivedFrom'],
+            u'title': u'Copy of Tilberedning',
+            u'abstract': None,
+            u'language': u'da',
+            u'mediaType': u'application/vnd.org.cnx.module',
+            u'version': u'draft',
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0'},
+            })
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'http://localhost:8000')
+
+        self.testapp.get('/contents/{}@draft.json'.format(result['id']),
+                status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        content = result.pop('content')
+        self.assertTrue(u'Ingredienser (4 personer):' in content)
+        self.assertTrue(content.startswith('<html'))
+        self.assertTrue(result.pop('created') is not None)
+        self.assertTrue(result.pop('revised') is not None)
+        self.assertEqual(result, {
+            u'submitter': FunctionalTests.profile['username'],
+            u'id': result['id'],
+            u'derivedFrom': post_data['derivedFrom'],
+            u'title': u'Copy of Tilberedning',
             u'abstract': None,
             u'language': u'da',
             u'mediaType': u'application/vnd.org.cnx.module',
