@@ -70,6 +70,7 @@ class PostgresqlStorageTests(unittest.TestCase):
                      submitter = 'me',
                      language='en-us')
         self.storage.add(d3)
+        self.storage.persist()
 
         # get by id
         result = self.storage.get(id=d3_id)
