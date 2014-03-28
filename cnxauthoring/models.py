@@ -123,8 +123,14 @@ class Document:
         self.language = language is None and DEFAULT_LANGUAGE or language
         self.derived_from = derived_from
         self.submitter = submitter
-        self.subjects = subjects or []
-        self.keywords = keywords or []
+        if type(subjects) in (list, tuple):
+            self.subjects =subjects
+        else:
+            self.subjects = subjects and [subjects] or []
+        if type(keywords) in (list, tuple):
+            self.keywords =keywords
+        else:
+            self.keywords = keywords and [keywords] or []
 
     def update(self, **kwargs):
         if 'license' in kwargs:
