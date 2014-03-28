@@ -332,6 +332,18 @@ class FunctionalTests(unittest.TestCase):
             u'tree': u'Required',
             })
 
+    def test_post_content_unknown_media_type(self):
+        response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'mediaType': 'unknown-media-type',
+                    }), status=400)
+        self.assertEqual(json.loads(response.body.decode('utf-8')), {
+            u'media_type': u'"unknown-media-type" is not one of '
+                           u'application/vnd.org.cnx.module, '
+                           u'application/vnd.org.cnx.collection',
+            u'title': u'Required',
+            })
+
     def test_post_content_minimal(self):
         response = self.testapp.post('/users/contents', 
                 json.dumps({'title': u'My document タイトル'}),
