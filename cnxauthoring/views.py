@@ -89,7 +89,7 @@ def user_contents(request):
     for content in storage.get_all(submitter=request.unauthenticated_userid):
         item = content.__json__()
         document = {k: item[k] for k in  
-               ['mediaType', 'title', 'id', 'version', 'revised']}
+               ['mediaType', 'title', 'id', 'version', 'revised', 'derivedFrom']}
         document['id'] = '@'.join([document['id'], document['version']])
         items.append(document)
     items.sort(lambda x,y: cmp(y['revised'],x['revised']))
