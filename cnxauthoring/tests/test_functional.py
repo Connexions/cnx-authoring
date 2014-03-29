@@ -1271,6 +1271,10 @@ class FunctionalTests(unittest.TestCase):
             u'Copy of Indkøb',
             u'oldest document by {}'.format(uid)])
 
+        derived_from = [i['derivedFrom'] for i in result['results']['items']]
+        self.assertEqual(derived_from, [None,
+            '91cb5f28-2b8a-4324-9373-dac1d617bc24@1', None])
+
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
