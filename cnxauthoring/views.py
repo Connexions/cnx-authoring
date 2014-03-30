@@ -92,7 +92,7 @@ def user_contents(request):
                ['mediaType', 'title', 'id', 'version', 'revised', 'derivedFrom']}
         document['id'] = '@'.join([document['id'], document['version']])
         items.append(document)
-    items.sort(lambda x,y: cmp(y['revised'],x['revised']))
+    items.sort(key=lambda item: item['revised'], reverse=True)
     return {
             u'query': {
                 u'limits': [],

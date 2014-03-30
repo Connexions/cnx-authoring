@@ -1234,23 +1234,47 @@ class FunctionalTests(unittest.TestCase):
                 },
             })
 
-        self.testapp.post('/users/contents',
-                json.dumps({'title': 'document by {}'.format(uid)}),
-                status=201)
+        self.derived_from()
+
+        import datetime
+        one_week_ago = datetime.datetime.now() - datetime.timedelta(7)
+        two_weeks_ago = datetime.datetime.now() - datetime.timedelta(14)
+
+        mock_datetime = mock.Mock()
+        mock_datetime.now = mock.Mock(return_value=one_week_ago)
+        with mock.patch('datetime.datetime', mock_datetime):
+            self.testapp.post('/users/contents',
+                    json.dumps(
+                        {'derivedFrom': '91cb5f28-2b8a-4324-9373-dac1d617bc24@1'}),
+                    status=201)
+
+        mock_datetime.now = mock.Mock(return_value=two_weeks_ago)
+        with mock.patch('datetime.datetime', mock_datetime):
+            self.testapp.post('/users/contents',
+                    json.dumps({'title': 'oldest document by {}'.format(uid)}),
+                    status=201)
 
         self.testapp.post('/users/contents',
-                json.dumps({'title': 'another document by {}'.format(uid)}),
+                json.dumps({'title': 'new document by {}'.format(uid)}),
                 status=201)
 
         response = self.testapp.get('/users/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(result['results']['total'], 2)
+        self.assertEqual(result['results']['total'], 3)
         self.assertTrue(result['results']['items'][0]['id'].endswith('@draft'))
         self.assertTrue(result['results']['items'][1]['id'].endswith('@draft'))
+        self.assertTrue(result['results']['items'][2]['id'].endswith('@draft'))
+
         titles = [i['title'] for i in result['results']['items']]
-        self.assertEqual(sorted(titles), [
-            'another document by {}'.format(uid),
-            'document by {}'.format(uid)])
+        self.assertEqual(titles, [
+            u'new document by {}'.format(uid),
+            u'Copy of Indkøb',
+            u'oldest document by {}'.format(uid)])
+
+        derived_from = [i['derivedFrom'] for i in result['results']['items']]
+        self.assertEqual(derived_from, [None,
+            '91cb5f28-2b8a-4324-9373-dac1d617bc24@1', None])
+
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
