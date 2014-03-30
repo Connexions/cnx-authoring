@@ -268,9 +268,9 @@ class FunctionalTests(unittest.TestCase):
             self.assert_cors_headers(response)
             self.assertEqual(response.headers['Content-Length'], '0')
 
-    def test_get_content_403(self):
+    def test_get_content_401(self):
         FunctionalTests.profile = None
-        response = self.testapp.get('/contents/1234abcde@draft.json', status=403)
+        response = self.testapp.get('/contents/1234abcde@draft.json', status=401)
         self.assert_cors_headers(response)
 
     def test_get_content_404(self):
@@ -313,9 +313,9 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(put_result, get_result)
         self.assert_cors_headers(response)
 
-    def test_post_content_403(self):
+    def test_post_content_401(self):
         FunctionalTests.profile = None
-        response = self.testapp.post('/users/contents', status=403)
+        response = self.testapp.post('/users/contents', status=401)
         self.assert_cors_headers(response)
 
     def test_post_content_invalid_json(self):
@@ -801,9 +801,9 @@ class FunctionalTests(unittest.TestCase):
             })
         self.assert_cors_headers(response)
 
-    def test_put_content_403(self):
+    def test_put_content_401(self):
         FunctionalTests.profile = None
-        response = self.testapp.put('/contents/1234abcde@draft.json', status=403)
+        response = self.testapp.put('/contents/1234abcde@draft.json', status=401)
         self.assert_cors_headers(response)
 
     def test_put_content_not_found(self):
@@ -980,9 +980,9 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['subjects'], update_data['subjects'])
         self.assert_cors_headers(response)
 
-    def test_search_content_403(self):
+    def test_search_content_401(self):
         FunctionalTests.profile = None
-        response = self.testapp.get('/search', status=403)
+        response = self.testapp.get('/search', status=401)
         self.assert_cors_headers(response)
 
     def test_search_content_no_q(self):
@@ -1095,9 +1095,9 @@ class FunctionalTests(unittest.TestCase):
 
         self.assert_cors_headers(response)
 
-    def test_get_resource_403(self):
+    def test_get_resource_401(self):
         FunctionalTests.profile = None
-        response = self.testapp.get('/resources/1234abcde', status=403)
+        response = self.testapp.get('/resources/1234abcde', status=401)
         self.assert_cors_headers(response)
 
     def test_get_resource_404(self):
@@ -1124,11 +1124,11 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.content_type, 'image/png')
         self.assert_cors_headers(response)
 
-    def test_post_resource_403(self):
+    def test_post_resource_401(self):
         FunctionalTests.profile = None
         response = self.testapp.post('/resources',
                 {'file': Upload('a.txt', b'hello\n', 'text/plain')},
-                status=403)
+                status=401)
         self.assert_cors_headers(response)
 
     def test_post_resource(self):
@@ -1194,9 +1194,9 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result, FunctionalTests.accounts_request_return)
         self.assert_cors_headers(response)
 
-    def test_profile_403(self):
+    def test_profile_401(self):
         FunctionalTests.profile = None
-        response = self.testapp.get('/users/profile', status=403)
+        response = self.testapp.get('/users/profile', status=401)
         self.assert_cors_headers(response)
 
     def test_profile(self):
@@ -1206,9 +1206,9 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result, FunctionalTests.profile)
         self.assert_cors_headers(response)
 
-    def test_user_contents_403(self):
+    def test_user_contents_401(self):
         FunctionalTests.profile = None
-        response = self.testapp.get('/users/contents', status=403)
+        response = self.testapp.get('/users/contents', status=401)
         self.assert_cors_headers(response)
 
     def test_user_contents(self):
