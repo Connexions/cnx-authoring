@@ -147,6 +147,16 @@ class FunctionalTests(unittest.TestCase):
         urllib2.urlopen = patched_urlopen
         self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
 
+    def assert_cors_headers(self, response):
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
+                'true')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                'http://localhost:8000')
+        self.assertEqual(response.headers['Access-Control-Allow-Headers'],
+                'Origin, Content-Type')
+        self.assertEqual(response.headers['Access-Control-Allow-Methods'],
+                'GET, OPTIONS, PUT, POST')
+
     def test_login(self):
         FunctionalTests.profile = None
         def authenticated_userid(*args):
@@ -159,16 +169,14 @@ class FunctionalTests(unittest.TestCase):
         FunctionalTests.profile = {'username': 'me'}
         response = self.testapp.get('/callback', status=302)
         self.assertEqual(response.headers['Location'], 'http://localhost/')
+        self.assert_cors_headers(response)
 
     def test_login_redirect_already_logged_in(self):
         response = self.testapp.get('/login?redirect=http://example.com/logged_in',
                 status=302)
         self.assertEqual(response.headers['Location'],
                 'http://example.com/logged_in')
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
     def test_login_redirect_loop(self):
         FunctionalTests.profile = None
@@ -184,6 +192,7 @@ class FunctionalTests(unittest.TestCase):
         FunctionalTests.profile = {'username': 'me'}
         response = self.testapp.get('/callback', status=302)
         self.assertEqual(response.headers['Location'], 'http://localhost/')
+        self.assert_cors_headers(response)
 
     def test_login_redirect_referer(self):
         FunctionalTests.profile = None
@@ -199,6 +208,7 @@ class FunctionalTests(unittest.TestCase):
         FunctionalTests.profile = {'username': 'me'}
         response = self.testapp.get('/callback', status=302)
         self.assertEqual(response.headers['Location'], 'http://example.com/')
+        self.assert_cors_headers(response)
 
     def test_login_redirect(self):
         FunctionalTests.profile = None
@@ -214,6 +224,7 @@ class FunctionalTests(unittest.TestCase):
         FunctionalTests.profile = {'username': 'me'}
         response = self.testapp.get('/callback', status=302)
         self.assertEqual(response.headers['Location'], 'http://example.com/logged_in')
+        self.assert_cors_headers(response)
 
     def test_logout_redirect_loop(self):
         response = self.testapp.get('/logout',
@@ -221,6 +232,7 @@ class FunctionalTests(unittest.TestCase):
                 status=302)
         self.assertEqual(response.headers['Location'], 'http://localhost/')
         self.assertEqual(FunctionalTests.profile, None)
+        self.assert_cors_headers(response)
 
     def test_logout_redirect_referer(self):
         response = self.testapp.get('/logout',
@@ -229,6 +241,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Location'],
                 'http://example.com/logged_out')
         self.assertEqual(FunctionalTests.profile, None)
+        self.assert_cors_headers(response)
 
     def test_logout_redirect(self):
         response = self.testapp.get(
@@ -238,18 +251,9 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Location'],
                 'http://example.com/logged_out')
         self.assertEqual(FunctionalTests.profile, None)
+        self.assert_cors_headers(response)
 
     def test_options(self):
-        def assert_headers(response):
-            self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                    'true')
-            self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                    'http://localhost:8000')
-            self.assertEqual(response.headers['Access-Control-Allow-Headers'],
-                    'Origin, Content-Type')
-            self.assertEqual(response.headers['Access-Control-Allow-Methods'],
-                    'GET, OPTIONS, PUT, POST')
-            self.assertEqual(response.headers['Content-Length'], '0')
 
         self.testapp.options('/', status=404)
         self.testapp.options('/some-random.html', status=404)
@@ -261,14 +265,17 @@ class FunctionalTests(unittest.TestCase):
 
         for url in urls:
             response = self.testapp.options(url, status=200)
-            assert_headers(response)
+            self.assert_cors_headers(response)
+            self.assertEqual(response.headers['Content-Length'], '0')
 
     def test_get_content_403(self):
         FunctionalTests.profile = None
-        self.testapp.get('/contents/1234abcde@draft.json', status=403)
+        response = self.testapp.get('/contents/1234abcde@draft.json', status=403)
+        self.assert_cors_headers(response)
 
     def test_get_content_404(self):
-        self.testapp.get('/contents/1234abcde@draft.json', status=404)
+        response = self.testapp.get('/contents/1234abcde@draft.json', status=404)
+        self.assert_cors_headers(response)
 
     def test_get_content_for_document(self):
         response = self.testapp.post('/users/contents',
@@ -304,25 +311,25 @@ class FunctionalTests(unittest.TestCase):
             u'keywords': [],
             })
         self.assertEqual(put_result, get_result)
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
     def test_post_content_403(self):
         FunctionalTests.profile = None
-        self.testapp.post('/users/contents', status=403)
+        response = self.testapp.post('/users/contents', status=403)
+        self.assert_cors_headers(response)
 
     def test_post_content_invalid_json(self):
         response = self.testapp.post('/users/contents',
                 'invalid json', status=400)
         self.assertTrue('Invalid JSON' in response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
 
     def test_post_content_empty(self):
         response = self.testapp.post('/users/contents', '{}', status=400)
         self.assertEqual(json.loads(response.body.decode('utf-8')), {
             u'title': u'Required',
             })
+        self.assert_cors_headers(response)
 
     def test_post_content_empty_binder(self):
         response = self.testapp.post('/users/contents',
@@ -333,6 +340,7 @@ class FunctionalTests(unittest.TestCase):
             u'title': u'Required',
             u'tree': u'Required',
             })
+        self.assert_cors_headers(response)
 
     def test_post_content_unknown_media_type(self):
         response = self.testapp.post('/users/contents',
@@ -345,6 +353,7 @@ class FunctionalTests(unittest.TestCase):
                            u'application/vnd.org.cnx.collection',
             u'title': u'Required',
             })
+        self.assert_cors_headers(response)
 
     def test_post_content_minimal(self):
         response = self.testapp.post('/users/contents', 
@@ -353,13 +362,11 @@ class FunctionalTests(unittest.TestCase):
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['title'], u'My document タイトル')
         self.assertEqual(result['language'], u'en')
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
-        self.testapp.get('/contents/{}@draft.json'.format(result['id']),
+        response = self.testapp.get('/contents/{}@draft.json'.format(result['id']),
                 status=200)
+        self.assert_cors_headers(response)
 
     def test_post_content_minimal_binder(self):
         response = self.testapp.post('/users/contents',
@@ -379,10 +386,7 @@ class FunctionalTests(unittest.TestCase):
             u'title': result['title'],
             })
 
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(result['id']), status=200)
@@ -394,6 +398,7 @@ class FunctionalTests(unittest.TestCase):
             u'id': '{}@draft'.format(result['id']),
             u'title': result['title'],
             })
+        self.assert_cors_headers(response)
 
     def test_post_content_multiple(self):
         post_data = [
@@ -406,15 +411,14 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0]['title'], u'My document タイトル 1')
         self.assertEqual(result[1]['title'], u'My document タイトル 2')
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
-        self.testapp.get('/contents/{}@draft.json'.format(result[0]['id']),
+        response = self.testapp.get('/contents/{}@draft.json'.format(result[0]['id']),
                 status=200)
-        self.testapp.get('/contents/{}@draft.json'.format(result[1]['id']),
+        self.assert_cors_headers(response)
+        response = self.testapp.get('/contents/{}@draft.json'.format(result[1]['id']),
                 status=200)
+        self.assert_cors_headers(response)
 
     def test_post_content_derived_from_not_found(self):
         post_data = {
@@ -426,6 +430,7 @@ class FunctionalTests(unittest.TestCase):
                 json.dumps(post_data),
                 status=400)
         self.assertTrue(b'Derive failed' in response.body)
+        self.assert_cors_headers(response)
 
     def test_post_content_derived_from_not_json(self):
         self.derived_from(return_value=b'invalid json')
@@ -437,6 +442,7 @@ class FunctionalTests(unittest.TestCase):
                 json.dumps(post_data),
                 status=400)
         self.assertTrue(b'Derive failed' in response.body)
+        self.assert_cors_headers(response)
 
     def test_post_content_derived_from(self):
         post_data = {
@@ -471,12 +477,9 @@ class FunctionalTests(unittest.TestCase):
             u'subjects': [],
             u'keywords': [],
             })
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
-        self.testapp.get('/contents/{}@draft.json'.format(result['id']),
+        response = self.testapp.get('/contents/{}@draft.json'.format(result['id']),
                 status=200)
         result = json.loads(response.body.decode('utf-8'))
         content = result.pop('content')
@@ -501,11 +504,13 @@ class FunctionalTests(unittest.TestCase):
             u'subjects': [],
             u'keywords': [],
             })
+        self.assert_cors_headers(response)
 
         # Check that resources are saved
         resource_path = re.search('(/resources/[^"]*)"', content).group(1)
         response = self.testapp.get(resource_path, status=200)
         self.assertEqual(response.content_type, 'image/jpeg')
+        self.assert_cors_headers(response)
 
     def test_post_content_derived_from_w_missing_resource(self):
         post_data = {
@@ -540,12 +545,9 @@ class FunctionalTests(unittest.TestCase):
             u'subjects': [u'Arts'],
             u'keywords': [],
             })
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
-        self.testapp.get('/contents/{}@draft.json'.format(result['id']),
+        response = self.testapp.get('/contents/{}@draft.json'.format(result['id']),
                 status=200)
         result = json.loads(response.body.decode('utf-8'))
         content = result.pop('content')
@@ -570,6 +572,7 @@ class FunctionalTests(unittest.TestCase):
             u'subjects': [u'Arts'],
             u'keywords': [],
             })
+        self.assert_cors_headers(response)
 
     def test_post_content_derived_from_binder(self):
         post_data = {
@@ -630,10 +633,7 @@ class FunctionalTests(unittest.TestCase):
             u'subjects': [u'Arts'],
             u'keywords': [u'køkken', u'Madlavning'],
             })
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(result['id']), status=200)
@@ -676,6 +676,7 @@ class FunctionalTests(unittest.TestCase):
             u'subjects': [u'Arts'],
             u'keywords': [u'køkken', u'Madlavning'],
             })
+        self.assert_cors_headers(response)
 
     def test_post_content(self):
         post_data = {
@@ -714,19 +715,18 @@ class FunctionalTests(unittest.TestCase):
             u'subjects': post_data['subjects'],
             u'keywords': post_data['keywords'],
             })
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
     def test_post_content_binder(self):
         response = self.testapp.post('/users/contents',
                 json.dumps({'title': 'Page one'}), status=201)
         page1 = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
 
         response = self.testapp.post('/users/contents',
                 json.dumps({'title': 'Page two'}), status=201)
         page2 = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
 
         response = self.testapp.post('/users/contents',
                 json.dumps({
@@ -754,6 +754,7 @@ class FunctionalTests(unittest.TestCase):
                         },
                     }), status=201)
         book = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
 
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(book['id']), status=200)
@@ -798,15 +799,18 @@ class FunctionalTests(unittest.TestCase):
             u'subjects': [],
             u'keywords': [],
             })
+        self.assert_cors_headers(response)
 
     def test_put_content_403(self):
         FunctionalTests.profile = None
-        self.testapp.put('/contents/1234abcde@draft.json', status=403)
+        response = self.testapp.put('/contents/1234abcde@draft.json', status=403)
+        self.assert_cors_headers(response)
 
     def test_put_content_not_found(self):
-        self.testapp.put('/contents/1234abcde@draft.json',
+        response = self.testapp.put('/contents/1234abcde@draft.json',
                 json.dumps({'title': u'Update document title'}),
                 status=404)
+        self.assert_cors_headers(response)
 
     def test_put_content_invalid_json(self):
         response = self.testapp.post('/users/contents', 
@@ -816,11 +820,13 @@ class FunctionalTests(unittest.TestCase):
                     'language': u'en'}),
                 status=201)
         document = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
 
         response = self.testapp.put(
                 '/contents/{}@draft.json'.format(document['id']),
                 'invalid json', status=400)
         self.assertTrue('Invalid JSON' in response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
 
     def test_put_content_derived_from(self):
         post_data = {
@@ -832,6 +838,7 @@ class FunctionalTests(unittest.TestCase):
                 json.dumps(post_data),
                 status=201)
         page = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
 
         post_data = {
                 'content': '<html><body><p>Page content</p></body></html>',
@@ -841,6 +848,7 @@ class FunctionalTests(unittest.TestCase):
                 json.dumps(post_data), status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['content'], post_data['content'])
+        self.assert_cors_headers(response)
 
     def test_put_content_binder(self):
         post_data = {
@@ -852,6 +860,7 @@ class FunctionalTests(unittest.TestCase):
                 json.dumps(post_data),
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
 
         update_data = {
                 'title': u'...',
@@ -894,6 +903,7 @@ class FunctionalTests(unittest.TestCase):
             u'subjects': [u'Arts',],
             u'keywords': [u'køkken', u'Madlavning'],
             })
+        self.assert_cors_headers(response)
 
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(result['id']),
@@ -927,6 +937,7 @@ class FunctionalTests(unittest.TestCase):
             u'subjects': [u'Arts'],
             u'keywords': [u'køkken', u'Madlavning'],
             })
+        self.assert_cors_headers(response)
 
     def test_put_content(self):
         response = self.testapp.post('/users/contents', 
@@ -936,6 +947,7 @@ class FunctionalTests(unittest.TestCase):
                     'language': u'en'}),
                 status=201)
         document = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
 
         update_data = {
             'title': u"Turning DNA through resonance",
@@ -966,14 +978,12 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['content'], update_data['content'])
         self.assertEqual(result['keywords'], update_data['keywords'])
         self.assertEqual(result['subjects'], update_data['subjects'])
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
     def test_search_content_403(self):
         FunctionalTests.profile = None
-        self.testapp.get('/search', status=403)
+        response = self.testapp.get('/search', status=403)
+        self.assert_cors_headers(response)
 
     def test_search_content_no_q(self):
         response = self.testapp.get('/search', status=200)
@@ -986,10 +996,7 @@ class FunctionalTests(unittest.TestCase):
                 'limits': [],
                 }
             })
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
     def test_search_content_q_empty(self):
         response = self.testapp.get('/search?q=', status=200)
@@ -1002,29 +1009,24 @@ class FunctionalTests(unittest.TestCase):
                 'limits': [],
                 }
             })
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
     def test_search_unbalanced_quotes(self):
         FunctionalTests.profile = {'username': str(uuid.uuid4())}
         post_data = {'title': u'Document'}
-        self.testapp.post('/users/contents', json.dumps(post_data), status=201)
+        response = self.testapp.post('/users/contents', json.dumps(post_data), status=201)
+        self.assert_cors_headers(response)
 
         response = self.testapp.get('/search?q="Document', status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['query']['limits'],
                 [{'tag': 'text', 'value': 'Document'}])
         self.assertEqual(result['results']['total'], 1)
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
     def test_search_content(self):
         post_data = {'title': u"Document"}
-        self.testapp.post('/users/contents', json.dumps(post_data), status=201)
+        response = self.testapp.post('/users/contents', json.dumps(post_data), status=201)
 
         FunctionalTests.profile = {'username': 'a_new_user'}
         post_data = {
@@ -1040,12 +1042,14 @@ class FunctionalTests(unittest.TestCase):
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
         doc_id = result['id']
+        self.assert_cors_headers(response)
 
         post_data = {'title': u'New stuff'}
         response = self.testapp.post('/users/contents', json.dumps(post_data),
                 status=201)
         result = json.loads(response.body.decode('utf-8'))
         new_doc_id = result['id']
+        self.assert_cors_headers(response)
 
         # should not be able to get other user's documents
         response = self.testapp.get('/search?q=document', status=200)
@@ -1057,6 +1061,7 @@ class FunctionalTests(unittest.TestCase):
                 'items': [],
                 'total': 0,
                 'limits': []}})
+        self.assert_cors_headers(response)
 
         # should be able to search user's own documents
         response = self.testapp.get('/search?q=DNA', status=200)
@@ -1064,6 +1069,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['results']['total'], 1)
         self.assertEqual(result['results']['items'][0]['id'],
                 '{}@draft'.format(doc_id))
+        self.assert_cors_headers(response)
 
         # should be able to search multiple terms
         response = self.testapp.get('/search?q=new+resonance', status=200)
@@ -1075,6 +1081,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(sorted([i['id'] for i in result['results']['items']]),
                 sorted(['{}@draft'.format(doc_id),
                     '{}@draft'.format(new_doc_id)]))
+        self.assert_cors_headers(response)
 
         # should be able to search with double quotes
         response = self.testapp.get('/search?q="through resonance"',
@@ -1086,17 +1093,16 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['results']['items'][0]['id'],
                 '{}@draft'.format(doc_id))
 
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
     def test_get_resource_403(self):
         FunctionalTests.profile = None
-        self.testapp.get('/resources/1234abcde', status=403)
+        response = self.testapp.get('/resources/1234abcde', status=403)
+        self.assert_cors_headers(response)
 
     def test_get_resource_404(self):
-        self.testapp.get('/resources/1234abcde', status=404)
+        response = self.testapp.get('/resources/1234abcde', status=404)
+        self.assert_cors_headers(response)
 
     def test_get_resource(self):
         with open(test_data('1x1.png'), 'rb') as data:
@@ -1109,22 +1115,21 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get(redirect_url, status=200)
         self.assertEqual(response.body, upload_data)
         self.assertEqual(response.content_type, 'image/png')
+        self.assert_cors_headers(response)
 
         # any logged in user can retrieve any resource files
         FunctionalTests.profile = {'username': str(uuid.uuid4())}
         response = self.testapp.get(redirect_url, status=200)
         self.assertEqual(response.body, upload_data)
         self.assertEqual(response.content_type, 'image/png')
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
     def test_post_resource_403(self):
         FunctionalTests.profile = None
-        self.testapp.post('/resources',
+        response = self.testapp.post('/resources',
                 {'file': Upload('a.txt', b'hello\n', 'text/plain')},
                 status=403)
+        self.assert_cors_headers(response)
 
     def test_post_resource(self):
         response = self.testapp.post('/resources',
@@ -1137,6 +1142,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.body,
                 b'/resources/'
                 b'f572d396fae9206628714fb2ce00f72e94f2258f')
+        self.assert_cors_headers(response)
 
     def test_post_duplicate_resource(self):
         response = self.testapp.post('/resources',
@@ -1159,24 +1165,19 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.body,
                 b'/resources/'
                 b'f572d396fae9206628714fb2ce00f72e94f2258f')
+        self.assert_cors_headers(response)
 
     def test_user_search_no_q(self):
         response = self.testapp.get('/users/search')
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, [])
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
     def test_user_search_q_empty(self):
         response = self.testapp.get('/users/search?q=')
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, [])
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
     def test_user_search(self):
         FunctionalTests.accounts_request_return = {
@@ -1191,31 +1192,27 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/users/search?q=admin')
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, FunctionalTests.accounts_request_return)
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
     def test_profile_403(self):
         FunctionalTests.profile = None
-        self.testapp.get('/users/profile', status=403)
+        response = self.testapp.get('/users/profile', status=403)
+        self.assert_cors_headers(response)
 
     def test_profile(self):
         FunctionalTests.profile = {'username': 'first_last'}
         response = self.testapp.get('/users/profile', status=200)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, FunctionalTests.profile)
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+        self.assert_cors_headers(response)
 
     def test_user_contents_403(self):
         FunctionalTests.profile = None
-        self.testapp.get('/users/contents', status=403)
+        response = self.testapp.get('/users/contents', status=403)
+        self.assert_cors_headers(response)
 
     def test_user_contents(self):
-        self.testapp.post('/users/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps({'title': 'document by default user'}), status=201)
 
         # a user should not get any contents that doesn't belong to themselves
@@ -1233,6 +1230,7 @@ class FunctionalTests(unittest.TestCase):
                 u'limits': [],
                 },
             })
+        self.assert_cors_headers(response)
 
         self.derived_from()
 
@@ -1243,20 +1241,23 @@ class FunctionalTests(unittest.TestCase):
         mock_datetime = mock.Mock()
         mock_datetime.now = mock.Mock(return_value=one_week_ago)
         with mock.patch('datetime.datetime', mock_datetime):
-            self.testapp.post('/users/contents',
+            response = self.testapp.post('/users/contents',
                     json.dumps(
                         {'derivedFrom': '91cb5f28-2b8a-4324-9373-dac1d617bc24@1'}),
                     status=201)
+        self.assert_cors_headers(response)
 
         mock_datetime.now = mock.Mock(return_value=two_weeks_ago)
         with mock.patch('datetime.datetime', mock_datetime):
-            self.testapp.post('/users/contents',
+            response = self.testapp.post('/users/contents',
                     json.dumps({'title': 'oldest document by {}'.format(uid)}),
                     status=201)
+        self.assert_cors_headers(response)
 
-        self.testapp.post('/users/contents',
+        response = self.testapp.post('/users/contents',
                 json.dumps({'title': 'new document by {}'.format(uid)}),
                 status=201)
+        self.assert_cors_headers(response)
 
         response = self.testapp.get('/users/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
@@ -1279,3 +1280,4 @@ class FunctionalTests(unittest.TestCase):
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
                 'http://localhost:8000')
+        self.assert_cors_headers(response)
