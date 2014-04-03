@@ -6,6 +6,7 @@
 # See LICENCE.txt for details.
 # ###
 import datetime
+import io
 import json
 import hashlib
 import uuid
@@ -78,21 +79,19 @@ LICENSES = [License(**dict(args))
 DEFAULT_LICENSE = LICENSES[-1]
 
 
-class Resource:
+class Resource(cnxepub.Resource):
     """Any *file* that is referenced within a ``Document``."""
 
-    def __init__(self, mediatype, data):
-        self.mediatype = mediatype
+    def __init__(self, mediatype, data, filename=None):
         # ``data`` must be a buffer or file-like object.
         try:
             self.data = data.read()
         except AttributeError:
             self.data = data[:]
-        self._hash = hashlib.new('sha1', self.data).hexdigest()
-
-    @property
-    def hash(self):
-        return self._hash
+        _hash = hashlib.new('sha1', self.data).hexdigest()
+        cnxepub.Resource.__init__(self, _hash, io.BytesIO(self.data),
+                mediatype, filename)
+        self._hash = _hash
 
 
 class Document:

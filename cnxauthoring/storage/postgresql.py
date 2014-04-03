@@ -68,6 +68,7 @@ class PostgresqlStorage(BaseStorage):
                 else:
                     rd = dict(r)
                     rd.pop('hash')
+                    rd['data'] = rd['data'][:]
                     results.append(type_(**dict(rd)))
                     
             for item in results:
@@ -84,8 +85,10 @@ class PostgresqlStorage(BaseStorage):
         if type_name== 'resource':
             exists = self.get(type_=Resource, hash=item._hash)
             if not exists:
+                data = Binary(item.data.read())
+                item.data.seek(0)
                 cursor.execute(SQL['add-resource'], 
-                            {'hash':item._hash,'mediatype':item.mediatype,'data':Binary(item.data)})
+                            {'hash':item._hash,'mediatype':item.media_type,'data':data})
         elif type_name in ['document','binder']:
             args = item.to_dict()
             args['license'] = repr(args['license'])
