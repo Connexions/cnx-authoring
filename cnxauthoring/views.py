@@ -149,7 +149,7 @@ def post_content_single(request, cstruct):
     appstruct['derived_from'] = derived_from
     content = create_content(**appstruct)
     resources = []
-    if content.mediatype != BINDER_MEDIATYPE and content.derived_from:
+    if content.mediatype != BINDER_MEDIATYPE and derived_from:
         resources = derive_resources(request, content)
 
     for r in resources:

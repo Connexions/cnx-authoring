@@ -56,24 +56,18 @@ class PostgresqlStorage(BaseStorage):
         if not in_progress:
             self.conn.rollback() # Frees the connection
         if res:
-            results = []
             for r in res:
                 if 'license' in r:
                     r['license'] = eval(r['license'])
                     rd = dict(r)
                     if rd['media_type'] == MEDIATYPES['binder']:
                         rd['tree'] = json.loads(rd.pop('content'))
-                    item = create_content(**rd)
-                    results.append(item)
+                    yield create_content(**rd)
                 else:
                     rd = dict(r)
                     rd.pop('hash')
                     rd['data'] = rd['data'][:]
-                    results.append(type_(**dict(rd)))
-                    
-            for item in results:
-                yield item
-            
+                    yield type_(**dict(rd))
 
     def add(self, item_or_items):
         """Adds any item or set of items to storage."""
@@ -94,7 +88,7 @@ class PostgresqlStorage(BaseStorage):
             args['license'] = repr(args['license'])
             args['media_type'] = MEDIATYPES[type_name]
             if 'tree' in args:
-                    args['content'] = json.dumps(args.pop('tree'))
+                args['content'] = json.dumps(args.pop('tree'))
             cursor.execute(SQL['add-document'], args)
         else:
             raise NotImplementedError(type_name)

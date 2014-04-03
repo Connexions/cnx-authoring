@@ -27,7 +27,7 @@ class MemoryStorage(BaseStorage):
         collection = self.storage[str(type_)]
         for item in collection:
             for k, v in kwargs.items():
-                if str(getattr(item, k)) != str(v):
+                if str(item.metadata.get(k)) != str(v):
                     break
             else:
                 yield item
@@ -82,7 +82,8 @@ class MemoryStorage(BaseStorage):
             search_terms.append(term.lower())
 
         for item in collection:
-            title = item.title and item.title.lower() or u''
+            title = item.metadata['title'] or ''
+            title = title.lower()
             for term in search_terms:
                 if term in title:
                     if submitter is None or item.submitter == submitter:
