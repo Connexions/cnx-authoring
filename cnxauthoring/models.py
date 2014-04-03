@@ -94,7 +94,7 @@ class Resource(cnxepub.Resource):
         self._hash = _hash
 
 
-class Document:
+class Document(cnxepub.Document):
     """Modular documents that contain written text
     by one or more authors.
     """
@@ -103,9 +103,9 @@ class Document:
     def __init__(self, title, **kwargs):
         metadata = build_metadata(title, **kwargs)
         metadata['media_type'] = self.mediatype
-        self.id = str(metadata['id'])
-        self.content = metadata['content']
-        self.metadata = metadata
+        id = str(metadata['id'])
+        content = metadata['content']
+        cnxepub.Document.__init__(self, id, content, metadata)
 
     def update(self, **kwargs):
         if 'license' in kwargs:
@@ -122,6 +122,28 @@ class Document:
         result = self.to_dict()
         utils.change_dict_keys(result, utils.underscore_to_camelcase)
         return result
+
+
+def build_tree(tree):
+    def get_nodes(tree, nodes):
+        for i in tree['contents']:
+            if 'contents' in i:
+                contents_nodes = []
+                get_nodes(i, contents_nodes)
+                if i['id'] == 'subcol':
+                    nodes.append(cnxepub.TranslucentBinder(
+                        metadata={'title': i['title']},
+                        nodes=contents_nodes))
+                else:
+                    nodes.append(cnxepub.Binder(i['id'],
+                        metadata={'title': i['title']},
+                        nodes=contents_nodes))
+            else:
+                nodes.append(cnxepub.DocumentPointer(i['id'],
+                    {'title': i['title']}))
+    nodes = []
+    get_nodes(tree, nodes)
+    return nodes
 
 
 def build_metadata(title, id=None, content=None, abstract=None, created=None, revised=None, subjects=None, keywords=None, license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None, submitter=None):
@@ -162,7 +184,7 @@ def to_dict(metadata):
     return result
 
 
-class Binder(Document):
+class Binder(cnxepub.Binder):
     """A collection of documents
     """
     mediatype = BINDER_MEDIATYPE
@@ -170,42 +192,28 @@ class Binder(Document):
     def __init__(self, title, tree, **kwargs):
         metadata = build_metadata(title, **kwargs)
         metadata['media_type'] = self.mediatype
-        self.id = str(metadata['id'])
-        self.metadata = metadata
-        self.build_tree(tree)
-
-    def build_tree(self, tree):
-        def get_nodes(tree, nodes):
-            for i in tree['contents']:
-                if 'contents' in i:
-                    contents_nodes = []
-                    get_nodes(i, contents_nodes)
-                    if i['id'] == 'subcol':
-                        nodes.append(cnxepub.TranslucentBinder(
-                            metadata={'title': i['title']},
-                            nodes=contents_nodes))
-                    else:
-                        nodes.append(cnxepub.Binder(i['id'],
-                            metadata={'title': i['title']},
-                            nodes=contents_nodes))
-                else:
-                    nodes.append(cnxepub.DocumentPointer(i['id'],
-                        {'title': i['title']}))
-        nodes = []
-        get_nodes(tree, nodes)
-        self._binder = cnxepub.Binder(self.id,
-                metadata=self.metadata.copy(), nodes=nodes)
+        id = str(metadata['id'])
+        cnxepub.Binder.__init__(self, id, nodes=build_tree(tree),
+                metadata=metadata, title_overrides=None)
 
     def update(self, **kwargs):
-        Document.update(self, **kwargs)
+        if 'license' in kwargs:
+            del kwargs['license']
         if 'tree' in kwargs:
-            self.build_tree(kwargs['tree'])
+            self._nodes = build_tree(kwargs.pop('tree'))
+        for key, value in kwargs.items():
+            if key in self.metadata:
+                self.metadata[key] = value
 
     def to_dict(self):
         result = to_dict(self.metadata)
-        result['tree'] = cnxepub.model_to_tree(self._binder)
+        result['tree'] = cnxepub.model_to_tree(self)
         return result
 
+    def __json__(self, request=None):
+        result = self.to_dict()
+        utils.change_dict_keys(result, utils.underscore_to_camelcase)
+        return result
 
 
 def create_content(**appstruct):
@@ -246,47 +254,19 @@ def derive_content(request, **kwargs):
 
 
 def derive_resources(request, document):
-    epubdoc = EPUBDocument(document, None)
     settings = request.registry.settings
     archive_url = settings['archive.url']
-    for r in epubdoc.references():
+    path = urlparse.unquote(request.route_path('get-resource', hash='{}'))
+    resources = {}
+    for r in document.references:
         if r.uri.startswith('/resources'):
-            try:
-                response = urllib2.urlopen(urlparse.urljoin(archive_url, r.uri))
+            if not resources.get(r.uri):
+                try:
+                    response = urllib2.urlopen(urlparse.urljoin(archive_url, r.uri))
+                except urllib2.HTTPError:
+                    continue
                 content_type = response.info().getheader('Content-Type')
-                resource = Resource(content_type, response)
-                r.uri = request.route_path('get-resource', hash=resource.hash)
-                yield resource
-            except urllib2.HTTPError:
-                pass
-    document.metadata['content'] = epubdoc.content()
-    document.content = document.metadata['content']
-
-
-class EPUBDocument(object):
-    def __init__(self, document, submitlog):
-        self.document = document
-        self.submitlog = submitlog
-        self.epubdoc = cnxepub.Document(
-                str(self.document.id),
-                self.document.content,
-                metadata=self.metadata())
-
-    def __call__(self):
-        return self.epubdoc
-
-    def metadata(self):
-        m = self.document.to_dict()
-        m['publisher'] = m.pop('submitter')
-        m['publication_message'] = self.submitlog
-        m.pop('content')
-        license = m.pop('license')
-        m['license_url'] = license['url']
-        m['license_text'] = ' '.join([license['name'], license['abbr'], license['version']])
-        return m
-
-    def references(self):
-        return self.epubdoc.references
-
-    def content(self):
-        return self.epubdoc.html
+                resources[r.uri] = Resource(content_type, response)
+                yield resources[r.uri]
+            r.bind(resources[r.uri], path)
+    document.metadata['content'] = document.html

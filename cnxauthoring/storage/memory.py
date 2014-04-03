@@ -30,6 +30,8 @@ class MemoryStorage(BaseStorage):
                 if str(item.metadata.get(k)) != str(v):
                     break
             else:
+                if hasattr(item, 'content'):
+                    item.content = item.metadata['content']
                 yield item
 
     def add(self, item_or_items):
@@ -37,6 +39,8 @@ class MemoryStorage(BaseStorage):
         if isinstance(item_or_items, list):
             raise NotImplementedError()
         item = item_or_items
+        if hasattr(item, '_xml'):
+            item._xml = None
         collection = self.storage[str(item.__class__)]
         collection.append(item)
         return item

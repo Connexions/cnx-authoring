@@ -188,7 +188,7 @@ def post_content(request):
 
     resp = request.response
     resp.status = 201
-    if content:
+    if content is not None:
         resp.headers.add(
             'Location',
             request.route_url('get-content-json', id=content.id))
