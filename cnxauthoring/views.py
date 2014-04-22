@@ -123,11 +123,9 @@ def get_resource(request):
     if resource is None:
         raise httpexceptions.HTTPNotFound()
     resp = request.response
-    if isinstance(resource.data, memoryview):
-        resp.body = resource.data.tobytes()
-    else:
-        resp.body = resource.data
-    resp.content_type = resource.mediatype
+    resp.body = resource.data.read()
+    resource.data.seek(0)
+    resp.content_type = resource.media_type
     return resp
 
 
@@ -151,7 +149,7 @@ def post_content_single(request, cstruct):
     appstruct['derived_from'] = derived_from
     content = create_content(**appstruct)
     resources = []
-    if content.mediatype != BINDER_MEDIATYPE and content.derived_from:
+    if content.mediatype != BINDER_MEDIATYPE and derived_from:
         resources = derive_resources(request, content)
 
     for r in resources:
@@ -190,7 +188,7 @@ def post_content(request):
 
     resp = request.response
     resp.status = 201
-    if content:
+    if content is not None:
         resp.headers.add(
             'Location',
             request.route_url('get-content-json', id=content.id))

@@ -27,9 +27,11 @@ class MemoryStorage(BaseStorage):
         collection = self.storage[str(type_)]
         for item in collection:
             for k, v in kwargs.items():
-                if str(getattr(item, k)) != str(v):
+                if str(item.metadata.get(k)) != str(v):
                     break
             else:
+                if hasattr(item, 'content'):
+                    item.content = item.metadata['content']
                 yield item
 
     def add(self, item_or_items):
@@ -37,6 +39,8 @@ class MemoryStorage(BaseStorage):
         if isinstance(item_or_items, list):
             raise NotImplementedError()
         item = item_or_items
+        if hasattr(item, '_xml'):
+            item._xml = None
         collection = self.storage[str(item.__class__)]
         collection.append(item)
         return item
@@ -82,7 +86,8 @@ class MemoryStorage(BaseStorage):
             search_terms.append(term.lower())
 
         for item in collection:
-            title = item.title and item.title.lower() or u''
+            title = item.metadata['title'] or ''
+            title = title.lower()
             for term in search_terms:
                 if term in title:
                     if submitter is None or item.submitter == submitter:
