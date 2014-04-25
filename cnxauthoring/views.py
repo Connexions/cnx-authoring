@@ -18,7 +18,7 @@ from pyramid import httpexceptions
 from openstax_accounts.interfaces import *
 
 from .models import (create_content, derive_content, Document, Resource,
-        BINDER_MEDIATYPE, derive_resources)
+        BINDER_MEDIATYPE, derive_resources, DocumentNotFoundError)
 from .schemata import DocumentSchema, BinderSchema
 from .storage import storage
 from . import utils
@@ -195,11 +195,14 @@ def post_content(request):
 
     contents = []
     content = None
-    if isinstance(cstruct, list):
-        for item in cstruct:
-            contents.append(post_content_single(request, item).__json__())
-    else:
-        content = post_content_single(request, cstruct)
+    try:
+        if isinstance(cstruct, list):
+            for item in cstruct:
+                contents.append(post_content_single(request, item).__json__())
+        else:
+            content = post_content_single(request, cstruct)
+    except DocumentNotFoundError as e:
+        raise httpexceptions.HTTPBadRequest(e.message)
 
     resp = request.response
     resp.status = 201
@@ -265,7 +268,10 @@ def put_content(request):
     except Exception as e:
         raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
 
-    content.update(**appstruct)
+    try:
+        content.update(**appstruct)
+    except DocumentNotFoundError as e:
+        raise httpexceptions.HTTPBadRequest(e.message)
     storage.update(content)
     storage.persist()
 

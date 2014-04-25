@@ -400,6 +400,26 @@ class FunctionalTests(unittest.TestCase):
             })
         self.assert_cors_headers(response)
 
+    def test_post_content_binder_document_not_found(self):
+        response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'title': 'Book',
+                    'abstract': 'Book abstract',
+                    'language': 'de',
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    'tree': {
+                        'contents': [
+                            {
+                                'id': 'page@draft',
+                                'title': 'Page one',
+                                },
+                            ],
+                        },
+                    }), status=400)
+        self.assert_cors_headers(response)
+        self.assertTrue('Document Not Found: page@draft' in
+                response.body.decode('utf-8'))
+
     def test_post_content_multiple(self):
         post_data = [
                 {'title': u'My document タイトル 1'},
@@ -575,20 +595,10 @@ class FunctionalTests(unittest.TestCase):
         self.assert_cors_headers(response)
 
     def test_post_content_derived_from_binder(self):
+        self.derived_from()
         post_data = {
                 'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
             }
-
-        def patched_urlopen(*args, **kwargs):
-            with open(test_data('{}.json'.format(post_data['derivedFrom']))) as f:
-                return io.BytesIO(f.read().encode('utf-8'))
-        try:
-            import urllib2 # python2
-        except ImportError:
-            import urllib.request as urllib2 # renamed in python3
-        urlopen = urllib2.urlopen
-        urllib2.urlopen = patched_urlopen
-        self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
 
         response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
@@ -849,6 +859,33 @@ class FunctionalTests(unittest.TestCase):
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['content'], post_data['content'])
         self.assert_cors_headers(response)
+
+    def test_put_content_binder_document_not_found(self):
+        response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'title': u'My book タイトル',
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    'tree': {
+                        'contents': [],
+                        },
+                    }), status=201)
+        self.assert_cors_headers(response)
+        binder = json.loads(response.body.decode('utf-8'))
+        update_data = {
+                'title': u'...',
+                'tree': {
+                    'contents': [{
+                        u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@draft',
+                        u'title': u'Hygiene',
+                        }],
+                    },
+                }
+        response = self.testapp.put(
+                '/contents/{}@draft.json'.format(binder['id']),
+                json.dumps(update_data), status=400)
+        self.assertTrue(
+                'Document Not Found: 7d089006-5a95-4e24-8e04-8168b5c41aa3@draft'
+                in response.body.decode('utf-8'))
 
     def test_put_content_binder(self):
         post_data = {

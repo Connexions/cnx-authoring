@@ -37,6 +37,11 @@ LICENSE_PARAMETER_MARKER = object()
 DEFAULT_LANGUAGE = 'en'
 
 
+class DocumentNotFoundError(Exception):
+    def __init__(self, document_id):
+        self.message = 'Document Not Found: {}'.format(document_id)
+
+
 class License:
     """A declaration of authority typically assigned to things."""
 
@@ -125,6 +130,7 @@ class Document(cnxepub.Document):
 
 
 def build_tree(tree):
+    from .storage import storage
     def get_nodes(tree, nodes):
         for i in tree['contents']:
             if 'contents' in i:
@@ -138,6 +144,12 @@ def build_tree(tree):
                     nodes.append(cnxepub.Binder(i['id'],
                         metadata={'title': i['title']},
                         nodes=contents_nodes))
+                continue
+            if i['id'].endswith('@draft'):
+                document = storage.get(id=i['id'][:-len('@draft')])
+                if not document:
+                    raise DocumentNotFoundError(i['id'])
+                nodes.append(document)
             else:
                 nodes.append(cnxepub.DocumentPointer(i['id'],
                     {'title': i['title']}))
