@@ -158,7 +158,7 @@ def build_tree(tree):
     return nodes
 
 
-def build_metadata(title, id=None, content=None, abstract=None, created=None, revised=None, subjects=None, keywords=None, license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None, submitter=None):
+def build_metadata(title, id=None, content=None, abstract=None, created=None, revised=None, subjects=None, keywords=None, license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None, submitter=None, state=None, publication=None):
     metadata = {}
     metadata['title'] = title
     metadata['version'] = 'draft'
@@ -184,6 +184,8 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None, re
         metadata['keywords'] =keywords
     else:
         metadata['keywords'] = keywords and [keywords] or []
+    metadata['publication'] = publication
+    metadata['state'] = state or 'Draft'
     return metadata
 
 

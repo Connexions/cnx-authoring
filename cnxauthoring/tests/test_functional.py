@@ -309,6 +309,8 @@ class FunctionalTests(unittest.TestCase):
             u'version': u'draft',
             u'subjects': [],
             u'keywords': [],
+            u'state': u'Draft',
+            u'publication': None,
             })
         self.assertEqual(put_result, get_result)
         self.assert_cors_headers(response)
@@ -496,6 +498,8 @@ class FunctionalTests(unittest.TestCase):
                 u'version': u'4.0'},
             u'subjects': [],
             u'keywords': [],
+            u'state': u'Draft',
+            u'publication': None,
             })
         self.assert_cors_headers(response)
 
@@ -523,6 +527,8 @@ class FunctionalTests(unittest.TestCase):
                 u'version': u'4.0'},
             u'subjects': [],
             u'keywords': [],
+            u'state': u'Draft',
+            u'publication': None,
             })
         self.assert_cors_headers(response)
 
@@ -564,6 +570,8 @@ class FunctionalTests(unittest.TestCase):
                 u'version': u'4.0'},
             u'subjects': [u'Arts'],
             u'keywords': [],
+            u'state': u'Draft',
+            u'publication': None,
             })
         self.assert_cors_headers(response)
 
@@ -591,6 +599,8 @@ class FunctionalTests(unittest.TestCase):
                 u'version': u'4.0'},
             u'subjects': [u'Arts'],
             u'keywords': [],
+            u'state': u'Draft',
+            u'publication': None,
             })
         self.assert_cors_headers(response)
 
@@ -642,6 +652,8 @@ class FunctionalTests(unittest.TestCase):
                 },
             u'subjects': [u'Arts'],
             u'keywords': [u'køkken', u'Madlavning'],
+            u'state': u'Draft',
+            u'publication': None,
             })
         self.assert_cors_headers(response)
 
@@ -685,6 +697,8 @@ class FunctionalTests(unittest.TestCase):
                 },
             u'subjects': [u'Arts'],
             u'keywords': [u'køkken', u'Madlavning'],
+            u'state': u'Draft',
+            u'publication': None,
             })
         self.assert_cors_headers(response)
 
@@ -724,6 +738,8 @@ class FunctionalTests(unittest.TestCase):
             u'version': u'draft',
             u'subjects': post_data['subjects'],
             u'keywords': post_data['keywords'],
+            u'state': u'Draft',
+            u'publication': None,
             })
         self.assert_cors_headers(response)
 
@@ -808,6 +824,8 @@ class FunctionalTests(unittest.TestCase):
                 },
             u'subjects': [],
             u'keywords': [],
+            u'state': u'Draft',
+            u'publication': None,
             })
         self.assert_cors_headers(response)
 
@@ -939,6 +957,8 @@ class FunctionalTests(unittest.TestCase):
                     },
             u'subjects': [u'Arts',],
             u'keywords': [u'køkken', u'Madlavning'],
+            u'state': u'Draft',
+            u'publication': None,
             })
         self.assert_cors_headers(response)
 
@@ -973,6 +993,8 @@ class FunctionalTests(unittest.TestCase):
                     },
             u'subjects': [u'Arts'],
             u'keywords': [u'køkken', u'Madlavning'],
+            u'state': u'Draft',
+            u'publication': None,
             })
         self.assert_cors_headers(response)
 

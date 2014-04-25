@@ -10,5 +10,7 @@ CREATE TABLE document ( id              uuid primary key,
                         abstract        text,
                         submitter       text not null,
                         subjects        text[],
-                        keywords        text[]
+                        keywords        text[],
+                        state           text,
+                        publication     text
                     );
