@@ -11,14 +11,19 @@ try:
     from urllib import urlencode # python 2
 except ImportError:
     from urllib.parse import urlencode # renamed in python 3
+try:
+    import urlparse # python2
+except ImportError:
+    import urllib.parse as urlparse # renamed in python3
 
 from pyramid.security import forget
 from pyramid.view import view_config
 from pyramid import httpexceptions
+import requests
 from openstax_accounts.interfaces import *
 
 from .models import (create_content, derive_content, Document, Resource,
-        BINDER_MEDIATYPE, derive_resources)
+        BINDER_MEDIATYPE, derive_resources, DocumentNotFoundError)
 from .schemata import DocumentSchema, BinderSchema
 from .storage import storage
 from . import utils
@@ -125,6 +130,21 @@ def get_content(request):
     content = storage.get(id=id, submitter=request.unauthenticated_userid)
     if content is None:
         raise httpexceptions.HTTPNotFound()
+    if (content.metadata['state'] not in [None, 'Done/Success'] and
+            content.metadata['publication']):
+        publishing_url = request.registry.settings['publishing.url']
+        if not publishing_url.endswith('/'):
+            publishing_url = publishing_url + '/'
+        response = requests.get(urlparse.urljoin(
+            publishing_url, content.metadata['publication']))
+        if response.status_code == 200:
+            try:
+                result = json.loads(response.content.decode('utf-8'))
+                content.update(state=result['state'])
+                storage.update(content)
+                storage.persist()
+            except (TypeError, ValueError):
+                pass
     return content
 
 
@@ -195,11 +215,14 @@ def post_content(request):
 
     contents = []
     content = None
-    if isinstance(cstruct, list):
-        for item in cstruct:
-            contents.append(post_content_single(request, item).__json__())
-    else:
-        content = post_content_single(request, cstruct)
+    try:
+        if isinstance(cstruct, list):
+            for item in cstruct:
+                contents.append(post_content_single(request, item).__json__())
+        else:
+            content = post_content_single(request, cstruct)
+    except DocumentNotFoundError as e:
+        raise httpexceptions.HTTPBadRequest(e.message)
 
     resp = request.response
     resp.status = 201
@@ -265,7 +288,10 @@ def put_content(request):
     except Exception as e:
         raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
 
-    content.update(**appstruct)
+    try:
+        content.update(**appstruct)
+    except DocumentNotFoundError as e:
+        raise httpexceptions.HTTPBadRequest(e.message)
     storage.update(content)
     storage.persist()
 
@@ -312,3 +338,48 @@ def search_content(request):
                 u'limits': [],
                 },
             }
+
+
+def post_to_publishing(request, userid, submitlog, content_ids):
+    publishing_url = request.registry.settings['publishing.url']
+    filename = 'contents.epub'
+    contents = []
+    for content_id in content_ids:
+        content = storage.get(id=content_id, submitter=userid)
+        if content is None:
+            raise httpexceptions.HTTPBadRequest('Unable to publish: '
+                    'content not found {}'.format(content_id))
+        contents.append(content)
+
+    upload_data = utils.build_epub(contents, userid, submitlog)
+    files = {
+        'epub': (filename, upload_data.read(), 'application/epub+zip'),
+        }
+    api_key = request.registry.settings['publishing.api_key']
+    headers = {'x-api-key': api_key}
+    return contents, requests.post(publishing_url, files=files, headers=headers)
+
+
+@view_config(route_name='publish', request_method='POST', renderer='json')
+@authenticated_only
+def publish(request):
+    """Publish documents to archive
+    """
+    request_body = request.json_body
+    contents, response = post_to_publishing(request,
+            request.unauthenticated_userid,
+            request_body['submitlog'], request_body['items'])
+    if response.status_code != 200:
+        raise httpexceptions.HTTPBadRequest('Unable to publish: '
+                'response status code: {}'.format(response.status_code))
+    try:
+        result = json.loads(response.content.decode('utf-8'))
+        for content in contents:
+            content.update(state=result['state'],
+                    publication=str(result['publication']))
+            storage.update(content)
+            storage.persist()
+        return result
+    except (TypeError, ValueError):
+        raise httpexceptions.HTTPBadRequest('Unable to publish: '
+                'response body: {}'.format(response.content.decode('utf-8')))

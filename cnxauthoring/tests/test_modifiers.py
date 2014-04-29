@@ -59,6 +59,8 @@ class ModelJSONRendering(unittest.TestCase):
                 },
             'subjects': [],
             'keywords': [],
+            'state': 'Draft',
+            'publication': None,
             }
         expected_json = json.dumps(expected_json)
 
