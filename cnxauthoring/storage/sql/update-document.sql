@@ -13,5 +13,6 @@ UPDATE document
             title = %(title)s, revised = %(revised)s, 
             content = %(content)s, derived_from = %(derived_from)s,
             submitter = %(submitter)s, subjects = %(subjects)s,
-            keywords = %(keywords)s
+            keywords = %(keywords)s, state = %(state)s,
+            publication = %(publication)s
 WHERE id  = %(id)s

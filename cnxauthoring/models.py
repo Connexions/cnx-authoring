@@ -37,6 +37,11 @@ LICENSE_PARAMETER_MARKER = object()
 DEFAULT_LANGUAGE = 'en'
 
 
+class DocumentNotFoundError(Exception):
+    def __init__(self, document_id):
+        self.message = 'Document Not Found: {}'.format(document_id)
+
+
 class License:
     """A declaration of authority typically assigned to things."""
 
@@ -123,8 +128,27 @@ class Document(cnxepub.Document):
         utils.change_dict_keys(result, utils.underscore_to_camelcase)
         return result
 
+    def publish(self):
+        license = self.metadata['license']
+        self.metadata['license_url'] = license.url
+        self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
+        self.set_uri('cnx-archive', self.id)
+        self.add_resources()
+
+    def add_resources(self):
+        from .storage import storage
+        resources = {}
+        for ref in self.references:
+            if ref.uri.startswith('/resources'):
+                resource = resources.get(ref.uri)
+                if not resource:
+                    hash = ref.uri.strip('/resources/')
+                    resource = storage.get(type_=Resource, hash=hash)
+                    self.resources.append(resource)
+
 
 def build_tree(tree):
+    from .storage import storage
     def get_nodes(tree, nodes):
         for i in tree['contents']:
             if 'contents' in i:
@@ -138,6 +162,12 @@ def build_tree(tree):
                     nodes.append(cnxepub.Binder(i['id'],
                         metadata={'title': i['title']},
                         nodes=contents_nodes))
+                continue
+            if i['id'].endswith('@draft'):
+                document = storage.get(id=i['id'][:-len('@draft')])
+                if not document:
+                    raise DocumentNotFoundError(i['id'])
+                nodes.append(document)
             else:
                 nodes.append(cnxepub.DocumentPointer(i['id'],
                     {'title': i['title']}))
@@ -146,7 +176,7 @@ def build_tree(tree):
     return nodes
 
 
-def build_metadata(title, id=None, content=None, abstract=None, created=None, revised=None, subjects=None, keywords=None, license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None, submitter=None):
+def build_metadata(title, id=None, content=None, abstract=None, created=None, revised=None, subjects=None, keywords=None, license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None, submitter=None, state=None, publication=None):
     metadata = {}
     metadata['title'] = title
     metadata['version'] = 'draft'
@@ -172,6 +202,8 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None, re
         metadata['keywords'] =keywords
     else:
         metadata['keywords'] = keywords and [keywords] or []
+    metadata['publication'] = publication
+    metadata['state'] = state or 'Draft'
     return metadata
 
 
@@ -204,6 +236,17 @@ class Binder(cnxepub.Binder):
         for key, value in kwargs.items():
             if key in self.metadata:
                 self.metadata[key] = value
+
+    def publish(self):
+        license = self.metadata['license']
+        self.metadata['license_url'] = license.url
+        self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
+        self.set_uri('cnx-archive', self.id)
+        documents = []
+        for document in cnxepub.flatten_to_documents(self):
+            if document.id not in documents:
+                documents.append(document.id)
+                document.publish()
 
     def to_dict(self):
         result = to_dict(self.metadata)
