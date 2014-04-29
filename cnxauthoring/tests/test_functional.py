@@ -1433,6 +1433,7 @@ class FunctionalTests(unittest.TestCase):
             self.assertEqual(patched_post.call_count, 1)
             args, kwargs = patched_post.call_args
         self.assertEqual(args, ('http://localhost:6543/publications',))
+        self.assertEqual(kwargs['headers'], {'x-api-key': 'b07'})
 
         filename, epub, content_type = kwargs['files']['epub']
         self.assertEqual(filename, 'contents.epub')

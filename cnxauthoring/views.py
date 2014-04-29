@@ -353,7 +353,9 @@ def post_to_publishing(request, userid, submitlog, content_ids):
     files = {
         'epub': (filename, upload_data.read(), 'application/epub+zip'),
         }
-    return contents, requests.post(publishing_url, files=files)
+    api_key = request.registry.settings['publishing.api_key']
+    headers = {'x-api-key': api_key}
+    return contents, requests.post(publishing_url, files=files, headers=headers)
 
 
 @view_config(route_name='publish', request_method='POST', renderer='json')
