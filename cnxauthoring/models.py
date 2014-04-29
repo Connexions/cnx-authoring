@@ -242,6 +242,11 @@ class Binder(cnxepub.Binder):
         self.metadata['license_url'] = license.url
         self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
         self.set_uri('cnx-archive', self.id)
+        documents = []
+        for document in cnxepub.flatten_to_documents(self):
+            if document.id not in documents:
+                documents.append(document.id)
+                document.publish()
 
     def to_dict(self):
         result = to_dict(self.metadata)

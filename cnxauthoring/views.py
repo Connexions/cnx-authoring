@@ -133,8 +133,10 @@ def get_content(request):
     if (content.metadata['state'] not in [None, 'Done/Success'] and
             content.metadata['publication']):
         publishing_url = request.registry.settings['publishing.url']
+        if not publishing_url.endswith('/'):
+            publishing_url = publishing_url + '/'
         response = requests.get(urlparse.urljoin(
-            publishing_url + '/', content.metadata['publication']))
+            publishing_url, content.metadata['publication']))
         if response.status_code == 200:
             try:
                 result = json.loads(response.content.decode('utf-8'))

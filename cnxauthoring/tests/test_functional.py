@@ -1527,3 +1527,80 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result['state'], 'Publishing')
         self.assertEqual(result['publication'], '144')
 
+    def test_publish_binder(self):
+        response = self.testapp.post('/users/contents',
+                json.dumps({'title': 'Page one',
+                    'content': '<html><body><p>Content of page one</p></body></html>'
+                    }), status=201)
+        page1 = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+        response = self.testapp.post('/users/contents',
+                json.dumps({'title': 'Page two',
+                    'content': '<html><body><p>Content of page two</p></body></html>'
+                    }), status=201)
+        page2 = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+        response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'title': 'Book',
+                    'abstract': 'Book abstract',
+                    'language': 'de',
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    'tree': {
+                        'contents': [
+                            {
+                                'id': '{}@draft'.format(page1['id']),
+                                'title': 'Page one',
+                                },
+                            {
+                                'id': 'subcol',
+                                'title': 'New section',
+                                'contents': [
+                                    {
+                                        'id': '{}@draft'.format(page2['id']),
+                                        'title': 'Page two',
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    }), status=201)
+        self.assert_cors_headers(response)
+        binder = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+                'submitlog': 'Publishing a book is working?',
+                'items': [
+                    binder['id'],
+                    ],
+                }
+        mock_output = json.dumps({
+            'state': 'Processing',
+            'publication': 145,
+            'mapping': {
+                binder['id']: '{}@1.1'.format(binder['id']),
+                page1['id']: '{}@1'.format(page1['id']),
+                page2['id']: '{}@1'.format(page2['id']),
+                }
+            }).encode('utf-8')
+        with mock.patch('requests.post') as patched_post:
+            patched_post.return_value = mock.Mock(status_code=200, content=mock_output)
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    status=200)
+            self.assertEqual(patched_post.call_count, 1)
+            args, kwargs = patched_post.call_args
+
+        self.assertEqual(args, ('http://localhost:6543/publications',))
+        self.assertEqual(kwargs['headers'], {'x-api-key': 'b07'})
+        filename, epub, content_type = kwargs['files']['epub']
+        self.assertEqual(filename, 'contents.epub')
+        self.assertEqual(content_type, 'application/epub+zip')
+        parsed_epub = cnxepub.EPUB.from_file(io.BytesIO(epub))
+        package = parsed_epub[0]
+        publication_binder = cnxepub.adapt_package(package)
+        self.assertEqual(publication_binder.metadata['title'], 'Book')
+        self.assertEqual(publication_binder.metadata['cnx-archive-uri'], binder['id'])
+        self.assertEqual(package.metadata['publication_message'],
+                u'Publishing a book is working?')

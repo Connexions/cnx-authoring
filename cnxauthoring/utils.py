@@ -71,23 +71,30 @@ def fix_quotes(query_string):
     return query_string
 
 def build_epub(contents, submitter, submitlog):
-    from .models import DEFAULT_LICENSE
+    from .models import DEFAULT_LICENSE, Binder
 
     epub = io.BytesIO()
+    documents = []
+    binders = []
     for content in contents:
         content.publish()
+        if isinstance(content, Binder):
+            binders.append(content)
+        else:
+            documents.append(content)
     license_text = ' '.join([DEFAULT_LICENSE.name, DEFAULT_LICENSE.abbr,
         DEFAULT_LICENSE.version])
-    binder = cnxepub.models.TranslucentBinder(
-            metadata={
-                'title': 'Publications binder',
-                'created': datetime.datetime.now(),
-                'revised': datetime.datetime.now(),
-                'license_text': license_text,
-                'license_url': DEFAULT_LICENSE.url,
-                },
-            nodes=contents)
+    if documents:
+        binders.append(cnxepub.models.TranslucentBinder(
+                metadata={
+                    'title': 'Publications binder',
+                    'created': datetime.datetime.now(),
+                    'revised': datetime.datetime.now(),
+                    'license_text': license_text,
+                    'license_url': DEFAULT_LICENSE.url,
+                    },
+                nodes=documents))
     cnxepub.adapters.make_publication_epub(
-            binder, submitter, submitlog, epub)
+            binders, submitter, submitlog, epub)
     epub.seek(0)
     return epub
