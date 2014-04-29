@@ -56,23 +56,18 @@ class PostgresqlStorage(BaseStorage):
         if not in_progress:
             self.conn.rollback() # Frees the connection
         if res:
-            results = []
             for r in res:
                 if 'license' in r:
                     r['license'] = eval(r['license'])
                     rd = dict(r)
                     if rd['media_type'] == MEDIATYPES['binder']:
                         rd['tree'] = json.loads(rd.pop('content'))
-                    item = create_content(**rd)
-                    results.append(item)
+                    yield create_content(**rd)
                 else:
                     rd = dict(r)
                     rd.pop('hash')
-                    results.append(type_(**dict(rd)))
-                    
-            for item in results:
-                yield item
-            
+                    rd['data'] = rd['data'][:]
+                    yield type_(**dict(rd))
 
     def add(self, item_or_items):
         """Adds any item or set of items to storage."""
@@ -84,14 +79,16 @@ class PostgresqlStorage(BaseStorage):
         if type_name== 'resource':
             exists = self.get(type_=Resource, hash=item._hash)
             if not exists:
+                data = Binary(item.data.read())
+                item.data.seek(0)
                 cursor.execute(SQL['add-resource'], 
-                            {'hash':item._hash,'mediatype':item.mediatype,'data':Binary(item.data)})
+                            {'hash':item._hash,'mediatype':item.media_type,'data':data})
         elif type_name in ['document','binder']:
             args = item.to_dict()
             args['license'] = repr(args['license'])
             args['media_type'] = MEDIATYPES[type_name]
             if 'tree' in args:
-                    args['content'] = json.dumps(args.pop('tree'))
+                args['content'] = json.dumps(args.pop('tree'))
             cursor.execute(SQL['add-document'], args)
         else:
             raise NotImplementedError(type_name)

@@ -5,6 +5,7 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
+import functools
 import json
 try:
     from urllib import urlencode # python 2
@@ -16,12 +17,20 @@ from pyramid.view import view_config
 from pyramid import httpexceptions
 from openstax_accounts.interfaces import *
 
-from . import Site
 from .models import (create_content, derive_content, Document, Resource,
         BINDER_MEDIATYPE, derive_resources)
 from .schemata import DocumentSchema, BinderSchema
 from .storage import storage
 from . import utils
+
+
+def authenticated_only(function):
+    @functools.wraps(function)
+    def wrapper(request, *args, **kwargs):
+        if not request.unauthenticated_userid:
+            raise httpexceptions.HTTPUnauthorized()
+        return function(request, *args, **kwargs)
+    return wrapper
 
 
 @view_config(route_name='login')
@@ -37,7 +46,8 @@ def login(request):
     request.authenticated_userid # triggers login
 
 
-@view_config(route_name='callback', context=Site, permission='protected')
+@view_config(route_name='callback')
+@authenticated_only
 def callback(request):
     # callback must be protected so that effective_principals is called
     # callback must redirect
@@ -63,7 +73,8 @@ def options(request):
     return ''
 
 
-@view_config(route_name='user-search', request_method='GET', renderer='json', context=Site, permission='protected')
+@view_config(route_name='user-search', request_method='GET', renderer='json')
+@authenticated_only
 def user_search(request):
     """Search for openstax accounts users"""
     q = request.GET.get('q', '')
@@ -76,15 +87,16 @@ def user_search(request):
     return result
 
 
-@view_config(route_name='profile', request_method='GET', renderer='json', context=Site, permission='protected')
+@view_config(route_name='profile', request_method='GET', renderer='json')
+@authenticated_only
 def profile(request):
     return request.user
 
 
-@view_config(route_name='user-contents', request_method='GET', renderer='json', context=Site, permission='protected')
+@view_config(route_name='user-contents', request_method='GET', renderer='json')
+@authenticated_only
 def user_contents(request):
     """Extract of the contents that belong to the current logged in user"""
-    
     items = []
     for content in storage.get_all(submitter=request.unauthenticated_userid):
         item = content.__json__()
@@ -105,7 +117,8 @@ def user_contents(request):
             }
 
 
-@view_config(route_name='get-content-json', request_method='GET', renderer='json', context=Site, permission='protected')
+@view_config(route_name='get-content-json', request_method='GET', renderer='json')
+@authenticated_only
 def get_content(request):
     """Acquisition of content by id"""
     id = request.matchdict['id']
@@ -115,7 +128,8 @@ def get_content(request):
     return content
 
 
-@view_config(route_name='get-resource', request_method='GET', context=Site, permission='protected')
+@view_config(route_name='get-resource', request_method='GET')
+@authenticated_only
 def get_resource(request):
     """Acquisition of a resource item"""
     hash = request.matchdict['hash']
@@ -123,11 +137,9 @@ def get_resource(request):
     if resource is None:
         raise httpexceptions.HTTPNotFound()
     resp = request.response
-    if isinstance(resource.data, memoryview):
-        resp.body = resource.data.tobytes()
-    else:
-        resp.body = resource.data
-    resp.content_type = resource.mediatype
+    resp.body = resource.data.read()
+    resource.data.seek(0)
+    resp.content_type = resource.media_type
     return resp
 
 
@@ -151,7 +163,7 @@ def post_content_single(request, cstruct):
     appstruct['derived_from'] = derived_from
     content = create_content(**appstruct)
     resources = []
-    if content.mediatype != BINDER_MEDIATYPE and content.derived_from:
+    if content.mediatype != BINDER_MEDIATYPE and derived_from:
         resources = derive_resources(request, content)
 
     for r in resources:
@@ -170,7 +182,8 @@ def post_content_single(request, cstruct):
     return content
 
 
-@view_config(route_name='post-content', request_method='POST', renderer='json', context=Site, permission='protected')
+@view_config(route_name='post-content', request_method='POST', renderer='json')
+@authenticated_only
 def post_content(request):
     """Create content.
     Returns the content location and a copy of the newly created content.
@@ -190,7 +203,7 @@ def post_content(request):
 
     resp = request.response
     resp.status = 201
-    if content:
+    if content is not None:
         resp.headers.add(
             'Location',
             request.route_url('get-content-json', id=content.id))
@@ -198,7 +211,8 @@ def post_content(request):
     return contents
 
 
-@view_config(route_name='post-resource', request_method='POST', renderer='string', context=Site, permission='protected')
+@view_config(route_name='post-resource', request_method='POST', renderer='string')
+@authenticated_only
 def post_resource(request):
     """Accept a resource file.
     On success, the Location header is set to the resource location.
@@ -223,7 +237,8 @@ def post_resource(request):
     return location
 
 
-@view_config(route_name='put-content', request_method='PUT', renderer='json', context=Site, permission='protected')
+@view_config(route_name='put-content', request_method='PUT', renderer='json')
+@authenticated_only
 def put_content(request):
     """Modify a stored document"""
     id = request.matchdict['id']
@@ -262,7 +277,8 @@ def put_content(request):
     return content
 
 
-@view_config(route_name='search-content', request_method='GET', renderer='json', context=Site, permission='protected')
+@view_config(route_name='search-content', request_method='GET', renderer='json')
+@authenticated_only
 def search_content(request):
     """Search documents by title and contents"""
     empty_response = {

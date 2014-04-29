@@ -19,6 +19,9 @@ except ImportError:
 from pyramid import testing
 
 
+unauthenticated_userid = 'pyramid.testing.DummyRequest.unauthenticated_userid'
+
+
 class ViewsTests(unittest.TestCase):
 
     def setUp(self):
@@ -51,7 +54,8 @@ class ViewsTests(unittest.TestCase):
         request.matchdict = {'id': id}
         with mock.patch.object(self.storage_cls, 'get', return_value=expected):
             from ..views import get_content
-            content = get_content(request)
+            with mock.patch(unauthenticated_userid, 'userid'):
+                content = get_content(request)
         self.assertEqual(content, expected)
 
     def test_get_content_404(self):
@@ -61,7 +65,8 @@ class ViewsTests(unittest.TestCase):
         with mock.patch.object(self.storage_cls, 'get', return_value=None):
             from ..views import get_content
             from pyramid.httpexceptions import HTTPNotFound
-            self.assertRaises(HTTPNotFound, get_content, request)
+            with mock.patch(unauthenticated_userid, 'userid'):
+                self.assertRaises(HTTPNotFound, get_content, request)
 
     def test_get_resource(self):
         # Set up a resource
@@ -77,7 +82,8 @@ class ViewsTests(unittest.TestCase):
 
         with mock.patch.object(self.storage_cls, 'get', return_value=expected):
             from ..views import get_resource
-            response = get_resource(request)
+            with mock.patch(unauthenticated_userid, 'userid'):
+                response = get_resource(request)
         self.assertEqual(response.body, data)
         self.assertEqual(response.content_type, mediatype)
 
@@ -88,7 +94,8 @@ class ViewsTests(unittest.TestCase):
         with mock.patch.object(self.storage_cls, 'get', return_value=None):
             from pyramid.httpexceptions import HTTPNotFound
             from ..views import get_resource
-            self.assertRaises(HTTPNotFound, get_resource, request)
+            with mock.patch(unauthenticated_userid, 'userid'):
+                self.assertRaises(HTTPNotFound, get_resource, request)
 
     def test_post_content_minimal(self):
         title = "Double negative hemispheres"
@@ -106,11 +113,8 @@ class ViewsTests(unittest.TestCase):
         from ..views import post_content
         request = testing.DummyRequest()
         request.json_body = {'title': title}
-        _unauthenticated_userid = request.__class__.unauthenticated_userid
-        self.addCleanup(setattr, request.__class__, 'unauthenticated_userid',
-                        _unauthenticated_userid)
-        request.__class__.unauthenticated_userid = 'username'
-        returned_document = post_content(request)
+        with mock.patch(unauthenticated_userid, 'userid'):
+            returned_document = post_content(request)
 
         self.assertEqual(returned_document, self.document)
         self.assertEqual(request.response.status, '201 Created')
@@ -142,12 +146,10 @@ class ViewsTests(unittest.TestCase):
         # Minimal document posts require a title.
         request = testing.DummyRequest()
         request.json_body = post_data.copy()
-        _unauthenticated_userid = request.__class__.unauthenticated_userid
-        self.addCleanup(setattr, request.__class__, 'unauthenticated_userid',
-                        _unauthenticated_userid)
         request.__class__.unauthenticated_userid = 'username'
         from ..views import post_content
-        returned_document = post_content(request)
+        with mock.patch(unauthenticated_userid, 'userid'):
+            returned_document = post_content(request)
 
         self.assertEqual(request.response.status, '201 Created')
         content_url = request.route_url('get-content-json', id=self.document.id)
@@ -155,11 +157,11 @@ class ViewsTests(unittest.TestCase):
                       request.response.headerlist)
 
         self.assertEqual(returned_document, self.document)
-        self.assertEqual(returned_document.title, post_data['title'])
-        self.assertEqual(returned_document.abstract, post_data['abstract'])
+        self.assertEqual(returned_document.metadata['title'], post_data['title'])
+        self.assertEqual(returned_document.metadata['abstract'], post_data['abstract'])
         # TODO Test created and revised dates.
-        self.assertEqual(returned_document.license.url, DEFAULT_LICENSE.url)
-        self.assertEqual(returned_document.language, post_data['language'])
+        self.assertEqual(returned_document.metadata['license'].url, DEFAULT_LICENSE.url)
+        self.assertEqual(returned_document.metadata['language'], post_data['language'])
         self.assertEqual(returned_document.content, post_data['content'])
 
     def test_post_resource(self):
@@ -186,9 +188,10 @@ class ViewsTests(unittest.TestCase):
 
         # Minimal document posts require a title.
         request = testing.DummyRequest()
-        request.POST = {'file': upload}
-        from ..views import post_resource
-        location = post_resource(request)
+        with mock.patch(unauthenticated_userid, 'userid'):
+            request.POST = {'file': upload}
+            from ..views import post_resource
+            location = post_resource(request)
 
         self.assertEqual(request.response.status, '201 Created')
         expected_location = request.route_path('get-resource',

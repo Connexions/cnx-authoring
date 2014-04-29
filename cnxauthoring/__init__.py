@@ -11,18 +11,6 @@ from pyramid.security import Allow, Everyone, Authenticated
 from pyramid.session import UnencryptedCookieSessionFactoryConfig
 
 
-class Site(object):
-    __name__ = 'Pyramid root resource'
-    __parent__ = None
-    __acl__ = [
-            (Allow, Authenticated, 'protected'),
-            (Allow, Everyone, 'view'),
-            ]
-
-    def __init__(self, request):
-        self.request = request
-
-
 def declare_routes(config):
     """Declaration of routing"""
     add_route = config.add_route
@@ -55,7 +43,7 @@ def main(global_config, **settings):
     session_factory = UnencryptedCookieSessionFactoryConfig(
             '311978f8-7af1-4b16-92fe-4c480cdda657')
 
-    config = Configurator(settings=settings, root_factory=Site,
+    config = Configurator(settings=settings,
                           session_factory=session_factory)
     declare_routes(config)
     declare_oauth_routes(config)
