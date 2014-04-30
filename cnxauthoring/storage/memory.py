@@ -27,10 +27,12 @@ class MemoryStorage(BaseStorage):
         collection = self.storage[str(type_)]
         for item in collection:
             for k, v in kwargs.items():
-                if str(item.metadata.get(k)) != str(v):
-                    break
+                if not (hasattr(item, 'metadata') and
+                        str(item.metadata.get(k)) == str(v) or
+                        str(getattr(item, k, None)) == str(v)):
+                        break
             else:
-                if hasattr(item, 'content'):
+                if hasattr(item, '_xml'):
                     item.content = item.metadata['content']
                 yield item
 
@@ -90,5 +92,5 @@ class MemoryStorage(BaseStorage):
             title = title.lower()
             for term in search_terms:
                 if term in title:
-                    if submitter is None or item.submitter == submitter:
+                    if submitter is None or item.metadata.get('submitter') == submitter:
                         yield item
