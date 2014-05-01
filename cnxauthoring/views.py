@@ -32,7 +32,7 @@ from . import utils
 def authenticated_only(function):
     @functools.wraps(function)
     def wrapper(request, *args, **kwargs):
-        if not request.unauthenticated_userid:
+        if not request.authenticated_userid:
             raise httpexceptions.HTTPUnauthorized()
         return function(request, *args, **kwargs)
     return wrapper
