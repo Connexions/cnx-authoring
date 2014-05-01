@@ -132,6 +132,7 @@ class Document(cnxepub.Document):
         license = self.metadata['license']
         self.metadata['license_url'] = license.url
         self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
+        self.metadata['summary'] = self.metadata['abstract']
         self.set_uri('cnx-archive', self.id)
         self.add_resources()
 
@@ -241,6 +242,7 @@ class Binder(cnxepub.Binder):
         license = self.metadata['license']
         self.metadata['license_url'] = license.url
         self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
+        self.metadata['summary'] = self.metadata['abstract']
         self.set_uri('cnx-archive', self.id)
         documents = []
         for document in cnxepub.flatten_to_documents(self):
