@@ -1000,6 +1000,92 @@ class FunctionalTests(unittest.TestCase):
             })
         self.assert_cors_headers(response)
 
+    def test_put_content_binder2(self):
+        response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'title': 'Empty book',
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    'tree': {
+                        'contents': [],
+                        },
+                    }), status=201)
+        binder = json.loads(response.body.decode('utf-8'))
+
+        response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'title': 'Empty page',
+                    }), status=201)
+        page = json.loads(response.body.decode('utf-8'))
+
+        response = self.testapp.put(
+                '/contents/{}@draft.json'.format(binder['id']),
+                json.dumps({
+                    'id': '{}@draft'.format(binder['id']),
+                    'downloads': [],
+                    'isLatest': True,
+                    'derivedFrom': None,
+                    'abstract': '',
+                    'revised': '2014-05-02T12:42:09.490860-04:00',
+                    'keywords': [],
+                    'subjects': [],
+                    'publication': None,
+                    'license': {
+                        'url': 'http://creativecommons.org/licenses/by/4.0/',
+                        'version': '4.0',
+                        'name': 'Attribution',
+                        'abbr': 'by'
+                        },
+                    'language': 'en',
+                    'title': 'etst book',
+                    'created': '2014-05-02T12:42:09.490738-04:00',
+                    'tree': {
+                        'id': '{}@draft'.format(binder['id']),
+                        'title': 'etst book',
+                        'contents': [
+                            {
+                                'id': 'f309a0f9-63fb-46ca-9585-d1e1dc96a142@3',
+                                'title': 'Introduction to Two-Dimensional Kinematics'
+                                },
+                            {
+                                'id': 'e12329e4-8d6c-49cf-aa45-6a05b26ebcba@2',
+                                'title': 'Introduction to One-Dimensional Kinematics'
+                                },
+                            {
+                                'id': '{}@draft'.format(page['id']),
+                                'title': 'test page'
+                                }
+                            ]
+                        },
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    'content': '',
+                    'state': 'Draft',
+                    'version': 'draft',
+                    'submitter': 'admin',
+                    'error': False,
+                    }), status=200)
+
+        response = self.testapp.get(
+                '/contents/{}@draft.json'.format(binder['id']), status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['tree'], {
+            'id': '{}@draft'.format(binder['id']),
+            'title': 'etst book',
+            'contents': [
+                {
+                    'id': 'f309a0f9-63fb-46ca-9585-d1e1dc96a142@3',
+                    'title': 'Introduction to Two-Dimensional Kinematics'
+                    },
+                {
+                    'id': 'e12329e4-8d6c-49cf-aa45-6a05b26ebcba@2',
+                    'title': 'Introduction to One-Dimensional Kinematics'
+                    },
+                {
+                    'id': '{}@draft'.format(page['id']),
+                    'title': 'test page'
+                    }
+                ]
+            })
+
     def test_put_content(self):
         response = self.testapp.post('/users/contents', 
                 json.dumps({
