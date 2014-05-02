@@ -1400,6 +1400,7 @@ class FunctionalTests(unittest.TestCase):
         post_data = {
                 'title': 'Page one',
                 'content': '<html><body><p>Contents of Page one</p></body></html>',
+                'abstract': 'Learn how to etc etc',
                 }
         response = self.testapp.post('/users/contents', json.dumps(post_data),
                 status=201)
@@ -1449,6 +1450,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(documents[0].id, page_one['id'])
         self.assertEqual(documents[0].metadata['title'], u'Page one')
         self.assertEqual(documents[0].metadata['language'], u'en')
+        self.assertTrue('Learn how to etc etc' in documents[0].metadata['summary'])
 
         self.assertEqual(documents[1].id, page_two['id'])
         self.assertEqual(documents[1].metadata['title'], u'Página dos')
@@ -1530,7 +1532,8 @@ class FunctionalTests(unittest.TestCase):
     def test_publish_binder(self):
         response = self.testapp.post('/users/contents',
                 json.dumps({'title': 'Page one',
-                    'content': '<html><body><p>Content of page one</p></body></html>'
+                    'content': '<html><body><p>Content of page one</p></body></html>',
+                    'abstract': 'Learn how to etc etc',
                     }), status=201)
         page1 = json.loads(response.body.decode('utf-8'))
         self.assert_cors_headers(response)
@@ -1601,6 +1604,25 @@ class FunctionalTests(unittest.TestCase):
         package = parsed_epub[0]
         publication_binder = cnxepub.adapt_package(package)
         self.assertEqual(publication_binder.metadata['title'], 'Book')
+        self.assertTrue('Book abstract' in publication_binder.metadata['summary'])
         self.assertEqual(publication_binder.metadata['cnx-archive-uri'], binder['id'])
         self.assertEqual(package.metadata['publication_message'],
                 u'Publishing a book is working?')
+
+        tree = cnxepub.models.model_to_tree(publication_binder)
+        self.assertEqual(tree, {
+            'id': binder['id'],
+            'title': 'Book',
+            'contents': [
+                {'id': page1['id'], 'title': 'Page one'},
+                {'id': 'subcol', 'title': 'New section', 'contents': [
+                    {'id': page2['id'], 'title': 'Page two'},
+                    ]},
+                ],
+            })
+
+        documents = list(cnxepub.flatten_to_documents(publication_binder))
+        self.assertEqual(documents[0].id, page1['id'])
+        self.assertEqual(documents[0].metadata['title'], u'Page one')
+        self.assertEqual(documents[0].metadata['language'], u'en')
+        self.assertTrue('Learn how to etc etc' in documents[0].metadata['summary'])
