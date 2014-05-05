@@ -3,8 +3,10 @@
    If this document is ever put into a sphinx scroll,
    therefore outside of the github readme,
    the adjustment should be made to make notes use the rst 'note' directive.
-   
-.. image:: https://travis-ci.org/Connexions/cnx-authoring.svg?branch=master   :target: https://travis-ci.org/Connexions/cnx-authoring
+
+.. image:: https://travis-ci.org/Connexions/cnx-authoring.svg?branch=master
+   :target: https://travis-ci.org/Connexions/cnx-authoring
+
 Game plan
 =========
 
