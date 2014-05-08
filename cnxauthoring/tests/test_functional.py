@@ -297,6 +297,8 @@ class FunctionalTests(unittest.TestCase):
             u'content': u'',
             u'created': get_result['created'],
             u'derivedFrom': None,
+            u'derivedFromTitle': None,
+            u'derivedFromUri': None,
             u'license': {
                 u'abbr': u'by',
                 u'name': u'Attribution',
@@ -488,6 +490,8 @@ class FunctionalTests(unittest.TestCase):
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
+            u'derivedFromTitle': u'Indkøb',
+            u'derivedFromUri': u'http://cnx.org/contents/{}'.format(post_data['derivedFrom']),
             u'title': u'Copy of Indkøb',
             u'abstract': u'',
             u'language': u'da',
@@ -517,6 +521,8 @@ class FunctionalTests(unittest.TestCase):
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
+            u'derivedFromTitle': u'Indkøb',
+            u'derivedFromUri': u'http://cnx.org/contents/{}'.format(post_data['derivedFrom']),
             u'title': u'Copy of Indkøb',
             u'abstract': u'',
             u'language': u'da',
@@ -560,6 +566,8 @@ class FunctionalTests(unittest.TestCase):
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
+            u'derivedFromTitle': u'Tilberedning',
+            u'derivedFromUri': u'http://cnx.org/contents/{}'.format(post_data['derivedFrom']),
             u'title': u'Copy of Tilberedning',
             u'abstract': u'',
             u'language': u'da',
@@ -589,6 +597,8 @@ class FunctionalTests(unittest.TestCase):
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
+            u'derivedFromTitle': u'Tilberedning',
+            u'derivedFromUri': u'http://cnx.org/contents/{}'.format(post_data['derivedFrom']),
             u'title': u'Copy of Tilberedning',
             u'abstract': u'',
             u'language': u'da',
@@ -623,6 +633,8 @@ class FunctionalTests(unittest.TestCase):
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
+            u'derivedFromTitle': u'Madlavning',
+            u'derivedFromUri': u'http://cnx.org/contents/{}'.format(post_data['derivedFrom']),
             u'title': u'Copy of Madlavning',
             u'abstract': u'',
             u'content': u'',
@@ -668,6 +680,8 @@ class FunctionalTests(unittest.TestCase):
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
+            u'derivedFromTitle': u'Madlavning',
+            u'derivedFromUri': u'http://cnx.org/contents/{}'.format(post_data['derivedFrom']),
             u'title': u'Copy of Madlavning',
             u'abstract': u'',
             u'content': u'',
@@ -732,6 +746,8 @@ class FunctionalTests(unittest.TestCase):
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
             u'derivedFrom': None,
+            u'derivedFromTitle': None,
+            u'derivedFromUri': None,
             u'title': post_data['title'],
             u'abstract': post_data['abstract'],
             u'language': post_data['language'],
@@ -796,6 +812,8 @@ class FunctionalTests(unittest.TestCase):
             u'content': u'',
             u'mediaType': u'application/vnd.org.cnx.collection',
             u'derivedFrom': None,
+            u'derivedFromTitle': None,
+            u'derivedFromUri': None,
             u'language': u'de',
             u'version': u'draft',
             u'submitter': u'me',
@@ -938,6 +956,8 @@ class FunctionalTests(unittest.TestCase):
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
+            u'derivedFromTitle': u'Madlavning',
+            u'derivedFromUri': u'http://cnx.org/contents/{}'.format(post_data['derivedFrom']),
             u'abstract': u'',
             u'content': u'',
             u'language': u'da',
@@ -974,6 +994,8 @@ class FunctionalTests(unittest.TestCase):
             u'submitter': FunctionalTests.profile['username'],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
+            u'derivedFromTitle': u'Madlavning',
+            u'derivedFromUri': u'http://cnx.org/contents/{}'.format(post_data['derivedFrom']),
             u'abstract': u'',
             u'content': u'',
             u'language': u'da',
@@ -1600,6 +1622,14 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(documents[0].id, page['id'])
         self.assertEqual(documents[0].metadata['title'], u'Copy of Indkøb')
         self.assertEqual(documents[0].metadata['language'], u'da')
+        self.assertEqual(documents[0].metadata['derived_from_uri'],
+                         'http://cnx.org/contents/91cb5f28-2b8a-4324-9373-dac1d617bc24@1')
+        self.assertEqual(documents[0].metadata['derived_from_title'], u'Indkøb')
+        self.assertEqual(len(documents[0].resources), 1)
+        self.assertEqual(documents[0].references[0].uri,
+                         'http://www.rema1000.dk/Madplanen.aspx')
+        self.assertEqual(documents[0].references[1].uri,
+                         '../resources/0f3da0de61849a47f77543c383d1ac621b25e6e0')
 
         self.assertEqual(json.loads(response.body.decode('utf-8')),
                 json.loads(mock_output.decode('utf-8')))
@@ -1712,3 +1742,82 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(documents[0].metadata['title'], u'Page one')
         self.assertEqual(documents[0].metadata['language'], u'en')
         self.assertTrue('Learn how to etc etc' in documents[0].metadata['summary'])
+
+    def test_publish_derived_from_binder(self):
+        self.derived_from()
+        post_data = {
+                'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+            }
+
+        response = self.testapp.post('/users/contents',
+                json.dumps(post_data),
+                status=201)
+        binder = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+        post_data = {
+                'submitlog': 'Publishing a derived book',
+                'items': [
+                    binder['id'],
+                    ],
+                }
+        mock_output = json.dumps({
+            'state': 'Done/Success',
+            'publication': 200,
+            'mapping': {
+                binder['id']: '{}@1.1'.format(binder['id']),
+                },
+            }).encode('utf-8')
+        with mock.patch('requests.post') as patched_post:
+            patched_post.return_value = mock.Mock(status_code=200, content=mock_output)
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    status=200)
+            self.assertEqual(patched_post.call_count, 1)
+            args, kwargs = patched_post.call_args
+
+        self.assertEqual(args, ('http://localhost:6543/publications',))
+        self.assertEqual(kwargs['headers'], {'x-api-key': 'b07'})
+        filename, epub, content_type = kwargs['files']['epub']
+        self.assertEqual(filename, 'contents.epub')
+        self.assertEqual(content_type, 'application/epub+zip')
+
+        parsed_epub = cnxepub.EPUB.from_file(io.BytesIO(epub))
+        package = parsed_epub[0]
+        publication_binder = cnxepub.adapt_package(package)
+        self.assertEqual(publication_binder.metadata['title'], 'Copy of Madlavning')
+        self.assertEqual(publication_binder.metadata['cnx-archive-uri'], binder['id'])
+        self.assertEqual(package.metadata['publication_message'],
+                         'Publishing a derived book')
+        self.assertEqual(publication_binder.metadata['derived_from_uri'],
+                         'http://cnx.org/contents/feda4909-5bbd-431e-a017-049aff54416d@1.1')
+        self.assertEqual(publication_binder.metadata['derived_from_title'],
+                         'Madlavning')
+
+        tree = cnxepub.models.model_to_tree(publication_binder)
+        self.assertEqual(tree, {
+            'id': binder['id'],
+            'title': 'Copy of Madlavning',
+            'contents': [
+                {'id': '91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
+                 'title': u'Indkøb'},
+                {'id': 'subcol',
+                 'title': u'Fødevarer og Hygiejne',
+                 'contents': [
+                     {'id': 'f6b979cb-8904-4265-bf2d-f059cc362217@1',
+                      'title': u'Fødevarer'},
+                     {'id': '7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
+                      'title': u'Hygiejne'},
+                     ]},
+                {'id': 'b0db72d9-fac3-4b43-9926-7e6e801663fb@1',
+                 'title': u'Tilberedning'},
+                ],
+            })
+
+        models = list(cnxepub.flatten_model(publication_binder))
+        self.assertEqual(len(models), 6)
+        self.assertEqual(models[0].metadata['title'], u'Copy of Madlavning')
+        self.assertEqual(models[1].metadata['title'], u'Indkøb')
+        self.assertEqual(models[2].metadata['title'], u'Fødevarer og Hygiejne')
+        self.assertEqual(models[3].metadata['title'], u'Fødevarer')
+        self.assertEqual(models[4].metadata['title'], u'Hygiejne')
+        self.assertEqual(models[5].metadata['title'], u'Tilberedning')
