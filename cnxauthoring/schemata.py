@@ -76,6 +76,14 @@ class DocumentSchema(colander.MappingSchema):
         colander.String(),
         missing=colander.drop,
         )
+    derived_from_title = colander.SchemaNode(
+        colander.String(),
+        missing=colander.drop,
+        )
+    derived_from_uri = colander.SchemaNode(
+        colander.String(),
+        missing=colander.drop,
+        )
     content = colander.SchemaNode(
         colander.String(),
         missing=colander.drop,

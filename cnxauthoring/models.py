@@ -176,8 +176,12 @@ def build_tree(tree):
                 nodes.append(document)
                 title_overrides.append(i.get('title'))
             else:
-                nodes.append(cnxepub.DocumentPointer(i['id'],
-                    {'title': i.get('title')}))
+                nodes.append(cnxepub.DocumentPointer(i['id'], {
+                    'title': i.get('title'),
+                    'cnx-archive-uri': i['id'],
+                    # TODO not hardcode this url
+                    'url': 'http://cnx.org/contents/{}'.format(i['id']),
+                    }))
                 title_overrides.append(i.get('title'))
     nodes = []
     title_overrides = []
@@ -185,7 +189,11 @@ def build_tree(tree):
     return nodes, title_overrides
 
 
-def build_metadata(title, id=None, content=None, abstract=None, created=None, revised=None, subjects=None, keywords=None, license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None, submitter=None, state=None, publication=None):
+def build_metadata(title, id=None, content=None, abstract=None, created=None,
+        revised=None, subjects=None, keywords=None,
+        license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None,
+        derived_from_uri=None, derived_from_title=None,
+        submitter=None, state=None, publication=None):
     metadata = {}
     metadata['title'] = title
     metadata['version'] = 'draft'
@@ -202,6 +210,8 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None, re
         metadata['license'] = license
     metadata['language'] = language is None and DEFAULT_LANGUAGE or language
     metadata['derived_from'] = derived_from
+    metadata['derived_from_uri'] = derived_from_uri
+    metadata['derived_from_title'] = derived_from_title
     metadata['submitter'] = submitter
     if type(subjects) in (list, tuple):
         metadata['subjects'] =subjects
@@ -302,6 +312,9 @@ def derive_content(request, **kwargs):
     except (TypeError, ValueError):
         return
     utils.change_dict_keys(document, utils.camelcase_to_underscore)
+    document['derived_from_title'] = document['title']
+    # TODO not hardcode this url
+    document['derived_from_uri'] = 'http://cnx.org/contents/{}'.format(derived_from)
     document['title'] = u'Copy of {}'.format(document['title'])
     document['created'] = None
     document['revised'] = None
