@@ -49,6 +49,8 @@ class ModelJSONRendering(unittest.TestCase):
             'version': 'draft',
             'submitter': None,
             'derivedFrom': None,
+            'derivedFromTitle': None,
+            'derivedFromUri': None,
             'abstract': u'',
             'content': u'',
             'license': {

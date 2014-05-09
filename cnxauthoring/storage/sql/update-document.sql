@@ -12,6 +12,8 @@ UPDATE document
             created = %(created)s, abstract = %(abstract)s,
             title = %(title)s, revised = %(revised)s, 
             content = %(content)s, derived_from = %(derived_from)s,
+            derived_from_title = %(derived_from_title)s,
+            derived_from_uri = %(derived_from_uri)s,
             submitter = %(submitter)s, subjects = %(subjects)s,
             keywords = %(keywords)s, state = %(state)s,
             publication = %(publication)s

@@ -132,6 +132,7 @@ class Document(cnxepub.Document):
         license = self.metadata['license']
         self.metadata['license_url'] = license.url
         self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
+        self.metadata['summary'] = self.metadata['abstract']
         self.set_uri('cnx-archive', self.id)
         self.add_resources()
 
@@ -149,34 +150,50 @@ class Document(cnxepub.Document):
 
 def build_tree(tree):
     from .storage import storage
-    def get_nodes(tree, nodes):
+    def get_nodes(tree, nodes, title_overrides):
         for i in tree['contents']:
             if 'contents' in i:
                 contents_nodes = []
-                get_nodes(i, contents_nodes)
+                contents_title_overrides = []
+                get_nodes(i, contents_nodes, contents_title_overrides)
                 if i['id'] == 'subcol':
                     nodes.append(cnxepub.TranslucentBinder(
-                        metadata={'title': i['title']},
-                        nodes=contents_nodes))
+                        metadata={'title': i.get('title')},
+                        nodes=contents_nodes,
+                        title_overrides=contents_title_overrides))
+                    title_overrides.append(i.get('title'))
                 else:
                     nodes.append(cnxepub.Binder(i['id'],
-                        metadata={'title': i['title']},
-                        nodes=contents_nodes))
+                        metadata={'title': i.get('title')},
+                        nodes=contents_nodes,
+                        title_overrides=contents_title_overrides))
+                    title_overrides.append(i.get('title'))
                 continue
             if i['id'].endswith('@draft'):
                 document = storage.get(id=i['id'][:-len('@draft')])
                 if not document:
                     raise DocumentNotFoundError(i['id'])
                 nodes.append(document)
+                title_overrides.append(i.get('title'))
             else:
-                nodes.append(cnxepub.DocumentPointer(i['id'],
-                    {'title': i['title']}))
+                nodes.append(cnxepub.DocumentPointer(i['id'], {
+                    'title': i.get('title'),
+                    'cnx-archive-uri': i['id'],
+                    # TODO not hardcode this url
+                    'url': 'http://cnx.org/contents/{}'.format(i['id']),
+                    }))
+                title_overrides.append(i.get('title'))
     nodes = []
-    get_nodes(tree, nodes)
-    return nodes
+    title_overrides = []
+    get_nodes(tree, nodes, title_overrides)
+    return nodes, title_overrides
 
 
-def build_metadata(title, id=None, content=None, abstract=None, created=None, revised=None, subjects=None, keywords=None, license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None, submitter=None, state=None, publication=None):
+def build_metadata(title, id=None, content=None, abstract=None, created=None,
+        revised=None, subjects=None, keywords=None,
+        license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None,
+        derived_from_uri=None, derived_from_title=None,
+        submitter=None, state=None, publication=None):
     metadata = {}
     metadata['title'] = title
     metadata['version'] = 'draft'
@@ -193,6 +210,8 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None, re
         metadata['license'] = license
     metadata['language'] = language is None and DEFAULT_LANGUAGE or language
     metadata['derived_from'] = derived_from
+    metadata['derived_from_uri'] = derived_from_uri
+    metadata['derived_from_title'] = derived_from_title
     metadata['submitter'] = submitter
     if type(subjects) in (list, tuple):
         metadata['subjects'] =subjects
@@ -225,14 +244,17 @@ class Binder(cnxepub.Binder):
         metadata = build_metadata(title, **kwargs)
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
-        cnxepub.Binder.__init__(self, id, nodes=build_tree(tree),
-                metadata=metadata, title_overrides=None)
+        nodes, title_overrides = build_tree(tree)
+        cnxepub.Binder.__init__(self, id, nodes=nodes,
+                metadata=metadata, title_overrides=title_overrides)
 
     def update(self, **kwargs):
         if 'license' in kwargs:
             del kwargs['license']
         if 'tree' in kwargs:
-            self._nodes = build_tree(kwargs.pop('tree'))
+            nodes, title_overrides = build_tree(kwargs.pop('tree'))
+            self._nodes = nodes
+            self._title_overrides = title_overrides
         for key, value in kwargs.items():
             if key in self.metadata:
                 self.metadata[key] = value
@@ -241,6 +263,7 @@ class Binder(cnxepub.Binder):
         license = self.metadata['license']
         self.metadata['license_url'] = license.url
         self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
+        self.metadata['summary'] = self.metadata['abstract']
         self.set_uri('cnx-archive', self.id)
         documents = []
         for document in cnxepub.flatten_to_documents(self):
@@ -289,6 +312,9 @@ def derive_content(request, **kwargs):
     except (TypeError, ValueError):
         return
     utils.change_dict_keys(document, utils.camelcase_to_underscore)
+    document['derived_from_title'] = document['title']
+    # TODO not hardcode this url
+    document['derived_from_uri'] = 'http://cnx.org/contents/{}'.format(derived_from)
     document['title'] = u'Copy of {}'.format(document['title'])
     document['created'] = None
     document['revised'] = None
