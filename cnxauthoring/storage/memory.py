@@ -32,6 +32,7 @@ class MemoryStorage(BaseStorage):
                         str(getattr(item, k, None)) == str(v)):
                         break
             else:
+                # item found
                 if hasattr(item, '_xml'):
                     item.content = item.metadata['content']
                 yield item
