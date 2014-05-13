@@ -345,6 +345,8 @@ def post_to_publishing(request, userid, submitlog, content_ids):
     filename = 'contents.epub'
     contents = []
     for content_id in content_ids:
+        if '@' in content_id:
+            content_id = content_id.split('@')[0]
         content = storage.get(id=content_id, submitter=userid)
         if content is None:
             raise httpexceptions.HTTPBadRequest('Unable to publish: '
