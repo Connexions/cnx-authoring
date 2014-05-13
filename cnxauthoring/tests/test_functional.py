@@ -1597,7 +1597,7 @@ class FunctionalTests(unittest.TestCase):
         post_data = {
                 'submitlog': 'Publishing is working!',
                 'items': [
-                    page['id'],
+                    '{}@draft'.format(page['id']),
                     ],
                 }
         mock_output = json.dumps({u'state': u'Processing', u'publication': 144,
