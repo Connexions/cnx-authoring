@@ -140,10 +140,10 @@ class Document(cnxepub.Document):
         from .storage import storage
         resources = {}
         for ref in self.references:
-            if ref.uri.startswith('/resources'):
+            if ref.uri.startswith('/resources/'):
                 resource = resources.get(ref.uri)
                 if not resource:
-                    hash = ref.uri.strip('/resources/')
+                    hash = ref.uri[len('/resources/'):]
                     resource = storage.get(type_=Resource, hash=hash)
                     self.resources.append(resource)
 
