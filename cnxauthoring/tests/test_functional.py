@@ -1604,7 +1604,8 @@ class FunctionalTests(unittest.TestCase):
             u'mapping': {page['id']: '{}@1'.format(page['id'])}}).encode('utf-8')
         with mock.patch('requests.post') as patched_post:
             patched_post.return_value = mock.Mock(status_code=200, content=mock_output)
-            response = self.testapp.post('/publish', json.dumps(post_data),
+            json_post_data = json.dumps(post_data)
+            response = self.testapp.post('/publish', json_post_data,
                     status=200)
             self.assertEqual(patched_post.call_count, 1)
             args, kwargs = patched_post.call_args
@@ -1695,6 +1696,8 @@ class FunctionalTests(unittest.TestCase):
                 'submitlog': 'Publishing a book is working?',
                 'items': [
                     binder['id'],
+                    page1['id'],
+                    page2['id'],
                     ],
                 }
         mock_output = json.dumps({
@@ -1821,5 +1824,3 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(models[1].metadata['title'], u'Indkøb')
         self.assertEqual(models[2].metadata['title'], u'Fødevarer og Hygiejne')
         self.assertEqual(models[3].metadata['title'], u'Fødevarer')
-        self.assertEqual(models[4].metadata['title'], u'Hygiejne')
-        self.assertEqual(models[5].metadata['title'], u'Tilberedning')

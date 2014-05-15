@@ -128,7 +128,7 @@ class Document(cnxepub.Document):
         utils.change_dict_keys(result, utils.underscore_to_camelcase)
         return result
 
-    def publish(self):
+    def publish_prep(self):
         license = self.metadata['license']
         self.metadata['license_url'] = license.url
         self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
@@ -259,7 +259,7 @@ class Binder(cnxepub.Binder):
             if key in self.metadata:
                 self.metadata[key] = value
 
-    def publish(self):
+    def publish_prep(self):
         license = self.metadata['license']
         self.metadata['license_url'] = license.url
         self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
@@ -269,7 +269,7 @@ class Binder(cnxepub.Binder):
         for document in cnxepub.flatten_to_documents(self):
             if document.id not in documents:
                 documents.append(document.id)
-                document.publish()
+                document.publish_prep()
 
     def to_dict(self):
         result = to_dict(self.metadata)
