@@ -111,12 +111,26 @@ class Document(cnxepub.Document):
     """
     mediatype = DOCUMENT_MEDIATYPE
 
-    def __init__(self, title, **kwargs):
+    def __init__(self, title, acls=None, **kwargs):
         metadata = build_metadata(title, **kwargs)
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         content = metadata['content']
         cnxepub.Document.__init__(self, id, content, metadata)
+        if acls is None:
+            self.acls = []
+        else:
+            self.acls = acls
+
+    def __acl__(self):
+        acls = [(Allow, Authenticated, ('create',))]
+        acls.append((Allow, self.metadata['submitter'],
+            ('view', 'edit', 'publish')))
+        for user_permissions in self.acls:
+            userid = user_permissions[0]
+            permissions = user_permissions[1:]
+            acls.append((Allow, userid, tuple(permissions)))
+        return acls
 
     def update(self, **kwargs):
         if 'license' in kwargs:
@@ -249,13 +263,27 @@ class Binder(cnxepub.Binder):
     """
     mediatype = BINDER_MEDIATYPE
 
-    def __init__(self, title, tree, **kwargs):
+    def __init__(self, title, tree, acls=None, **kwargs):
         metadata = build_metadata(title, **kwargs)
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         nodes, title_overrides = build_tree(tree)
         cnxepub.Binder.__init__(self, id, nodes=nodes,
                 metadata=metadata, title_overrides=title_overrides)
+        if acls is None:
+            self.acls = []
+        else:
+            self.acls = acls
+
+    def __acl__(self):
+        acls = [(Allow, Authenticated, ('create',))]
+        acls.append((Allow, self.metadata['submitter'],
+            ('create', 'view', 'edit', 'publish')))
+        for user_permissions in self.acls:
+            userid = user_permissions[0]
+            permissions = user_permissions[1:]
+            acls.append((Allow, userid, tuple(permissions)))
+        return acls
 
     def update(self, **kwargs):
         if 'license' in kwargs:

@@ -103,6 +103,7 @@ def profile(request):
 def user_contents(request):
     """Extract of the contents that belong to the current logged in user"""
     items = []
+    # TODO use acls instead of filter by submitter
     for content in storage.get_all(submitter=request.unauthenticated_userid):
         item = content.__json__()
         document = {k: item[k] for k in  
@@ -127,9 +128,12 @@ def user_contents(request):
 def get_content(request):
     """Acquisition of content by id"""
     id = request.matchdict['id']
-    content = storage.get(id=id, submitter=request.unauthenticated_userid)
+    content = storage.get(id=id)
     if content is None:
         raise httpexceptions.HTTPNotFound()
+    if not request.has_permission('view', content):
+        raise httpexceptions.HTTPForbidden(
+                'You do not have permission to view {}'.format(id))
     if (content.metadata['state'] not in [None, 'Done/Success'] and
             content.metadata['publication']):
         publishing_url = request.registry.settings['publishing.url']
@@ -220,9 +224,13 @@ def post_content(request):
     try:
         if isinstance(cstruct, list):
             for item in cstruct:
-                contents.append(post_content_single(request, item).__json__())
+                contents.append(post_content_single(request, item))
+                if not request.has_permission('create', contents[-1]):
+                    raise httpexceptions.HTTPForbidden()
         else:
             content = post_content_single(request, cstruct)
+            if not request.has_permission('create', content):
+                raise httpexceptions.HTTPForbidden()
     except DocumentNotFoundError as e:
         raise httpexceptions.HTTPBadRequest(e.message)
 
@@ -270,9 +278,12 @@ def post_resource(request):
 def put_content(request):
     """Modify a stored document"""
     id = request.matchdict['id']
-    content = storage.get(id=id, submitter=request.unauthenticated_userid)
+    content = storage.get(id=id)
     if content is None:
         raise httpexceptions.HTTPNotFound()
+    if not request.has_permission('edit', content):
+        raise httpexceptions.HTTPForbidden(
+                'You do not have permission to edit {}'.format(id))
 
     try:
         cstruct = request.json_body
@@ -366,6 +377,9 @@ def post_to_publishing(request, userid, submitlog, content_ids):
                 if content_item is None:
                     raise httpexceptions.HTTPBadRequest('Unable to publish: '
                             'content not found {}'.format(content_id))
+                if not request.has_permission('publish', content):
+                    raise httpexceptions.HTTPForbidden(
+                        'You do not have permission to publish {}'.format(content_id))
                 content.append(content_item)
 
         else:  #documentid
@@ -376,6 +390,9 @@ def post_to_publishing(request, userid, submitlog, content_ids):
             if content is None:
                 raise httpexceptions.HTTPBadRequest('Unable to publish: '
                         'content not found {}'.format(content_id))
+            if not request.has_permission('publish', content):
+                raise httpexceptions.HTTPForbidden(
+                    'You do not have permission to publish {}'.format(content_id))
 
         contents.append(content)
 

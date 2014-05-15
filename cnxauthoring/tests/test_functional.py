@@ -48,8 +48,10 @@ class MockAuthenticationPolicy(object):
 
     def effective_principals(self, request):
         groups = [Everyone]
-        if self.authenticated_userid(request):
+        userid = self.authenticated_userid(request)
+        if userid:
             groups.append(Authenticated)
+            groups.append(userid)
         return groups
 
     def remember(self, request, principal, **kw):
@@ -279,6 +281,37 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/contents/1234abcde@draft.json', status=404)
         self.assert_cors_headers(response)
 
+    def test_get_content_403(self):
+        response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'title': 'My New Document',
+                    }),
+                status=201)
+        content = json.loads(response.body.decode('utf-8'))
+        with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.get('/contents/{}@draft.json'
+                    .format(content['id']), status=403)
+        self.assertTrue('You do not have permission to view'
+                in response.body.decode('utf-8'))
+
+        response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'title': 'My New Binder',
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    'tree': {
+                        'contents': [],
+                        },
+                    }),
+                status=201)
+        content = json.loads(response.body.decode('utf-8'))
+        with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.get('/contents/{}@draft.json'
+                    .format(content['id']), status=403)
+        self.assertTrue('You do not have permission to view'
+                in response.body.decode('utf-8'))
+
     def test_get_content_for_document(self):
         response = self.testapp.post('/users/contents',
                 json.dumps({
@@ -322,6 +355,26 @@ class FunctionalTests(unittest.TestCase):
     def test_post_content_401(self):
         FunctionalTests.profile = None
         response = self.testapp.post('/users/contents', status=401)
+        self.assert_cors_headers(response)
+
+    def test_post_content_403(self):
+        with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.post('/users/contents', 
+                json.dumps({'title': u'My document タイトル'}),
+                status=403)
+        self.assert_cors_headers(response)
+
+        with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'title': u'My book タイトル',
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    'tree': {
+                        'contents': [],
+                        },
+                    }), status=403)
         self.assert_cors_headers(response)
 
     def test_post_content_invalid_json(self):
@@ -859,6 +912,42 @@ class FunctionalTests(unittest.TestCase):
                 json.dumps({'title': u'Update document title'}),
                 status=404)
         self.assert_cors_headers(response)
+
+    def test_put_content_403(self):
+        response = self.testapp.post('/users/contents', 
+                json.dumps({
+                    'title': u'My document タイトル',
+                    'abstract': u'My document abstract',
+                    'language': u'en'}),
+                status=201)
+        document = json.loads(response.body.decode('utf-8'))
+
+        with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.put(
+                '/contents/{}@draft.json'.format(document['id']),
+                json.dumps({'title': 'new title'}), status=403)
+        self.assertTrue('You do not have permission to edit'
+                in response.body.decode('utf-8'))
+
+        response = self.testapp.post('/users/contents', 
+                json.dumps({
+                    'title': u'My binder タイトル',
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    'tree': {
+                        'contents': [],
+                        },
+                    'language': u'en'}),
+                status=201)
+        binder = json.loads(response.body.decode('utf-8'))
+
+        with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.put(
+                '/contents/{}@draft.json'.format(binder['id']),
+                json.dumps({'title': 'new title'}), status=403)
+        self.assertTrue('You do not have permission to edit'
+                in response.body.decode('utf-8'))
 
     def test_put_content_invalid_json(self):
         response = self.testapp.post('/users/contents', 
@@ -1478,6 +1567,54 @@ class FunctionalTests(unittest.TestCase):
         FunctionalTests.profile = None
         response = self.testapp.post('/publish', '{}', status=401)
         self.assert_cors_headers(response)
+
+    def test_publish_403(self):
+        post_data = {
+                'title': 'Page one',
+                'content': '<html><body><p>Contents of Page one</p></body></html>',
+                'abstract': 'Learn how to etc etc',
+                }
+        response = self.testapp.post('/users/contents', json.dumps(post_data),
+                status=201)
+        page = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+                'submitlog': u'Nueva versión!',
+                'items': [
+                    page['id'],
+                    ],
+                }
+        with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    status=403)
+        self.assertTrue('You do not have permission to publish'
+                    in response.body.decode('utf-8'))
+
+        post_data = {
+                'title': 'Binder',
+                'mediaType': 'application/vnd.org.cnx.collection',
+                'tree': {
+                    'contents': [],
+                    },
+                }
+        response = self.testapp.post('/users/contents', json.dumps(post_data),
+                status=201)
+        book = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+                'submitlog': u'Nueva versión!',
+                'items': [
+                    book['id'],
+                    ],
+                }
+        with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    status=403)
+        self.assertTrue('You do not have permission to publish'
+                    in response.body.decode('utf-8'))
+
 
     def test_publish_service_not_available(self):
         post_data = {
