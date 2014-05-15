@@ -156,6 +156,8 @@ def get_resource(request):
     resource = storage.get(hash=hash, type_=Resource)
     if resource is None:
         raise httpexceptions.HTTPNotFound()
+    if not request.has_permission('view', resource):
+        raise httpexceptions.HTTPForbidden()
     resp = request.response
     resp.body = resource.data.read()
     resource.data.seek(0)
@@ -246,6 +248,9 @@ def post_resource(request):
     data = file_form_field.file
 
     resource = Resource(mediatype, data)
+    if not request.has_permission('create', resource):
+        raise httpexceptions.HTTPForbidden()
+
     try:
         resource = storage.add(resource)
     except:

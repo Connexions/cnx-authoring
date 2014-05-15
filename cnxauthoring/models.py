@@ -21,6 +21,7 @@ except ImportError:
 
 import tzlocal
 import cnxepub.models as cnxepub
+from pyramid.security import Allow, Authenticated
 
 from . import utils
 
@@ -97,6 +98,11 @@ class Resource(cnxepub.Resource):
         cnxepub.Resource.__init__(self, _hash, io.BytesIO(self.data),
                 mediatype, filename)
         self._hash = _hash
+
+    def __acl__(self):
+        return (
+                (Allow, Authenticated, ('view', 'create',)),
+                )
 
 
 class Document(cnxepub.Document):

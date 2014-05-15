@@ -1269,6 +1269,21 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/resources/1234abcde', status=401)
         self.assert_cors_headers(response)
 
+    def test_get_resource_403(self):
+        with open(test_data('1x1.png'), 'rb') as data:
+            upload_data = data.read()
+
+        response = self.testapp.post('/resources',
+                {'file': Upload('1x1.png', upload_data, 'image/png')},
+                status=201)
+        self.assert_cors_headers(response)
+        redirect_url = response.headers['Location']
+
+        with mock.patch('cnxauthoring.models.Resource.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.get(redirect_url, status=403)
+        self.assert_cors_headers(response)
+
     def test_get_resource_404(self):
         response = self.testapp.get('/resources/1234abcde', status=404)
         self.assert_cors_headers(response)
@@ -1298,6 +1313,14 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.post('/resources',
                 {'file': Upload('a.txt', b'hello\n', 'text/plain')},
                 status=401)
+        self.assert_cors_headers(response)
+
+    def test_post_resource_403(self):
+        with mock.patch('cnxauthoring.models.Resource.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.post('/resources',
+                {'file': Upload('a.txt', b'hello\n', 'text/plain')},
+                status=403)
         self.assert_cors_headers(response)
 
     def test_post_resource(self):
