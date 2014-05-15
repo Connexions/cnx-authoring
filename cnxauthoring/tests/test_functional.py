@@ -1625,11 +1625,13 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(documents[0].metadata['derived_from_uri'],
                          'http://cnx.org/contents/91cb5f28-2b8a-4324-9373-dac1d617bc24@1')
         self.assertEqual(documents[0].metadata['derived_from_title'], u'Indkøb')
-        self.assertEqual(len(documents[0].resources), 1)
+        self.assertEqual(len(documents[0].resources), 2)
         self.assertEqual(documents[0].references[0].uri,
                          'http://www.rema1000.dk/Madplanen.aspx')
         self.assertEqual(documents[0].references[1].uri,
                          '../resources/0f3da0de61849a47f77543c383d1ac621b25e6e0')
+        self.assertEqual(documents[0].references[2].uri,
+                         '../resources/0405557b301a1b689df0f02566bec761d7783232')
 
         self.assertEqual(json.loads(response.body.decode('utf-8')),
                 json.loads(mock_output.decode('utf-8')))
