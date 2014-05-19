@@ -23,7 +23,7 @@ import requests
 from openstax_accounts.interfaces import *
 
 from .models import (create_content, derive_content, Document, Resource,
-        BINDER_MEDIATYPE, derive_resources, DocumentNotFoundError)
+        BINDER_MEDIATYPE, DocumentNotFoundError)
 from .schemata import DocumentSchema, BinderSchema
 from .storage import storage
 from . import utils
@@ -173,8 +173,9 @@ def post_content_single(request, cstruct):
     utils.change_dict_keys(cstruct, utils.camelcase_to_underscore)
     derived_from = cstruct.get('derived_from')
     if derived_from:
-        cstruct = derive_content(request, **cstruct)
-        if not cstruct:
+        try:
+            cstruct = derive_content(request, **cstruct)
+        except DocumentNotFoundError:
             raise httpexceptions.HTTPBadRequest(
                     'Derive failed: {}'.format(derived_from))
     cstruct['submitter'] = request.unauthenticated_userid
@@ -190,7 +191,7 @@ def post_content_single(request, cstruct):
     content = create_content(**appstruct)
     resources = []
     if content.mediatype != BINDER_MEDIATYPE and derived_from:
-        resources = derive_resources(request, content)
+        resources = utils.derive_resources(request, content)
 
     for r in resources:
         try:
