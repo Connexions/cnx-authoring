@@ -18,6 +18,30 @@ from .database import SQL
 
 psycopg2.extras.register_uuid()
 
+# cribbed from http://stackoverflow.com/questions/19048017/python-extract-substitution-vars-from-format-string
+def get_format_keys(s):
+    d = {}
+    while True:
+        try:
+            s % d
+        except KeyError as exc:
+            # exc.args[0] contains the name of the key that was not found;
+            # 0 is used because it appears to work with all types of placeholders.
+            d[exc.args[0]] = 0
+        else:
+            break
+    return d.keys()
+
+def check_args(s, kwargs):
+    format_keys = get_format_keys(s)
+    for k in kwargs:
+        if k not in format_keys:
+            raise KeyError(k)
+
+def checked_execute(cur, s, kwargs):
+    check_args(s, kwargs)
+    cur.execute(s, kwargs)
+
 class PostgresqlStorage(BaseStorage):
     """Utility for managing and interfacing with the the storage medium."""
 
@@ -51,7 +75,7 @@ class PostgresqlStorage(BaseStorage):
 
         match_clauses = ['{k} = %({k})s'.format(k = k) for k in  kwargs]
             
-        cursor.execute(SQL['get'].format(tablename = type_name, where_clause = ' AND '.join(match_clauses)), kwargs)
+        checked_execute(cursor,SQL['get'].format(tablename = type_name, where_clause = ' AND '.join(match_clauses)), kwargs)
         res = cursor.fetchall()
         if not in_progress:
             self.conn.rollback() # Frees the connection
@@ -81,15 +105,21 @@ class PostgresqlStorage(BaseStorage):
             if not exists:
                 data = Binary(item.data.read())
                 item.data.seek(0)
-                cursor.execute(SQL['add-resource'], 
+                checked_execute(cursor, SQL['add-resource'],
                             {'hash':item._hash,'mediatype':item.media_type,'data':data})
         elif type_name in ['document','binder']:
             args = item.to_dict()
             args['license'] = repr(args['license'])
             args['media_type'] = MEDIATYPES[type_name]
+            if 'version' in args:
+                args.pop('version')
+            if 'summary' in args:
+                args.pop('summary')
             if 'tree' in args:
                 args['content'] = json.dumps(args.pop('tree'))
-            cursor.execute(SQL['add-document'], args)
+            if 'cnx-archive-uri' not in args:
+                args['cnx-archive-uri'] = None
+            checked_execute(cursor, SQL['add-document'], args)
         else:
             raise NotImplementedError(type_name)
         return item
@@ -106,14 +136,26 @@ class PostgresqlStorage(BaseStorage):
         type_name= item.__class__.__name__.lower()
         cursor = self.conn.cursor()
         if type_name== 'resource':
-            cursor.execute(SQL['update-resource'], 
+            checked_execute(cursor, SQL['update-resource'],
                         {'hash':item._hash,'mediatype':item.mediatype,'data':Binary(item.data)})
         elif type_name in ['document', 'binder']:
             args = item.to_dict()
             args['license'] = repr(args['license'])
+            if 'license_url' in args:
+                args.pop('license_url')
+            if 'license_text' in args:
+                args.pop('license_text')
+            if 'media_type' in args:
+                args.pop('media_type')
+            if 'version' in args:
+                 args.pop('version')
+            if 'summary' in args:
+                 args.pop('summary')
+            if 'cnx-archive-uri' not in args:
+                args['cnx-archive-uri'] = None
             if 'tree' in args:
                 args['content'] = json.dumps(args.pop('tree'))
-            cursor.execute(SQL['update-document'], args)
+            checked_execute(cursor, SQL['update-document'], args)
         return item
 
     def persist(self):

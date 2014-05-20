@@ -14,5 +14,6 @@ CREATE TABLE document ( id                 uuid primary key,
                         subjects           text[],
                         keywords           text[],
                         state              text,
-                        publication        text
+                        publication        text,
+                        cnx_archive_uri    text
                     );
