@@ -325,6 +325,15 @@ def create_content(**appstruct):
     return document
 
 
+def revise_content(request, **kwargs):
+    archive_id = kwargs['id']
+    document = utils.fetch_archive_content(request, archive_id)
+    document.update(kwargs)
+    document['revised'] = None
+    document['license'] = {'url': DEFAULT_LICENSE.url}
+    return document
+
+
 def derive_content(request, **kwargs):
     derived_from = kwargs['derived_from']
     document = utils.fetch_archive_content(request, derived_from)

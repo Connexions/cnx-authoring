@@ -123,7 +123,6 @@ class ViewsTests(unittest.TestCase):
     def test_post_content(self):
         from ..models import DEFAULT_LICENSE
         post_data = {
-            'id': str(uuid.uuid4()),
             'title': "Turning DNA through resonance",
             'abstract': "Theories on turning DNA structures",
             'created': datetime.datetime.now().isoformat(),

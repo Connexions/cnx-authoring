@@ -22,8 +22,8 @@ from pyramid import httpexceptions
 import requests
 from openstax_accounts.interfaces import *
 
-from .models import (create_content, derive_content, Document, Resource,
-        BINDER_MEDIATYPE, DocumentNotFoundError)
+from .models import (create_content, derive_content, revise_content, Document,
+        Resource, BINDER_MEDIATYPE, DocumentNotFoundError)
 from .schemata import DocumentSchema, BinderSchema
 from .storage import storage
 from . import utils
@@ -172,12 +172,25 @@ def get_resource(request):
 def post_content_single(request, cstruct):
     utils.change_dict_keys(cstruct, utils.camelcase_to_underscore)
     derived_from = cstruct.get('derived_from')
+    archive_id = cstruct.get('id')
     if derived_from:
         try:
             cstruct = derive_content(request, **cstruct)
         except DocumentNotFoundError:
             raise httpexceptions.HTTPBadRequest(
                     'Derive failed: {}'.format(derived_from))
+
+    if archive_id:
+        try:
+            cstruct = revise_content(request, **cstruct)
+        except DocumentNotFoundError:
+            raise httpexceptions.HTTPNotFound()
+        # TODO users other than the submitter should be able to edit it
+        # (requires permission information from archive)
+        if cstruct['submitter']['id'] != request.unauthenticated_userid:
+            raise httpexceptions.HTTPForbidden(
+                    'You do not have permission to edit {}'.format(archive_id))
+
     cstruct['submitter'] = request.unauthenticated_userid
     if cstruct.get('media_type') == BINDER_MEDIATYPE:
         schema = BinderSchema()
@@ -188,9 +201,12 @@ def post_content_single(request, cstruct):
     except Exception as e:
         raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
     appstruct['derived_from'] = derived_from
+    if archive_id:
+        appstruct['id'] = archive_id.split('@')[0]
+        appstruct['cnx_archive_uri'] = archive_id
     content = create_content(**appstruct)
     resources = []
-    if content.mediatype != BINDER_MEDIATYPE and derived_from:
+    if content.mediatype != BINDER_MEDIATYPE and (derived_from or archive_id):
         resources = utils.derive_resources(request, content)
 
     for r in resources:
