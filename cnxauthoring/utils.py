@@ -82,9 +82,9 @@ def filter_binder_documents(binder, documents):
             if model.id not in docids:
                 binder.pop(i) # remove it
                 # Is it new?
-                if model.metadata['version'] != 'draft':
+                if model.get_uri('cnx-archive'):
                     #convert to documentpointer
-                    dp = epub.models.DocumentPointer('@'.join((model.id,model.metadata['version'])))
+                    dp = epub.models.DocumentPointer(model.get_uri('cnx-archive'))
                     binder.insert(i,dp)
 
 def build_epub(contents, submitter, submitlog):

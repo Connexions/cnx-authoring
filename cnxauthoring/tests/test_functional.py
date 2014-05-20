@@ -1726,7 +1726,7 @@ class FunctionalTests(unittest.TestCase):
         publication_binder = cnxepub.adapt_package(package)
         self.assertEqual(publication_binder.metadata['title'], 'Book')
         self.assertTrue('Book abstract' in publication_binder.metadata['summary'])
-        self.assertEqual(publication_binder.metadata['cnx-archive-uri'], binder['id'])
+        # self.assertEqual(publication_binder.metadata['cnx-archive-uri'], binder['id'])
         self.assertEqual(package.metadata['publication_message'],
                 u'Publishing a book is working?')
 
@@ -1790,7 +1790,7 @@ class FunctionalTests(unittest.TestCase):
         package = parsed_epub[0]
         publication_binder = cnxepub.adapt_package(package)
         self.assertEqual(publication_binder.metadata['title'], 'Copy of Madlavning')
-        self.assertEqual(publication_binder.metadata['cnx-archive-uri'], binder['id'])
+        # self.assertEqual(publication_binder.metadata['cnx-archive-uri'], binder['id'])
         self.assertEqual(package.metadata['publication_message'],
                          'Publishing a derived book')
         self.assertEqual(publication_binder.metadata['derived_from_uri'],

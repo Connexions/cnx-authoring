@@ -178,7 +178,8 @@ def build_tree(tree):
             else:
                 nodes.append(cnxepub.DocumentPointer(i['id'], {
                     'title': i.get('title'),
-                    'cnx-archive-uri': i['id'],
+                    # TODO should be a uri/path like /contents
+                    'cnx-archive-uri': '{}'.format(i['id']),
                     # TODO not hardcode this url
                     'url': 'http://cnx.org/contents/{}'.format(i['id']),
                     }))
@@ -193,7 +194,7 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None,
         revised=None, subjects=None, keywords=None,
         license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None,
         derived_from_uri=None, derived_from_title=None,
-        submitter=None, state=None, publication=None):
+        submitter=None, state=None, publication=None, cnx_archive_uri=None):
     metadata = {}
     metadata['title'] = title
     metadata['version'] = 'draft'
@@ -223,6 +224,8 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None,
         metadata['keywords'] = keywords and [keywords] or []
     metadata['publication'] = publication
     metadata['state'] = state or 'Draft'
+    if cnx_archive_uri:
+        metadata['cnx-archive-uri'] = cnx_archive_uri
     return metadata
 
 
