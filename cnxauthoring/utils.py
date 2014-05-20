@@ -96,8 +96,8 @@ def build_epub(contents, submitter, submitlog):
     for i,content in enumerate(contents,1):
         if type(content) == list: # book + pages in a list
             if isinstance(content[0], Binder): 
-                content[0].publish_prep()
                 filter_binder_documents(content[0], content[1:])
+                content[0].publish_prep()
                 binders.append(content[0])
             else:  # belt and suspenders - seems to be an extra level of lists - filter out docs
                 for doc in content:
