@@ -14,15 +14,59 @@ Connexions Authoring Service
 INSTALL
 -------
 
-1. ``virtualenv .``
+1. Create virtualenv:
 
-2. ``./bin/python setup.py install``
+.. code:: bash
 
-3. Make a copy of ``development.ini.example`` and call it ``development.ini``.
+   virtualenv .
 
-4. Edit settings in ``development.ini`` as necessary.
+2. Install cnx-query-grammar
 
-5. ``./bin/pserve development.ini``
+.. code:: bash
+
+   git clone https://github.com/Connexions/cnx-query-grammar.git
+   cd cnx-query-grammar && ../bin/python setup.py install && cd ..
+
+3. Install cnx-epub
+
+.. code:: bash
+
+   git clone https://github.com/Connexions/cnx-epub.git
+   cd cnx-epub && ../bin/python setup.py install && cd ..
+
+4. Install cnx-authoring
+   
+.. code:: bash
+
+   ./bin/python setup.py install
+
+5. Make a copy of ``development.ini.example`` and call it ``development.ini``.
+
+.. code:: bash
+
+   cp development.ini.example development.ini
+
+6. Edit settings in ``development.ini`` as necessary.
+
+   cnx-authoring will not run without correct `openstax accounts <https://github.com/openstax/accounts>`_ settings.
+
+   A `fabric script <https://github.com/Connexions/openstax-setup>`_ has been written to help set up a dev environment for openstax/accounts.
+
+7. If you are using the postgresql storage option:
+
+.. code:: bash
+
+   sudo -u postgres psql -d postgres -c "CREATE USER cnxauthoring WITH SUPERUSER PASSWORD 'cnxauthoring';"
+   sudo -u postgres createdb -O cnxauthoring authoring
+   ./bin/cnx-authoring-initialize_db  development.ini
+
+8. Start the server:
+
+.. code:: bash
+
+   ./bin/pserve development.ini
+
+**Known bugs**: pickle storage is currently broken.
 
 
 Data structure

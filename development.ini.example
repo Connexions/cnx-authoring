@@ -9,7 +9,7 @@ cors.access_control_allow_origin = http://localhost:8000 http://localhost:8080
 cors.access_control_allow_headers = Origin, Content-Type
 cors.access_control_allow_methods = GET, OPTIONS, PUT, POST
 
-storage = pickle
+storage = memory
 pickle.filename = dev.p
 postgresql.db-connection-string = dbname=authoring user=cnxauthoring
 
