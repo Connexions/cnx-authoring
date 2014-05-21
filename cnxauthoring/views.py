@@ -126,7 +126,8 @@ def user_contents(request):
         item = content.__json__()
         document = {k: item[k] for k in  
                ['mediaType', 'title', 'id', 'version', 'revised', 'derivedFrom','state']}
-        document['id'] = '@'.join([document['id'], document['version']])
+        if document['state'] != 'Done/Success':
+            document['id'] = '@'.join([document['id'], document['version']])
         items.append(document)
     items.sort(key=lambda item: item['revised'], reverse=True)
     return {
