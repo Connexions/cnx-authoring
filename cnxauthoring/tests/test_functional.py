@@ -316,8 +316,8 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.post('/users/contents',
                 json.dumps({
                     'title': 'My New Document',
-                    'created': u'2014-03-13T15:21:15',
-                    'revised': u'2014-03-13T15:21:15',
+                    'created': u'2014-03-13T15:21:15-05:00',
+                    'revised': u'2014-03-13T15:21:15-05:00',
                     }),
                 status=201)
         put_result = json.loads(response.body.decode('utf-8'))
@@ -1628,6 +1628,34 @@ class FunctionalTests(unittest.TestCase):
             })
         self.assert_cors_headers(response)
 
+        response = self.testapp.post('/users/contents',
+                json.dumps({'title': 'document by {} user'.format(uid),
+                            'created': u'2014-03-13T15:21:15.677617-05:00',
+                            'revised': u'2014-03-13T15:21:15.677617-05:00',
+                            }), status=201)
+        page = json.loads(response.body.decode('utf-8'))
+
+        #user should get back the contents just posted - full content test
+        response = self.testapp.get('/users/contents', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result, {
+            u'query': {
+                u'limits': [],
+                },
+            u'results': {u'items': [{u'derivedFrom': None,
+                           u'id': u'{}@draft'.format(page['id']),
+                           u'mediaType': u'application/vnd.org.cnx.module',
+                           u'revised': u'2014-03-13T15:21:15.677617-05:00',
+                           u'state': u'Draft',
+                           u'title': u'document by {} user'.format(uid),
+                           u'version': u'draft'}],
+               u'limits': [],
+               u'total': 1}
+            })
+
+        self.assert_cors_headers(response)
+
+
         self.mock_archive()
 
         import datetime
@@ -1657,20 +1685,22 @@ class FunctionalTests(unittest.TestCase):
 
         response = self.testapp.get('/users/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(result['results']['total'], 3)
+        self.assertEqual(result['results']['total'], 4)
         self.assertTrue(result['results']['items'][0]['id'].endswith('@draft'))
         self.assertTrue(result['results']['items'][1]['id'].endswith('@draft'))
         self.assertTrue(result['results']['items'][2]['id'].endswith('@draft'))
+        self.assertTrue(result['results']['items'][3]['id'].endswith('@draft'))
 
         titles = [i['title'] for i in result['results']['items']]
         self.assertEqual(titles, [
             u'new document by {}'.format(uid),
             u'Copy of Indkøb',
-            u'oldest document by {}'.format(uid)])
+            u'oldest document by {}'.format(uid),
+            u'document by {} user'.format(uid) ])
 
         derived_from = [i['derivedFrom'] for i in result['results']['items']]
         self.assertEqual(derived_from, [None,
-            '91cb5f28-2b8a-4324-9373-dac1d617bc24@1', None])
+            '91cb5f28-2b8a-4324-9373-dac1d617bc24@1', None, None])
 
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
