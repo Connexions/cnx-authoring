@@ -48,8 +48,10 @@ class MockAuthenticationPolicy(object):
 
     def effective_principals(self, request):
         groups = [Everyone]
-        if self.authenticated_userid(request):
+        userid = self.authenticated_userid(request)
+        if userid:
             groups.append(Authenticated)
+            groups.append(userid)
         return groups
 
     def remember(self, request, principal, **kw):
@@ -122,7 +124,7 @@ class FunctionalTests(unittest.TestCase):
     def setUp(self):
         FunctionalTests.profile = {u'username': u'me'}
 
-    def derived_from(self, return_value=None, content_type=None):
+    def mock_archive(self, return_value=None, content_type=None):
         response = mock.Mock()
         response.info = mock.Mock()
         response.info().getheader = mock.Mock(side_effect={
@@ -279,6 +281,37 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/contents/1234abcde@draft.json', status=404)
         self.assert_cors_headers(response)
 
+    def test_get_content_403(self):
+        response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'title': 'My New Document',
+                    }),
+                status=201)
+        content = json.loads(response.body.decode('utf-8'))
+        with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.get('/contents/{}@draft.json'
+                    .format(content['id']), status=403)
+        self.assertTrue('You do not have permission to view'
+                in response.body.decode('utf-8'))
+
+        response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'title': 'My New Binder',
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    'tree': {
+                        'contents': [],
+                        },
+                    }),
+                status=201)
+        content = json.loads(response.body.decode('utf-8'))
+        with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.get('/contents/{}@draft.json'
+                    .format(content['id']), status=403)
+        self.assertTrue('You do not have permission to view'
+                in response.body.decode('utf-8'))
+
     def test_get_content_for_document(self):
         response = self.testapp.post('/users/contents',
                 json.dumps({
@@ -322,6 +355,26 @@ class FunctionalTests(unittest.TestCase):
     def test_post_content_401(self):
         FunctionalTests.profile = None
         response = self.testapp.post('/users/contents', status=401)
+        self.assert_cors_headers(response)
+
+    def test_post_content_403(self):
+        with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.post('/users/contents', 
+                json.dumps({'title': u'My document タイトル'}),
+                status=403)
+        self.assert_cors_headers(response)
+
+        with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'title': u'My book タイトル',
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    'tree': {
+                        'contents': [],
+                        },
+                    }), status=403)
         self.assert_cors_headers(response)
 
     def test_post_content_invalid_json(self):
@@ -450,7 +503,7 @@ class FunctionalTests(unittest.TestCase):
         post_data = {
                 'derivedFrom': u'notfound@1',
             }
-        self.derived_from()
+        self.mock_archive()
 
         response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
@@ -459,7 +512,7 @@ class FunctionalTests(unittest.TestCase):
         self.assert_cors_headers(response)
 
     def test_post_content_derived_from_not_json(self):
-        self.derived_from(return_value=b'invalid json')
+        self.mock_archive(return_value=b'invalid json')
         post_data = {
                 'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             }
@@ -474,7 +527,7 @@ class FunctionalTests(unittest.TestCase):
         post_data = {
                 'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             }
-        self.derived_from(content_type='image/jpeg')
+        self.mock_archive(content_type='image/jpeg')
 
         response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
@@ -550,7 +603,7 @@ class FunctionalTests(unittest.TestCase):
         post_data = {
                 'derivedFrom': u'b0db72d9-fac3-4b43-9926-7e6e801663fb@1',
             }
-        self.derived_from()
+        self.mock_archive()
 
         response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
@@ -617,7 +670,7 @@ class FunctionalTests(unittest.TestCase):
         self.assert_cors_headers(response)
 
     def test_post_content_derived_from_binder(self):
-        self.derived_from()
+        self.mock_archive()
         post_data = {
                 'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
             }
@@ -716,6 +769,121 @@ class FunctionalTests(unittest.TestCase):
             u'state': u'Draft',
             u'publication': None,
             })
+        self.assert_cors_headers(response)
+
+    def test_post_content_revision_403(self):
+        self.mock_archive()
+        post_data = {
+            'id': '91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
+            'title': u"Turning DNA through resonance",
+            'abstract': u"Theories on turning DNA structures",
+            'language': u'en',
+            'content': u"Ding dong the switch is flipped.",
+            'subjects': [u'Science and Technology'],
+            'keywords': [u'DNA', u'resonance'],
+            }
+
+        response = self.testapp.post('/users/contents',
+                json.dumps(post_data),
+                status=403)
+
+    def test_post_content_revision_404(self):
+        self.mock_archive()
+        post_data = {
+            'id': 'edf794be-28bc-4242-8ae2-b043e4dd32ef@1',
+            'title': u"Turning DNA through resonance",
+            'abstract': u"Theories on turning DNA structures",
+            'language': u'en',
+            'content': u"Ding dong the switch is flipped.",
+            'subjects': [u'Science and Technology'],
+            'keywords': [u'DNA', u'resonance'],
+            }
+
+        response = self.testapp.post('/users/contents',
+                json.dumps(post_data),
+                status=404)
+
+    def test_post_content_revision(self):
+        self.mock_archive(content_type='image/jpeg')
+        FunctionalTests.profile = {'username': 'Rasmus1975'}
+        post_data = {
+            'id': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
+            'title': u'Turning DNA through resonance',
+            'abstract': u'Theories on turning DNA structures',
+            'language': u'en',
+            'subjects': [u'Science and Technology'],
+            'keywords': [u'DNA', u'resonance'],
+            }
+
+        response = self.testapp.post('/users/contents',
+                json.dumps(post_data),
+                status=201)
+        result = json.loads(response.body.decode('utf-8'))
+        license = result.pop('license')
+        self.assertEqual(license['url'], DEFAULT_LICENSE.url)
+        created = result.pop('created')
+        self.assertTrue(created.startswith('2011-10-05'))
+        revised = result.pop('revised')
+        self.assertFalse(revised.startswith('2011'))
+        content = result.pop('content')
+        self.assertTrue(u'Lav en madplan for den kommende uge' in content)
+
+        self.assertEqual(result, {
+            u'submitter': u'Rasmus1975',
+            u'id': post_data['id'].split('@')[0],
+            u'derivedFrom': None,
+            u'derivedFromTitle': None,
+            u'derivedFromUri': None,
+            u'title': u'Turning DNA through resonance',
+            u'abstract': u'Theories on turning DNA structures',
+            u'language': u'en',
+            u'mediaType': u'application/vnd.org.cnx.module',
+            u'version': u'draft',
+            u'subjects': [u'Science and Technology'],
+            u'keywords': [u'DNA', u'resonance'],
+            u'state': u'Draft',
+            u'publication': None,
+            u'cnx-archive-uri': post_data['id'],
+            })
+        self.assert_cors_headers(response)
+
+        response = self.testapp.get('/contents/{}@draft.json'.format(result['id']),
+                status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        content = result.pop('content')
+        self.assertTrue(u'Lav en madplan for den kommende uge' in content)
+        self.assertTrue(content.startswith('<html'))
+        self.assertTrue(result.pop('created') is not None)
+        self.assertTrue(result.pop('revised') is not None)
+        self.assertEqual(result, {
+            u'submitter': u'Rasmus1975',
+            u'id': result['id'],
+            u'derivedFrom': None,
+            u'derivedFromTitle': None,
+            u'derivedFromUri': None,
+            u'title': u'Turning DNA through resonance',
+            u'abstract': u'Theories on turning DNA structures',
+            u'language': u'en',
+            u'mediaType': u'application/vnd.org.cnx.module',
+            u'version': u'draft',
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
+            u'subjects': [u'Science and Technology'],
+            u'keywords': [u'DNA', u'resonance'],
+            u'state': u'Draft',
+            u'publication': None,
+            u'cnx-archive-uri': post_data['id'],
+            })
+        self.assert_cors_headers(response)
+
+        # Check that resources are saved
+        resource_path = re.search('(/resources/[^"]*)"', content).group(1)
+        response = self.testapp.get(resource_path, status=200)
+        self.assertEqual(response.content_type, 'image/jpeg')
         self.assert_cors_headers(response)
 
     def test_post_content(self):
@@ -860,6 +1028,42 @@ class FunctionalTests(unittest.TestCase):
                 status=404)
         self.assert_cors_headers(response)
 
+    def test_put_content_403(self):
+        response = self.testapp.post('/users/contents', 
+                json.dumps({
+                    'title': u'My document タイトル',
+                    'abstract': u'My document abstract',
+                    'language': u'en'}),
+                status=201)
+        document = json.loads(response.body.decode('utf-8'))
+
+        with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.put(
+                '/contents/{}@draft.json'.format(document['id']),
+                json.dumps({'title': 'new title'}), status=403)
+        self.assertTrue('You do not have permission to edit'
+                in response.body.decode('utf-8'))
+
+        response = self.testapp.post('/users/contents', 
+                json.dumps({
+                    'title': u'My binder タイトル',
+                    'mediaType': 'application/vnd.org.cnx.collection',
+                    'tree': {
+                        'contents': [],
+                        },
+                    'language': u'en'}),
+                status=201)
+        binder = json.loads(response.body.decode('utf-8'))
+
+        with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.put(
+                '/contents/{}@draft.json'.format(binder['id']),
+                json.dumps({'title': 'new title'}), status=403)
+        self.assertTrue('You do not have permission to edit'
+                in response.body.decode('utf-8'))
+
     def test_put_content_invalid_json(self):
         response = self.testapp.post('/users/contents', 
                 json.dumps({
@@ -880,7 +1084,7 @@ class FunctionalTests(unittest.TestCase):
         post_data = {
                 'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             }
-        self.derived_from()
+        self.mock_archive()
 
         response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
@@ -929,7 +1133,7 @@ class FunctionalTests(unittest.TestCase):
         post_data = {
                 'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
             }
-        self.derived_from()
+        self.mock_archive()
 
         response = self.testapp.post('/users/contents',
                 json.dumps(post_data),
@@ -1269,6 +1473,21 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/resources/1234abcde', status=401)
         self.assert_cors_headers(response)
 
+    def test_get_resource_403(self):
+        with open(test_data('1x1.png'), 'rb') as data:
+            upload_data = data.read()
+
+        response = self.testapp.post('/resources',
+                {'file': Upload('1x1.png', upload_data, 'image/png')},
+                status=201)
+        self.assert_cors_headers(response)
+        redirect_url = response.headers['Location']
+
+        with mock.patch('cnxauthoring.models.Resource.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.get(redirect_url, status=403)
+        self.assert_cors_headers(response)
+
     def test_get_resource_404(self):
         response = self.testapp.get('/resources/1234abcde', status=404)
         self.assert_cors_headers(response)
@@ -1298,6 +1517,14 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.post('/resources',
                 {'file': Upload('a.txt', b'hello\n', 'text/plain')},
                 status=401)
+        self.assert_cors_headers(response)
+
+    def test_post_resource_403(self):
+        with mock.patch('cnxauthoring.models.Resource.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.post('/resources',
+                {'file': Upload('a.txt', b'hello\n', 'text/plain')},
+                status=403)
         self.assert_cors_headers(response)
 
     def test_post_resource(self):
@@ -1401,7 +1628,7 @@ class FunctionalTests(unittest.TestCase):
             })
         self.assert_cors_headers(response)
 
-        self.derived_from()
+        self.mock_archive()
 
         import datetime
         one_week_ago = datetime.datetime.now() - datetime.timedelta(7)
@@ -1455,6 +1682,54 @@ class FunctionalTests(unittest.TestCase):
         FunctionalTests.profile = None
         response = self.testapp.post('/publish', '{}', status=401)
         self.assert_cors_headers(response)
+
+    def test_publish_403(self):
+        post_data = {
+                'title': 'Page one',
+                'content': '<html><body><p>Contents of Page one</p></body></html>',
+                'abstract': 'Learn how to etc etc',
+                }
+        response = self.testapp.post('/users/contents', json.dumps(post_data),
+                status=201)
+        page = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+                'submitlog': u'Nueva versión!',
+                'items': [
+                    page['id'],
+                    ],
+                }
+        with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    status=403)
+        self.assertTrue('You do not have permission to publish'
+                    in response.body.decode('utf-8'))
+
+        post_data = {
+                'title': 'Binder',
+                'mediaType': 'application/vnd.org.cnx.collection',
+                'tree': {
+                    'contents': [],
+                    },
+                }
+        response = self.testapp.post('/users/contents', json.dumps(post_data),
+                status=201)
+        book = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+                'submitlog': u'Nueva versión!',
+                'items': [
+                    book['id'],
+                    ],
+                }
+        with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
+            acl.return_value = ()
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    status=403)
+        self.assertTrue('You do not have permission to publish'
+                    in response.body.decode('utf-8'))
+
 
     def test_publish_service_not_available(self):
         post_data = {
@@ -1589,7 +1864,7 @@ class FunctionalTests(unittest.TestCase):
         post_data = {
                 'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
                 }
-        self.derived_from(content_type='image/jpeg')
+        self.mock_archive(content_type='image/jpeg')
         response = self.testapp.post('/users/contents', json.dumps(post_data),
                 status=201)
         page = json.loads(response.body.decode('utf-8'))
@@ -1749,7 +2024,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue('Learn how to etc etc' in documents[0].metadata['summary'])
 
     def test_publish_derived_from_binder(self):
-        self.derived_from()
+        self.mock_archive()
         post_data = {
                 'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
             }
@@ -1824,3 +2099,59 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(models[1].metadata['title'], u'Indkøb')
         self.assertEqual(models[2].metadata['title'], u'Fødevarer og Hygiejne')
         self.assertEqual(models[3].metadata['title'], u'Fødevarer')
+
+    def test_publish_revision_single_page(self):
+        self.mock_archive(content_type='image/jpeg')
+        FunctionalTests.profile = {'username': 'Rasmus1975'}
+        post_data = {
+            'id': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
+            'title': u'Turning DNA through resonance',
+            'abstract': u'Theories on turning DNA structures',
+            'language': u'en',
+            'subjects': [u'Science and Technology'],
+            'keywords': [u'DNA', u'resonance'],
+            }
+
+        response = self.testapp.post('/users/contents',
+                json.dumps(post_data),
+                status=201)
+        self.assert_cors_headers(response)
+        page = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+                'submitlog': 'Publishing a revision',
+                'items': [
+                    page['id'],
+                    ],
+                }
+        mock_output = json.dumps({
+            'state': 'Done/Success',
+            'publication': 201,
+            'mapping': {
+                page['id']: '{}@2'.format(page['id']),
+                },
+            }).encode('utf-8')
+        with mock.patch('requests.post') as patched_post:
+            patched_post.return_value = mock.Mock(status_code=200, content=mock_output)
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    status=200)
+            self.assertEqual(patched_post.call_count, 1)
+            args, kwargs = patched_post.call_args
+
+        self.assertEqual(args, ('http://localhost:6543/publications',))
+        self.assertEqual(kwargs['headers'], {'x-api-key': 'b07'})
+        filename, epub, content_type = kwargs['files']['epub']
+        self.assertEqual(filename, 'contents.epub')
+        self.assertEqual(content_type, 'application/epub+zip')
+
+        parsed_epub = cnxepub.EPUB.from_file(io.BytesIO(epub))
+        package = parsed_epub[0]
+        publication_binder = cnxepub.adapt_package(package)
+        self.assertEqual(publication_binder.metadata,
+                         {'title': 'Publications binder'})
+        self.assertEqual(package.metadata['publication_message'],
+                         'Publishing a revision')
+
+        documents = list(cnxepub.flatten_to_documents(publication_binder))
+        self.assertEqual(documents[0].id, page['id'])
+        self.assertEqual(documents[0].get_uri('cnx-archive'), page['id'])

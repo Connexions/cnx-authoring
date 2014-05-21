@@ -22,8 +22,8 @@ from pyramid import httpexceptions
 import requests
 from openstax_accounts.interfaces import *
 
-from .models import (create_content, derive_content, Document, Resource,
-        BINDER_MEDIATYPE, derive_resources, DocumentNotFoundError)
+from .models import (create_content, derive_content, revise_content, Document,
+        Resource, BINDER_MEDIATYPE, DocumentNotFoundError)
 from .schemata import DocumentSchema, BinderSchema
 from .storage import storage
 from . import utils
@@ -103,6 +103,7 @@ def profile(request):
 def user_contents(request):
     """Extract of the contents that belong to the current logged in user"""
     items = []
+    # TODO use acls instead of filter by submitter
     for content in storage.get_all(submitter=request.unauthenticated_userid):
         item = content.__json__()
         document = {k: item[k] for k in  
@@ -127,9 +128,12 @@ def user_contents(request):
 def get_content(request):
     """Acquisition of content by id"""
     id = request.matchdict['id']
-    content = storage.get(id=id, submitter=request.unauthenticated_userid)
+    content = storage.get(id=id)
     if content is None:
         raise httpexceptions.HTTPNotFound()
+    if not request.has_permission('view', content):
+        raise httpexceptions.HTTPForbidden(
+                'You do not have permission to view {}'.format(id))
     if (content.metadata['state'] not in [None, 'Done/Success'] and
             content.metadata['publication']):
         publishing_url = request.registry.settings['publishing.url']
@@ -156,6 +160,8 @@ def get_resource(request):
     resource = storage.get(hash=hash, type_=Resource)
     if resource is None:
         raise httpexceptions.HTTPNotFound()
+    if not request.has_permission('view', resource):
+        raise httpexceptions.HTTPForbidden()
     resp = request.response
     resp.body = resource.data.read()
     resource.data.seek(0)
@@ -166,11 +172,25 @@ def get_resource(request):
 def post_content_single(request, cstruct):
     utils.change_dict_keys(cstruct, utils.camelcase_to_underscore)
     derived_from = cstruct.get('derived_from')
+    archive_id = cstruct.get('id')
     if derived_from:
-        cstruct = derive_content(request, **cstruct)
-        if not cstruct:
+        try:
+            cstruct = derive_content(request, **cstruct)
+        except DocumentNotFoundError:
             raise httpexceptions.HTTPBadRequest(
                     'Derive failed: {}'.format(derived_from))
+
+    if archive_id:
+        try:
+            cstruct = revise_content(request, **cstruct)
+        except DocumentNotFoundError:
+            raise httpexceptions.HTTPNotFound()
+        # TODO users other than the submitter should be able to edit it
+        # (requires permission information from archive)
+        if cstruct['submitter']['id'] != request.unauthenticated_userid:
+            raise httpexceptions.HTTPForbidden(
+                    'You do not have permission to edit {}'.format(archive_id))
+
     cstruct['submitter'] = request.unauthenticated_userid
     if cstruct.get('media_type') == BINDER_MEDIATYPE:
         schema = BinderSchema()
@@ -181,10 +201,13 @@ def post_content_single(request, cstruct):
     except Exception as e:
         raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
     appstruct['derived_from'] = derived_from
+    if archive_id:
+        appstruct['id'] = archive_id.split('@')[0]
+        appstruct['cnx_archive_uri'] = archive_id
     content = create_content(**appstruct)
     resources = []
-    if content.mediatype != BINDER_MEDIATYPE and derived_from:
-        resources = derive_resources(request, content)
+    if content.mediatype != BINDER_MEDIATYPE and (derived_from or archive_id):
+        resources = utils.derive_resources(request, content)
 
     for r in resources:
         try:
@@ -218,9 +241,13 @@ def post_content(request):
     try:
         if isinstance(cstruct, list):
             for item in cstruct:
-                contents.append(post_content_single(request, item).__json__())
+                contents.append(post_content_single(request, item))
+                if not request.has_permission('create', contents[-1]):
+                    raise httpexceptions.HTTPForbidden()
         else:
             content = post_content_single(request, cstruct)
+            if not request.has_permission('create', content):
+                raise httpexceptions.HTTPForbidden()
     except DocumentNotFoundError as e:
         raise httpexceptions.HTTPBadRequest(e.message)
 
@@ -246,6 +273,9 @@ def post_resource(request):
     data = file_form_field.file
 
     resource = Resource(mediatype, data)
+    if not request.has_permission('create', resource):
+        raise httpexceptions.HTTPForbidden()
+
     try:
         resource = storage.add(resource)
     except:
@@ -265,9 +295,12 @@ def post_resource(request):
 def put_content(request):
     """Modify a stored document"""
     id = request.matchdict['id']
-    content = storage.get(id=id, submitter=request.unauthenticated_userid)
+    content = storage.get(id=id)
     if content is None:
         raise httpexceptions.HTTPNotFound()
+    if not request.has_permission('edit', content):
+        raise httpexceptions.HTTPForbidden(
+                'You do not have permission to edit {}'.format(id))
 
     try:
         cstruct = request.json_body
@@ -361,6 +394,9 @@ def post_to_publishing(request, userid, submitlog, content_ids):
                 if content_item is None:
                     raise httpexceptions.HTTPBadRequest('Unable to publish: '
                             'content not found {}'.format(content_id))
+                if not request.has_permission('publish', content):
+                    raise httpexceptions.HTTPForbidden(
+                        'You do not have permission to publish {}'.format(content_id))
                 content.append(content_item)
 
         else:  #documentid
@@ -371,6 +407,9 @@ def post_to_publishing(request, userid, submitlog, content_ids):
             if content is None:
                 raise httpexceptions.HTTPBadRequest('Unable to publish: '
                         'content not found {}'.format(content_id))
+            if not request.has_permission('publish', content):
+                raise httpexceptions.HTTPForbidden(
+                    'You do not have permission to publish {}'.format(content_id))
 
         contents.append(content)
 

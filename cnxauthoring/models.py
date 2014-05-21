@@ -7,20 +7,12 @@
 # ###
 import datetime
 import io
-import json
 import hashlib
 import uuid
-try:
-    import urllib2 # python2
-except ImportError:
-    import urllib.request as urllib2 # renamed in python3
-try:
-    import urlparse # python2
-except ImportError:
-    import urllib.parse as urlparse # renamed in python3
 
 import tzlocal
 import cnxepub.models as cnxepub
+from pyramid.security import Allow, Authenticated
 
 from . import utils
 
@@ -98,6 +90,11 @@ class Resource(cnxepub.Resource):
                 mediatype, filename)
         self._hash = _hash
 
+    def __acl__(self):
+        return (
+                (Allow, Authenticated, ('view', 'create',)),
+                )
+
 
 class Document(cnxepub.Document):
     """Modular documents that contain written text
@@ -105,12 +102,26 @@ class Document(cnxepub.Document):
     """
     mediatype = DOCUMENT_MEDIATYPE
 
-    def __init__(self, title, **kwargs):
+    def __init__(self, title, acls=None, **kwargs):
         metadata = build_metadata(title, **kwargs)
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         content = metadata['content']
         cnxepub.Document.__init__(self, id, content, metadata)
+        if acls is None:
+            self.acls = []
+        else:
+            self.acls = acls
+
+    def __acl__(self):
+        acls = [(Allow, Authenticated, ('create',))]
+        acls.append((Allow, self.metadata['submitter'],
+            ('view', 'edit', 'publish')))
+        for user_permissions in self.acls:
+            userid = user_permissions[0]
+            permissions = user_permissions[1:]
+            acls.append((Allow, userid, tuple(permissions)))
+        return acls
 
     def update(self, **kwargs):
         if 'license' in kwargs:
@@ -243,13 +254,27 @@ class Binder(cnxepub.Binder):
     """
     mediatype = BINDER_MEDIATYPE
 
-    def __init__(self, title, tree, **kwargs):
+    def __init__(self, title, tree, acls=None, **kwargs):
         metadata = build_metadata(title, **kwargs)
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         nodes, title_overrides = build_tree(tree)
         cnxepub.Binder.__init__(self, id, nodes=nodes,
                 metadata=metadata, title_overrides=title_overrides)
+        if acls is None:
+            self.acls = []
+        else:
+            self.acls = acls
+
+    def __acl__(self):
+        acls = [(Allow, Authenticated, ('create',))]
+        acls.append((Allow, self.metadata['submitter'],
+            ('create', 'view', 'edit', 'publish')))
+        for user_permissions in self.acls:
+            userid = user_permissions[0]
+            permissions = user_permissions[1:]
+            acls.append((Allow, userid, tuple(permissions)))
+        return acls
 
     def update(self, **kwargs):
         if 'license' in kwargs:
@@ -300,21 +325,18 @@ def create_content(**appstruct):
     return document
 
 
+def revise_content(request, **kwargs):
+    archive_id = kwargs['id']
+    document = utils.fetch_archive_content(request, archive_id)
+    document.update(kwargs)
+    document['revised'] = None
+    document['license'] = {'url': DEFAULT_LICENSE.url}
+    return document
+
+
 def derive_content(request, **kwargs):
     derived_from = kwargs['derived_from']
-    settings = request.registry.settings
-    archive_url = settings['archive.url']
-    content_url = urlparse.urljoin(archive_url,
-            '/contents/{}.json'.format(derived_from))
-    try:
-        response = urllib2.urlopen(content_url).read()
-    except urllib2.HTTPError:
-        return
-    try:
-        document = json.loads(response.decode('utf-8'))
-    except (TypeError, ValueError):
-        return
-    utils.change_dict_keys(document, utils.camelcase_to_underscore)
+    document = utils.fetch_archive_content(request, derived_from)
     document['derived_from_title'] = document['title']
     # TODO not hardcode this url
     document['derived_from_uri'] = 'http://cnx.org/contents/{}'.format(derived_from)
@@ -323,22 +345,3 @@ def derive_content(request, **kwargs):
     document['revised'] = None
     document['license'] = {'url': DEFAULT_LICENSE.url}
     return document
-
-
-def derive_resources(request, document):
-    settings = request.registry.settings
-    archive_url = settings['archive.url']
-    path = urlparse.unquote(request.route_path('get-resource', hash='{}'))
-    resources = {}
-    for r in document.references:
-        if r.uri.startswith('/resources'):
-            if not resources.get(r.uri):
-                try:
-                    response = urllib2.urlopen(urlparse.urljoin(archive_url, r.uri))
-                except urllib2.HTTPError:
-                    continue
-                content_type = response.info().getheader('Content-Type')
-                resources[r.uri] = Resource(content_type, response)
-                yield resources[r.uri]
-            r.bind(resources[r.uri], path)
-    document.metadata['content'] = document.html
