@@ -22,8 +22,8 @@ from pyramid import httpexceptions
 import requests
 from openstax_accounts.interfaces import *
 
-from .models import (create_content, derive_content, revise_content, Document,
-        Resource, BINDER_MEDIATYPE, DocumentNotFoundError)
+from .models import (create_content, derive_content, revise_content,
+        Document, Resource, BINDER_MEDIATYPE, DocumentNotFoundError)
 from .schemata import DocumentSchema, BinderSchema
 from .storage import storage
 from . import utils
@@ -97,6 +97,23 @@ def user_search(request):
 def profile(request):
     return request.user
 
+def update_content_state(request, content):
+    """Updates content state if it is non-terminal by checking w/ publishing service"""
+    if (content.metadata['state'] not in [None, 'Done/Success'] and
+            content.metadata['publication']):
+        publishing_url = request.registry.settings['publishing.url']
+        if not publishing_url.endswith('/'):
+            publishing_url = publishing_url + '/'
+        response = requests.get(urlparse.urljoin(
+            publishing_url, content.metadata['publication']))
+        if response.status_code == 200:
+            try:
+                result = json.loads(response.content.decode('utf-8'))
+                content.update(state=result['state'])
+                storage.update(content)
+                storage.persist()
+            except (TypeError, ValueError):
+                pass
 
 @view_config(route_name='user-contents', request_method='GET', renderer='json')
 @authenticated_only
@@ -105,10 +122,12 @@ def user_contents(request):
     items = []
     # TODO use acls instead of filter by submitter
     for content in storage.get_all(submitter=request.unauthenticated_userid):
+        update_content_state(request, content)
         item = content.__json__()
         document = {k: item[k] for k in  
-               ['mediaType', 'title', 'id', 'version', 'revised', 'derivedFrom']}
-        document['id'] = '@'.join([document['id'], document['version']])
+               ['mediaType', 'title', 'id', 'version', 'revised', 'derivedFrom','state']}
+        if document['state'] != 'Done/Success':
+            document['id'] = '@'.join([document['id'], document['version']])
         items.append(document)
     items.sort(key=lambda item: item['revised'], reverse=True)
     return {
@@ -134,21 +153,7 @@ def get_content(request):
     if not request.has_permission('view', content):
         raise httpexceptions.HTTPForbidden(
                 'You do not have permission to view {}'.format(id))
-    if (content.metadata['state'] not in [None, 'Done/Success'] and
-            content.metadata['publication']):
-        publishing_url = request.registry.settings['publishing.url']
-        if not publishing_url.endswith('/'):
-            publishing_url = publishing_url + '/'
-        response = requests.get(urlparse.urljoin(
-            publishing_url, content.metadata['publication']))
-        if response.status_code == 200:
-            try:
-                result = json.loads(response.content.decode('utf-8'))
-                content.update(state=result['state'])
-                storage.update(content)
-                storage.persist()
-            except (TypeError, ValueError):
-                pass
+    update_content_state(request, content)
     return content
 
 
