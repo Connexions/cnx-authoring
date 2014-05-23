@@ -171,6 +171,8 @@ def get_resource(request):
     resp.body = resource.data.read()
     resource.data.seek(0)
     resp.content_type = resource.media_type
+    if 'html' in resp.content_type:
+        resp.content_type = 'application/octet-stream'
     return resp
 
 
