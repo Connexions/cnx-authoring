@@ -27,13 +27,12 @@ setup(
         url='https://github.com/connexions/cnx-authoring',
         license='LGPL, See also LICENSE.txt',
         description='Unpublished repo',
-        packages=find_packages(),
+        packages=find_packages(exclude=['*.tests', '*.tests.*']),
         install_requires=install_requires,
         tests_require=tests_require,
         package_data={
             'cnxauthoring.storage': ['sql/*.sql', 'sql/*/*.sql'],
             },
-        include_package_data=True,
         entry_points={
             'paste.app_factory': [
                 'main = cnxauthoring:main',
