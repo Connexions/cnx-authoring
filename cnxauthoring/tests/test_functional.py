@@ -1492,6 +1492,24 @@ class FunctionalTests(unittest.TestCase):
         response = self.testapp.get('/resources/1234abcde', status=404)
         self.assert_cors_headers(response)
 
+    def test_get_resource_html(self):
+        """Test that a html resource file will get downloaded as a binary file
+        to avoid people using it to steal cookies etc
+
+        See https://github.com/Connexions/cnx-authoring/issues/64
+        """
+        upload_data = b'<html><body><h1>title</h1></body></html>'
+        response = self.testapp.post('/resources', {
+            'file': Upload('a.html', upload_data,
+                'text/html')}, status=201)
+        redirect_url = response.headers['Location']
+        self.assert_cors_headers(response)
+
+        response = self.testapp.get(redirect_url, status=200)
+        self.assertEqual(response.body, upload_data)
+        self.assertEqual(response.content_type, 'application/octet-stream')
+        self.assert_cors_headers(response)
+
     def test_get_resource(self):
         with open(test_data('1x1.png'), 'rb') as data:
             upload_data = data.read()
