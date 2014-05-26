@@ -179,3 +179,30 @@ def derive_resources(request, document):
                 yield resources[r.uri]
             r.bind(resources[r.uri], path)
     document.metadata['content'] = document.html
+
+
+def profile_to_user_dict(profile):
+    """Take a profile from openstax accounts and transform it into a local user
+    format"""
+    # in case it's already in the local user format, no need to transform
+    if 'email' in profile:
+        return profile
+    email = None
+    for contact_info in profile.get('contact_infos') or []:
+        if contact_info.get('type') == 'EmailAddress':
+            email = contact_info.get('value')
+    return {
+            'firstname': profile.get('first_name') or '',
+            'surname': profile.get('last_name') or '',
+            'email': email or '',
+            'id': profile.get('username') or '',
+            'username': profile.get('username') or '',
+            }
+
+
+def fix_user_fields(metadata):
+    for field in ['submitter']:
+        if isinstance(metadata[field], list):
+            metadata[field] = [profile_to_user_dict(i) for i in metadata[field]]
+        elif isinstance(metadata[field], dict):
+            metadata[field] = profile_to_user_dict(metadata[field])

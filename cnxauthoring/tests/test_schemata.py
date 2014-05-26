@@ -14,7 +14,7 @@ class DocumentSchemaTestCase(unittest.TestCase):
     def test_datetime_fields_missing(self):
         cstruct = {
             'title': 'required title',
-            'submitter': 'username',
+            'submitter': {'username': 'username'},
             }
         from ..schemata import document_schema
         appstruct = document_schema.bind().deserialize(cstruct)

@@ -107,6 +107,7 @@ class Document(cnxepub.Document):
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         content = metadata['content']
+        utils.fix_user_fields(metadata)
         cnxepub.Document.__init__(self, id, content, metadata)
         if acls is None:
             self.acls = []
@@ -115,7 +116,7 @@ class Document(cnxepub.Document):
 
     def __acl__(self):
         acls = [(Allow, Authenticated, ('create',))]
-        acls.append((Allow, self.metadata['submitter'],
+        acls.append((Allow, self.metadata['submitter']['id'],
             ('view', 'edit', 'publish')))
         for user_permissions in self.acls:
             userid = user_permissions[0]
@@ -130,6 +131,7 @@ class Document(cnxepub.Document):
             if key in self.metadata:
                 self.metadata[key] = value
         self.content = self.metadata['content']
+        utils.fix_user_fields(self.metadata)
 
     def to_dict(self):
         return to_dict(self.metadata)
@@ -259,6 +261,7 @@ class Binder(cnxepub.Binder):
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         nodes, title_overrides = build_tree(tree)
+        utils.fix_user_fields(metadata)
         cnxepub.Binder.__init__(self, id, nodes=nodes,
                 metadata=metadata, title_overrides=title_overrides)
         if acls is None:
@@ -268,7 +271,7 @@ class Binder(cnxepub.Binder):
 
     def __acl__(self):
         acls = [(Allow, Authenticated, ('create',))]
-        acls.append((Allow, self.metadata['submitter'],
+        acls.append((Allow, self.metadata['submitter']['id'],
             ('create', 'view', 'edit', 'publish')))
         for user_permissions in self.acls:
             userid = user_permissions[0]
@@ -286,6 +289,7 @@ class Binder(cnxepub.Binder):
         for key, value in kwargs.items():
             if key in self.metadata:
                 self.metadata[key] = value
+        utils.fix_user_fields(self.metadata)
 
     def publish_prep(self):
         license = self.metadata['license']

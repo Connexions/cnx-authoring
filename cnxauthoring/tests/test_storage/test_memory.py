@@ -12,6 +12,13 @@ import uuid
 from .. import test_data
 from ...models import Document, Resource, Binder
 
+SUBMITTER = {
+        u'id': u'me',
+        u'email': u'me@example.com',
+        u'firstname': u'User',
+        u'surname': u'One',
+        }
+
 class MemoryStorageTests(unittest.TestCase):
     def setUp(self):
         from ...storage.memory import MemoryStorage
@@ -22,7 +29,7 @@ class MemoryStorageTests(unittest.TestCase):
         d = Document('Document Title: One', id=d1_id,
                      content='<p>Document One contents etc</p>',
                      abstract='Summary of Document One',
-                     submitter='me',
+                     submitter=SUBMITTER,
                      language='en')
         self.storage.add(d)
         self.storage.persist()
@@ -34,7 +41,7 @@ class MemoryStorageTests(unittest.TestCase):
         d2 = Document('Document Two', id=d2_id,
                       content='<p>Document Two contents etc</p>',
                       abstract='Summary of Document Two',
-                      submitter='me',
+                      submitter=SUBMITTER,
                       language='en')
         self.storage.add(d2)
         self.storage.persist()
@@ -47,7 +54,7 @@ class MemoryStorageTests(unittest.TestCase):
 
     def test_add_and_get_binder(self):
         d1_id = uuid.uuid4()
-        d = Document('Document Title: One', id=d1_id, submitter='me')
+        d = Document('Document Title: One', id=d1_id, submitter=SUBMITTER)
         self.storage.add(d)
         self.storage.persist()
 
@@ -56,7 +63,7 @@ class MemoryStorageTests(unittest.TestCase):
             'contents': [
                 {'id': str(d1_id)},
                 ]},
-            id=b1_id, submitter='me')
+            id=b1_id, submitter=SUBMITTER)
         self.storage.add(b)
         self.storage.persist()
 
@@ -82,7 +89,7 @@ class MemoryStorageTests(unittest.TestCase):
         d = Document('Document Title: One', id=d1_id,
                      content='<p>Document One content etc</p>',
                      abstract='Summary of Document One',
-                     submitter='me',
+                     submitter=SUBMITTER,
                      language='en')
         self.storage.add(d)
         self.storage.persist()
@@ -129,9 +136,16 @@ class MemoryStorageTests(unittest.TestCase):
         result = self.storage.get(language='de', abstract='Summary of Document One')
         self.assertEqual(result, None)
 
+        # get by submitter username
+        result = self.storage.get(submitter={'id': 'me'})
+        self.assertEqual(result.to_dict(), d.to_dict())
+
+        result = self.storage.get(submitter={'id': 'you'})
+        self.assertEqual(result, None)
+
     def test_update_document(self):
         d1_id = uuid.uuid4()
-        d = Document('Document Title: One', id=d1_id, submitter='me')
+        d = Document('Document Title: One', id=d1_id, submitter=SUBMITTER)
         self.storage.add(d)
         self.storage.persist()
 
@@ -145,14 +159,14 @@ class MemoryStorageTests(unittest.TestCase):
 
     def test_update_binder(self):
         d1_id = uuid.uuid4()
-        d = Document('Document Title: One', id=d1_id, submitter='me')
+        d = Document('Document Title: One', id=d1_id, submitter=SUBMITTER)
         self.storage.add(d)
         self.storage.persist()
 
         b1_id = uuid.uuid4()
         b = Binder('Book Title', {
             'contents': []},
-            id=b1_id, submitter='me')
+            id=b1_id, submitter=SUBMITTER)
         self.storage.add(b)
         self.storage.persist()
 
