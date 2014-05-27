@@ -51,6 +51,10 @@ class User(colander.MappingSchema):
         return colander.Mapping(unknown='preserve')
 
 
+class Users(colander.SequenceSchema):
+    user = User()
+
+
 class DocumentSchema(colander.MappingSchema):
     """Schema for ``Document``"""
 
@@ -98,6 +102,7 @@ class DocumentSchema(colander.MappingSchema):
         missing=colander.drop,
         )
     submitter = User()
+    authors = Users()
     media_type = colander.SchemaNode(
         colander.String(),
         default=DOCUMENT_MEDIATYPE,

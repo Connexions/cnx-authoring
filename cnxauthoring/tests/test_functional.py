@@ -366,6 +366,7 @@ class FunctionalTests(unittest.TestCase):
             u'mediaType': u'application/vnd.org.cnx.module',
             u'language': u'en',
             u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'abstract': u'',
             u'version': u'draft',
             u'subjects': [],
@@ -565,6 +566,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Indkøb',
@@ -596,6 +598,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Indkøb',
@@ -641,6 +644,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Tilberedning',
@@ -672,6 +676,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Tilberedning',
@@ -708,6 +713,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -755,6 +761,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -860,6 +867,13 @@ class FunctionalTests(unittest.TestCase):
                 u'email': u'',
                 u'username': u'Rasmus1975',
                 },
+            u'authors': [{
+                u'id': u'Rasmus1975',
+                u'firstname': u'',
+                u'surname': u'',
+                u'email': u'',
+                u'username': u'Rasmus1975',
+                }],
             u'id': post_data['id'].split('@')[0],
             u'derivedFrom': None,
             u'derivedFromTitle': None,
@@ -893,6 +907,13 @@ class FunctionalTests(unittest.TestCase):
                 u'email': u'',
                 u'username': u'Rasmus1975',
                 },
+            u'authors': [{
+                u'id': u'Rasmus1975',
+                u'firstname': u'',
+                u'surname': u'',
+                u'email': u'',
+                u'username': u'Rasmus1975',
+                }],
             u'id': result['id'],
             u'derivedFrom': None,
             u'derivedFromTitle': None,
@@ -948,6 +969,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(revised.startswith('2014-03-13T15:21:15.677617'))
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': None,
             u'derivedFromTitle': None,
@@ -1021,6 +1043,7 @@ class FunctionalTests(unittest.TestCase):
             u'language': u'de',
             u'version': u'draft',
             u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'license': {
                 u'abbr': u'by',
                 u'name': u'Attribution',
@@ -1194,6 +1217,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -1232,6 +1256,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -1323,6 +1348,7 @@ class FunctionalTests(unittest.TestCase):
                     'state': 'Draft',
                     'version': 'draft',
                     'submitter': SUBMITTER,
+                    'authors': [SUBMITTER],
                     'error': False,
                     }), status=200)
 

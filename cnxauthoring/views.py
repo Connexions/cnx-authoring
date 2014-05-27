@@ -199,6 +199,7 @@ def post_content_single(request, cstruct):
                     'You do not have permission to edit {}'.format(archive_id))
 
     cstruct['submitter'] = request.user
+    cstruct['authors'] = [request.user]
     if cstruct.get('media_type') == BINDER_MEDIATYPE:
         schema = BinderSchema()
     else:

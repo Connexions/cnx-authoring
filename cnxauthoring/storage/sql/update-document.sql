@@ -15,6 +15,7 @@ UPDATE document
             derived_from_title = %(derived_from_title)s,
             derived_from_uri = %(derived_from_uri)s,
             submitter = %(submitter)s, subjects = %(subjects)s,
+            authors = %(authors)s,
             keywords = %(keywords)s, state = %(state)s,
             publication = %(publication)s, cnx_archive_uri = %(cnx-archive-uri)s
 WHERE id  = %(id)s

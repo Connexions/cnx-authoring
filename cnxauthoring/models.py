@@ -213,7 +213,8 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None,
         revised=None, subjects=None, keywords=None,
         license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None,
         derived_from_uri=None, derived_from_title=None,
-        submitter=None, state=None, publication=None, cnx_archive_uri=None):
+        submitter=None, state=None, publication=None, cnx_archive_uri=None,
+        authors=None):
     metadata = {}
     metadata['title'] = title
     metadata['version'] = 'draft'
@@ -245,6 +246,7 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None,
     metadata['state'] = state or 'Draft'
     if cnx_archive_uri:
         metadata['cnx-archive-uri'] = cnx_archive_uri
+    metadata['authors'] = authors or []
     return metadata
 
 
@@ -339,4 +341,5 @@ def derive_content(request, **kwargs):
     document['created'] = None
     document['revised'] = None
     document['license'] = {'url': DEFAULT_LICENSE.url}
+    document['authors'] = [request.user]
     return document
