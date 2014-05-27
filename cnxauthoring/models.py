@@ -96,7 +96,31 @@ class Resource(cnxepub.Resource):
                 )
 
 
-class Document(cnxepub.Document):
+class BaseContent:
+    """A base class for common code in Document and Binder
+    """
+
+    def __acl__(self):
+        acls = [(Allow, Authenticated, ('create',))]
+        acls.append((Allow, self.metadata['submitter']['id'],
+            ('view', 'edit', 'publish')))
+        for user_permissions in self.acls:
+            userid = user_permissions[0]
+            permissions = user_permissions[1:]
+            acls.append((Allow, userid, tuple(permissions)))
+        return acls
+
+    def to_dict(self):
+        return to_dict(self.metadata)
+
+    def __json__(self, request=None):
+        result = self.to_dict()
+        utils.change_dict_keys(result, utils.underscore_to_camelcase)
+        return result
+
+
+
+class Document(cnxepub.Document, BaseContent):
     """Modular documents that contain written text
     by one or more authors.
     """
@@ -114,16 +138,6 @@ class Document(cnxepub.Document):
         else:
             self.acls = acls
 
-    def __acl__(self):
-        acls = [(Allow, Authenticated, ('create',))]
-        acls.append((Allow, self.metadata['submitter']['id'],
-            ('view', 'edit', 'publish')))
-        for user_permissions in self.acls:
-            userid = user_permissions[0]
-            permissions = user_permissions[1:]
-            acls.append((Allow, userid, tuple(permissions)))
-        return acls
-
     def update(self, **kwargs):
         if 'license' in kwargs:
             del kwargs['license']
@@ -132,14 +146,6 @@ class Document(cnxepub.Document):
                 self.metadata[key] = value
         self.content = self.metadata['content']
         utils.fix_user_fields(self.metadata)
-
-    def to_dict(self):
-        return to_dict(self.metadata)
-
-    def __json__(self, request=None):
-        result = self.to_dict()
-        utils.change_dict_keys(result, utils.underscore_to_camelcase)
-        return result
 
     def publish_prep(self):
         license = self.metadata['license']
@@ -251,7 +257,7 @@ def to_dict(metadata):
     return result
 
 
-class Binder(cnxepub.Binder):
+class Binder(cnxepub.Binder, BaseContent):
     """A collection of documents
     """
     mediatype = BINDER_MEDIATYPE
@@ -268,16 +274,6 @@ class Binder(cnxepub.Binder):
             self.acls = []
         else:
             self.acls = acls
-
-    def __acl__(self):
-        acls = [(Allow, Authenticated, ('create',))]
-        acls.append((Allow, self.metadata['submitter']['id'],
-            ('create', 'view', 'edit', 'publish')))
-        for user_permissions in self.acls:
-            userid = user_permissions[0]
-            permissions = user_permissions[1:]
-            acls.append((Allow, userid, tuple(permissions)))
-        return acls
 
     def update(self, **kwargs):
         if 'license' in kwargs:
@@ -306,11 +302,6 @@ class Binder(cnxepub.Binder):
     def to_dict(self):
         result = to_dict(self.metadata)
         result['tree'] = cnxepub.model_to_tree(self)
-        return result
-
-    def __json__(self, request=None):
-        result = self.to_dict()
-        utils.change_dict_keys(result, utils.underscore_to_camelcase)
         return result
 
 
