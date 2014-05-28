@@ -121,7 +121,7 @@ def user_contents(request):
     """Extract of the contents that belong to the current logged in user"""
     items = []
     # TODO use acls instead of filter by submitter
-    for content in storage.get_all(submitter=request.unauthenticated_userid):
+    for content in storage.get_all(submitter={'id': request.unauthenticated_userid}):
         update_content_state(request, content)
         item = content.__json__()
         document = {k: item[k] for k in  
@@ -198,7 +198,8 @@ def post_content_single(request, cstruct):
             raise httpexceptions.HTTPForbidden(
                     'You do not have permission to edit {}'.format(archive_id))
 
-    cstruct['submitter'] = request.unauthenticated_userid
+    cstruct['submitter'] = request.user
+    cstruct['authors'] = [request.user]
     if cstruct.get('media_type') == BINDER_MEDIATYPE:
         schema = BinderSchema()
     else:
@@ -315,7 +316,7 @@ def put_content(request):
         raise httpexceptions.HTTPBadRequest('Invalid JSON')
 
     utils.change_dict_keys(cstruct, utils.camelcase_to_underscore)
-    cstruct['submitter'] = request.unauthenticated_userid
+    cstruct['submitter'] = request.user
     for key, value in utils.utf8(content.to_dict()).items():
         cstruct.setdefault(key, value)
 
@@ -410,7 +411,7 @@ def post_to_publishing(request, userid, submitlog, content_ids):
             content_id = content_id_item
             if content_id.endswith('@draft'):
                 content_id = content_id[:-len('@draft')]
-            content = storage.get(id=content_id, submitter=userid)
+            content = storage.get(id=content_id)
             if content is None:
                 raise httpexceptions.HTTPBadRequest('Unable to publish: '
                         'content not found {}'.format(content_id))

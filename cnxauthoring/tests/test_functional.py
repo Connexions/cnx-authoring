@@ -79,6 +79,30 @@ def mock_openstax_accounts(config):
     config.registry.registerUtility(accounts, IOpenstaxAccounts)
 
 
+USER_PROFILE = {
+        u'username': u'me',
+        u'id': 1,
+        u'first_name': u'User',
+        u'last_name': u'One',
+        u'contact_infos': [
+            {
+                u'type': u'EmailAddress',
+                u'verified': True,
+                u'id': 1,
+                u'value': u'me@example.com',
+                },
+            ],
+        }
+
+SUBMITTER = {
+        u'id': u'me',
+        u'email': u'me@example.com',
+        u'firstname': u'User',
+        u'surname': u'One',
+        u'username': u'me',
+        }
+
+
 class FunctionalTests(unittest.TestCase):
     profile = None
     accounts_request_return = ''
@@ -122,7 +146,7 @@ class FunctionalTests(unittest.TestCase):
             storage.conn.close()
 
     def setUp(self):
-        FunctionalTests.profile = {u'username': u'me'}
+        FunctionalTests.profile = USER_PROFILE
 
     def mock_archive(self, return_value=None, content_type=None):
         response = mock.Mock()
@@ -170,7 +194,7 @@ class FunctionalTests(unittest.TestCase):
                 side_effect=authenticated_userid):
             response = self.testapp.get('/login', status=302)
         # user logs in successfully
-        FunctionalTests.profile = {'username': 'me'}
+        FunctionalTests.profile = USER_PROFILE
         response = self.testapp.get('/callback', status=302)
         self.assertEqual(response.headers['Location'], 'http://localhost/')
         self.assert_cors_headers(response)
@@ -193,7 +217,7 @@ class FunctionalTests(unittest.TestCase):
                     headers={'REFERER': 'http://localhost/login'},
                     status=302)
         # user logs in successfully
-        FunctionalTests.profile = {'username': 'me'}
+        FunctionalTests.profile = USER_PROFILE
         response = self.testapp.get('/callback', status=302)
         self.assertEqual(response.headers['Location'], 'http://localhost/')
         self.assert_cors_headers(response)
@@ -209,7 +233,7 @@ class FunctionalTests(unittest.TestCase):
                     headers={'REFERER': 'http://example.com/'},
                     status=302)
         # user logs in successfully
-        FunctionalTests.profile = {'username': 'me'}
+        FunctionalTests.profile = USER_PROFILE
         response = self.testapp.get('/callback', status=302)
         self.assertEqual(response.headers['Location'], 'http://example.com/')
         self.assert_cors_headers(response)
@@ -225,7 +249,7 @@ class FunctionalTests(unittest.TestCase):
                     '/login?redirect=http://example.com/logged_in',
                     status=302)
         # user logs in successfully
-        FunctionalTests.profile = {'username': 'me'}
+        FunctionalTests.profile = USER_PROFILE
         response = self.testapp.get('/callback', status=302)
         self.assertEqual(response.headers['Location'], 'http://example.com/logged_in')
         self.assert_cors_headers(response)
@@ -341,7 +365,8 @@ class FunctionalTests(unittest.TestCase):
             u'revised': get_result['revised'],
             u'mediaType': u'application/vnd.org.cnx.module',
             u'language': u'en',
-            u'submitter': u'me',
+            u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'abstract': u'',
             u'version': u'draft',
             u'subjects': [],
@@ -540,7 +565,8 @@ class FunctionalTests(unittest.TestCase):
         self.assertFalse('2011-10-05' in result.pop('created'))
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
-            u'submitter': FunctionalTests.profile['username'],
+            u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Indkøb',
@@ -571,7 +597,8 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
-            u'submitter': FunctionalTests.profile['username'],
+            u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Indkøb',
@@ -616,7 +643,8 @@ class FunctionalTests(unittest.TestCase):
         self.assertFalse('2011-10-12' in result.pop('created'))
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
-            u'submitter': FunctionalTests.profile['username'],
+            u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Tilberedning',
@@ -647,7 +675,8 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
-            u'submitter': FunctionalTests.profile['username'],
+            u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Tilberedning',
@@ -683,7 +712,8 @@ class FunctionalTests(unittest.TestCase):
         self.assertFalse('2011-10-12' in result.pop('created'))
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
-            u'submitter': FunctionalTests.profile['username'],
+            u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -730,7 +760,8 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
-            u'submitter': FunctionalTests.profile['username'],
+            u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -829,7 +860,20 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(u'Lav en madplan for den kommende uge' in content)
 
         self.assertEqual(result, {
-            u'submitter': u'Rasmus1975',
+            u'submitter': {
+                u'id': u'Rasmus1975',
+                u'firstname': u'',
+                u'surname': u'',
+                u'email': u'',
+                u'username': u'Rasmus1975',
+                },
+            u'authors': [{
+                u'id': u'Rasmus1975',
+                u'firstname': u'',
+                u'surname': u'',
+                u'email': u'',
+                u'username': u'Rasmus1975',
+                }],
             u'id': post_data['id'].split('@')[0],
             u'derivedFrom': None,
             u'derivedFromTitle': None,
@@ -856,7 +900,20 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
-            u'submitter': u'Rasmus1975',
+            u'submitter': {
+                u'id': u'Rasmus1975',
+                u'firstname': u'',
+                u'surname': u'',
+                u'email': u'',
+                u'username': u'Rasmus1975',
+                },
+            u'authors': [{
+                u'id': u'Rasmus1975',
+                u'firstname': u'',
+                u'surname': u'',
+                u'email': u'',
+                u'username': u'Rasmus1975',
+                }],
             u'id': result['id'],
             u'derivedFrom': None,
             u'derivedFromTitle': None,
@@ -911,7 +968,8 @@ class FunctionalTests(unittest.TestCase):
         revised = result.pop('revised')
         self.assertTrue(revised.startswith('2014-03-13T15:21:15.677617'))
         self.assertEqual(result, {
-            u'submitter': FunctionalTests.profile['username'],
+            u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': None,
             u'derivedFromTitle': None,
@@ -984,7 +1042,8 @@ class FunctionalTests(unittest.TestCase):
             u'derivedFromUri': None,
             u'language': u'de',
             u'version': u'draft',
-            u'submitter': u'me',
+            u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'license': {
                 u'abbr': u'by',
                 u'name': u'Attribution',
@@ -1157,7 +1216,8 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
-            u'submitter': FunctionalTests.profile['username'],
+            u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -1195,7 +1255,8 @@ class FunctionalTests(unittest.TestCase):
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
-            u'submitter': FunctionalTests.profile['username'],
+            u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -1286,7 +1347,8 @@ class FunctionalTests(unittest.TestCase):
                     'content': '',
                     'state': 'Draft',
                     'version': 'draft',
-                    'submitter': 'admin',
+                    'submitter': SUBMITTER,
+                    'authors': [SUBMITTER],
                     'error': False,
                     }), status=200)
 

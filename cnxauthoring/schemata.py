@@ -42,6 +42,19 @@ class LicenseSchema(colander.MappingSchema):
 license_schema = LicenseSchema()
 
 
+class User(colander.MappingSchema):
+    username = colander.SchemaNode(
+            colander.String(),
+            )
+
+    def schema_type(self, **kw):
+        return colander.Mapping(unknown='preserve')
+
+
+class Users(colander.SequenceSchema):
+    user = User()
+
+
 class DocumentSchema(colander.MappingSchema):
     """Schema for ``Document``"""
 
@@ -88,9 +101,8 @@ class DocumentSchema(colander.MappingSchema):
         colander.String(),
         missing=colander.drop,
         )
-    submitter = colander.SchemaNode(
-        colander.String(),
-        )
+    submitter = User()
+    authors = Users()
     media_type = colander.SchemaNode(
         colander.String(),
         default=DOCUMENT_MEDIATYPE,

@@ -27,9 +27,16 @@ class MemoryStorage(BaseStorage):
         collection = self.storage[str(type_)]
         for item in collection:
             for k, v in kwargs.items():
-                if not (hasattr(item, 'metadata') and
-                        str(item.metadata.get(k)) == str(v) or
-                        str(getattr(item, k, None)) == str(v)):
+                if hasattr(item, 'metadata'):
+                    value = item.metadata.get(k)
+                else:
+                    value = getattr(item, k, None)
+
+                if isinstance(v, dict) and isinstance(value, dict):
+                    if any([value.get(inner_k) != v[inner_k] for inner_k in v]):
+                        break
+                else:
+                    if str(value) != str(v):
                         break
             else:
                 # item found

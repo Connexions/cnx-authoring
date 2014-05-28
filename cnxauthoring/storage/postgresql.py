@@ -17,6 +17,7 @@ from ..models import Document, Resource, create_content, MEDIATYPES
 from .database import SQL
 
 psycopg2.extras.register_uuid()
+psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
 
 # cribbed from http://stackoverflow.com/questions/19048017/python-extract-substitution-vars-from-format-string
 def get_format_keys(s):
@@ -73,9 +74,23 @@ class PostgresqlStorage(BaseStorage):
             except ValueError:
                 return
 
-        match_clauses = ['{k} = %({k})s'.format(k = k) for k in  kwargs]
-            
-        checked_execute(cursor,SQL['get'].format(tablename = type_name, where_clause = ' AND '.join(match_clauses)), kwargs)
+        match_clauses = []
+        match_values = kwargs.copy()
+        for k, v in kwargs.items():
+            if isinstance(v, dict):
+                for json_k, json_v in v.items():
+                    match_clauses.append(
+                            "{field}->>'{json_key}' = %({field}_{json_key})s"
+                            .format(field=k, json_key=json_k))
+                    match_values['{field}_{json_key}'.format(
+                        field=k, json_key=json_k)] = json_v
+                match_values.pop(k)
+            else:
+                match_clauses.append('{field} = %({field})s'.format(field=k))
+
+        checked_execute(cursor, SQL['get'].format(
+            tablename=type_name, where_clause=' AND '.join(match_clauses)),
+            match_values)
         res = cursor.fetchall()
         if not in_progress:
             self.conn.rollback() # Frees the connection
@@ -119,6 +134,7 @@ class PostgresqlStorage(BaseStorage):
                 args['content'] = json.dumps(args.pop('tree'))
             if 'cnx-archive-uri' not in args:
                 args['cnx-archive-uri'] = None
+            args['authors'] = psycopg2.extras.Json(args['authors'])
             checked_execute(cursor, SQL['add-document'], args)
         else:
             raise NotImplementedError(type_name)
@@ -155,6 +171,7 @@ class PostgresqlStorage(BaseStorage):
                 args['cnx-archive-uri'] = None
             if 'tree' in args:
                 args['content'] = json.dumps(args.pop('tree'))
+            args['authors'] = psycopg2.extras.Json(args['authors'])
             checked_execute(cursor, SQL['update-document'], args)
         return item
 
@@ -183,7 +200,7 @@ class PostgresqlStorage(BaseStorage):
             search_terms.append(term.lower())
 
         title_terms = ['lower(title) ~ %s'] * len(search_terms)
-        where_clause = '(' + ' OR '.join(title_terms) + ') AND submitter = %s'
+        where_clause = '(' + ' OR '.join(title_terms) + ") AND submitter->>'id' = %s"
         sqlargs = search_terms + [submitter]        
 
         cursor.execute(SQL['search-title'].format(where_clause=where_clause), sqlargs)

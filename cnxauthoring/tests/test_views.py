@@ -38,6 +38,20 @@ class ViewsTests(unittest.TestCase):
         setattr(storage_pkg, 'storage', _storage_instance)
         self.addCleanup(setattr, storage_pkg, 'storage', None)
 
+        testing.DummyRequest.user = {
+            u'username': u'me',
+            u'id': 1,
+            u'contactInfos': [
+                {
+                    u'type': u'EmailAddress',
+                    u'verified': True,
+                    u'id': 1,
+                    u'value': u'me@example.com',
+                    },
+                ],
+            }
+        self.addCleanup(delattr, testing.DummyRequest, 'user')
+
     tearDown = testing.tearDown
 
     @property
@@ -111,7 +125,7 @@ class ViewsTests(unittest.TestCase):
         # Minimal document posts require a title.
         from ..views import post_content
         request = testing.DummyRequest()
-        request.json_body = {'title': title}
+        request.json_body = {'title': title, 'submitter': request.user}
         returned_document = post_content(request)
 
         self.assertEqual(returned_document, self.document)
