@@ -120,6 +120,7 @@ class DocumentSchema(colander.MappingSchema):
         )
     submitter = User()
     authors = Users(validator=colander.Length(min=1))
+    publishers = Users(validator=colander.Length(min=1))
     media_type = colander.SchemaNode(
         colander.String(),
         default=DOCUMENT_MEDIATYPE,

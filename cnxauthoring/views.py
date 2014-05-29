@@ -204,6 +204,16 @@ def post_content_single(request, cstruct):
     if request.unauthenticated_userid not in author_ids:
         cstruct['authors'] += [utils.profile_to_user_dict(request.user)]
 
+    cstruct.setdefault('publishers', [])
+    publisher_ids = [i['id'] for i in cstruct['publishers']]
+    # publishers is known as maintainers in legacy
+    for maintainer in cstruct.get('maintainers', []):
+        if maintainer['id'] not in publisher_ids:
+            cstruct['publishers'] += [maintainer]
+            publisher_ids.append(maintainer['id'])
+    if request.unauthenticated_userid not in publisher_ids:
+        cstruct['publishers'] += [utils.profile_to_user_dict(request.user)]
+
     if cstruct.get('media_type') == BINDER_MEDIATYPE:
         schema = BinderSchema()
     else:

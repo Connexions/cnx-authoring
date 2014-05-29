@@ -369,6 +369,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'language': u'en',
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'abstract': u'',
             u'version': u'draft',
             u'subjects': [],
@@ -569,6 +570,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Indkøb',
@@ -601,6 +603,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Indkøb',
@@ -647,6 +650,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Tilberedning',
@@ -679,6 +683,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Tilberedning',
@@ -716,6 +721,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -764,6 +770,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -881,6 +888,18 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'id': u'Rasmus1975',
                 u'type': u'cnx-id',
                 }],
+            u'publishers': [{
+                u'website': u'',
+                u'surname': u'Ruby',
+                u'suffix': u'',
+                u'firstname': u'Rasmus',
+                u'title': u'',
+                u'othername': u'',
+                u'email': u'rasmus@example.com',
+                u'fullname': u'Rasmus Ruby',
+                u'id': u'Rasmus1975',
+                u'type': u'cnx-id',
+                }],
             u'id': post_data['id'].split('@')[0],
             u'derivedFrom': None,
             u'derivedFromTitle': None,
@@ -915,6 +934,18 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'type': u'cnx-id',
                 },
             u'authors': [{
+                u'website': u'',
+                u'surname': u'Ruby',
+                u'suffix': u'',
+                u'firstname': u'Rasmus',
+                u'title': u'',
+                u'othername': u'',
+                u'email': u'rasmus@example.com',
+                u'fullname': u'Rasmus Ruby',
+                u'id': u'Rasmus1975',
+                u'type': u'cnx-id',
+                }],
+            u'publishers': [{
                 u'website': u'',
                 u'surname': u'Ruby',
                 u'suffix': u'',
@@ -982,6 +1013,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': None,
             u'derivedFromTitle': None,
@@ -1056,6 +1088,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'version': u'draft',
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'license': {
                 u'abbr': u'by',
                 u'name': u'Attribution',
@@ -1230,6 +1263,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -1269,6 +1303,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -1361,6 +1396,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'version': 'draft',
                     'submitter': SUBMITTER,
                     'authors': [SUBMITTER],
+                    'publishers': [SUBMITTER],
                     'error': False,
                     }), status=200)
 

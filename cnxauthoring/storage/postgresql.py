@@ -135,6 +135,7 @@ class PostgresqlStorage(BaseStorage):
             if 'cnx-archive-uri' not in args:
                 args['cnx-archive-uri'] = None
             args['authors'] = psycopg2.extras.Json(args['authors'])
+            args['publishers'] = psycopg2.extras.Json(args['publishers'])
             checked_execute(cursor, SQL['add-document'], args)
         else:
             raise NotImplementedError(type_name)
@@ -172,6 +173,7 @@ class PostgresqlStorage(BaseStorage):
             if 'tree' in args:
                 args['content'] = json.dumps(args.pop('tree'))
             args['authors'] = psycopg2.extras.Json(args['authors'])
+            args['publishers'] = psycopg2.extras.Json(args['publishers'])
             checked_execute(cursor, SQL['update-document'], args)
         return item
 

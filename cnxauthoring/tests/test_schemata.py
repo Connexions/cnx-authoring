@@ -20,6 +20,9 @@ class DocumentSchemaTestCase(unittest.TestCase):
             'authors': [{
                 'id': 'username',
                 }],
+            'publishers': [{
+                'id': 'username',
+                }],
             }
         from ..schemata import document_schema
         appstruct = document_schema.bind().deserialize(cstruct)
