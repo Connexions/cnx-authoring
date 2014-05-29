@@ -198,8 +198,12 @@ def post_content_single(request, cstruct):
             raise httpexceptions.HTTPForbidden(
                     'You do not have permission to edit {}'.format(archive_id))
 
-    cstruct['submitter'] = request.user
-    cstruct['authors'] = [request.user]
+    cstruct['submitter'] = utils.profile_to_user_dict(request.user)
+    cstruct.setdefault('authors', [])
+    author_ids = [i['id'] for i in cstruct['authors']]
+    if request.unauthenticated_userid not in author_ids:
+        cstruct['authors'] += [utils.profile_to_user_dict(request.user)]
+
     if cstruct.get('media_type') == BINDER_MEDIATYPE:
         schema = BinderSchema()
     else:
@@ -316,7 +320,7 @@ def put_content(request):
         raise httpexceptions.HTTPBadRequest('Invalid JSON')
 
     utils.change_dict_keys(cstruct, utils.camelcase_to_underscore)
-    cstruct['submitter'] = request.user
+    cstruct['submitter'] = utils.profile_to_user_dict(request.user)
     for key, value in utils.utf8(content.to_dict()).items():
         cstruct.setdefault(key, value)
 

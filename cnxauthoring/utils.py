@@ -196,13 +196,4 @@ def profile_to_user_dict(profile):
             'surname': profile.get('last_name') or '',
             'email': email or '',
             'id': profile.get('username') or '',
-            'username': profile.get('username') or '',
             }
-
-
-def fix_user_fields(metadata):
-    for field in ['submitter', 'authors']:
-        if isinstance(metadata[field], list):
-            metadata[field] = [profile_to_user_dict(i) for i in metadata[field]]
-        elif isinstance(metadata[field], dict):
-            metadata[field] = profile_to_user_dict(metadata[field])

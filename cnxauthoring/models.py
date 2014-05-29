@@ -131,7 +131,6 @@ class Document(cnxepub.Document, BaseContent):
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         content = metadata['content']
-        utils.fix_user_fields(metadata)
         cnxepub.Document.__init__(self, id, content, metadata)
         if acls is None:
             self.acls = []
@@ -145,7 +144,6 @@ class Document(cnxepub.Document, BaseContent):
             if key in self.metadata:
                 self.metadata[key] = value
         self.content = self.metadata['content']
-        utils.fix_user_fields(self.metadata)
 
     def publish_prep(self):
         license = self.metadata['license']
@@ -269,7 +267,6 @@ class Binder(cnxepub.Binder, BaseContent):
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         nodes, title_overrides = build_tree(tree)
-        utils.fix_user_fields(metadata)
         cnxepub.Binder.__init__(self, id, nodes=nodes,
                 metadata=metadata, title_overrides=title_overrides)
         if acls is None:
@@ -287,7 +284,6 @@ class Binder(cnxepub.Binder, BaseContent):
         for key, value in kwargs.items():
             if key in self.metadata:
                 self.metadata[key] = value
-        utils.fix_user_fields(self.metadata)
 
     def publish_prep(self):
         license = self.metadata['license']
@@ -341,5 +337,5 @@ def derive_content(request, **kwargs):
     document['created'] = None
     document['revised'] = None
     document['license'] = {'url': DEFAULT_LICENSE.url}
-    document['authors'] = [request.user]
+    document['authors'] = []
     return document

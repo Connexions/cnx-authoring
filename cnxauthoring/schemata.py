@@ -43,8 +43,25 @@ license_schema = LicenseSchema()
 
 
 class User(colander.MappingSchema):
-    username = colander.SchemaNode(
+    id = colander.SchemaNode(
             colander.String(),
+            )
+    email = colander.SchemaNode(
+            colander.String(),
+            missing='',
+            )
+    firstname = colander.SchemaNode(
+            colander.String(),
+            missing='',
+            )
+    surname = colander.SchemaNode(
+            colander.String(),
+            missing='',
+            )
+    type = colander.SchemaNode(
+            colander.String(),
+            missing='cnx-id',
+            validator=colander.OneOf(['cnx-id']),
             )
 
     def schema_type(self, **kw):
@@ -102,7 +119,7 @@ class DocumentSchema(colander.MappingSchema):
         missing=colander.drop,
         )
     submitter = User()
-    authors = Users()
+    authors = Users(validator=colander.Length(min=1))
     media_type = colander.SchemaNode(
         colander.String(),
         default=DOCUMENT_MEDIATYPE,

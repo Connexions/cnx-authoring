@@ -99,11 +99,11 @@ SUBMITTER = {
         u'email': u'me@example.com',
         u'firstname': u'User',
         u'surname': u'One',
-        u'username': u'me',
+        u'type': u'cnx-id',
         }
 
 
-class FunctionalTests(unittest.TestCase):
+class BaseFunctionalTestCase(unittest.TestCase):
     profile = None
     accounts_request_return = ''
     maxDiff = None
@@ -185,6 +185,8 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Methods'],
                 'GET, OPTIONS, PUT, POST')
 
+
+class FunctionalTests(BaseFunctionalTestCase):
     def test_login(self):
         FunctionalTests.profile = None
         def authenticated_userid(*args):
@@ -865,14 +867,19 @@ class FunctionalTests(unittest.TestCase):
                 u'firstname': u'',
                 u'surname': u'',
                 u'email': u'',
-                u'username': u'Rasmus1975',
+                u'type': u'cnx-id',
                 },
             u'authors': [{
+                u'website': u'',
+                u'surname': u'Ruby',
+                u'suffix': u'',
+                u'firstname': u'Rasmus',
+                u'title': u'',
+                u'othername': u'',
+                u'email': u'rasmus@example.com',
+                u'fullname': u'Rasmus Ruby',
                 u'id': u'Rasmus1975',
-                u'firstname': u'',
-                u'surname': u'',
-                u'email': u'',
-                u'username': u'Rasmus1975',
+                u'type': u'cnx-id',
                 }],
             u'id': post_data['id'].split('@')[0],
             u'derivedFrom': None,
@@ -905,14 +912,19 @@ class FunctionalTests(unittest.TestCase):
                 u'firstname': u'',
                 u'surname': u'',
                 u'email': u'',
-                u'username': u'Rasmus1975',
+                u'type': u'cnx-id',
                 },
             u'authors': [{
+                u'website': u'',
+                u'surname': u'Ruby',
+                u'suffix': u'',
+                u'firstname': u'Rasmus',
+                u'title': u'',
+                u'othername': u'',
+                u'email': u'rasmus@example.com',
+                u'fullname': u'Rasmus Ruby',
                 u'id': u'Rasmus1975',
-                u'firstname': u'',
-                u'surname': u'',
-                u'email': u'',
-                u'username': u'Rasmus1975',
+                u'type': u'cnx-id',
                 }],
             u'id': result['id'],
             u'derivedFrom': None,
@@ -1787,6 +1799,9 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
                 'http://localhost:8000')
         self.assert_cors_headers(response)
+
+
+class PublicationTests(BaseFunctionalTestCase):
 
     def test_publish_401(self):
         FunctionalTests.profile = None
