@@ -14,53 +14,74 @@ Connexions Authoring Service
 INSTALL
 -------
 
-1. Create virtualenv:
+1. Install and create virtualenv:
 
 .. code:: bash
 
+   sudo apt-get install python-virtualenv
    virtualenv .
+   
+2. Install development libraries
 
-2. Install cnx-query-grammar
+.. code :: bash
+
+   sudo apt-get libxml2-dev libxslt-dev libz-dev libpq-dev
+
+3. Install cnx-query-grammar
 
 .. code:: bash
 
    git clone https://github.com/Connexions/cnx-query-grammar.git
    cd cnx-query-grammar && ../bin/python setup.py install && cd ..
 
-3. Install cnx-epub
+4. Install cnx-epub
 
 .. code:: bash
 
    git clone https://github.com/Connexions/cnx-epub.git
    cd cnx-epub && ../bin/python setup.py install && cd ..
 
-4. Install cnx-authoring
+5. Install cnx-authoring
    
 .. code:: bash
 
    ./bin/python setup.py install
 
-5. Make a copy of ``development.ini.example`` and call it ``development.ini``.
+6. Make a copy of ``development.ini.example`` and call it ``development.ini``.
 
 .. code:: bash
 
    cp development.ini.example development.ini
 
-6. Edit settings in ``development.ini`` as necessary.
+7. Edit settings in ``development.ini`` as necessary.
 
    cnx-authoring will not run without correct `openstax accounts <https://github.com/openstax/accounts>`_ settings.
 
    A `fabric script <https://github.com/Connexions/openstax-setup>`_ has been written to help set up a dev environment for openstax/accounts.
 
-7. If you are using the postgresql storage option:
+8. If you are using the postgresql storage option:
 
-.. code:: bash
+   Install postgresql:
+   
+   .. code:: bash
 
-   sudo -u postgres psql -d postgres -c "CREATE USER cnxauthoring WITH SUPERUSER PASSWORD 'cnxauthoring';"
-   sudo -u postgres createdb -O cnxauthoring authoring
-   ./bin/cnx-authoring-initialize_db  development.ini
+      sudo apt-get postgresql postgresql-contrib
 
-8. Start the server:
+   Change two instances of "password" to "trust" in pg_hba.conf file and reload
+   
+   .. code:: bash
+   
+      sudo service postgresql reload
+      
+   Set up with database
+
+   .. code:: bash
+
+      sudo -u postgres psql -d postgres -c "CREATE USER cnxauthoring WITH SUPERUSER PASSWORD 'cnxauthoring';"
+      sudo -u postgres createdb -O cnxauthoring authoring
+      ./bin/cnx-authoring-initialize_db  development.ini
+
+9. Start the server:
 
 .. code:: bash
 
