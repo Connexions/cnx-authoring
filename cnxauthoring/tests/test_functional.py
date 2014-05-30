@@ -1724,10 +1724,9 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
     def test_profile(self):
-        FunctionalTests.profile = {'username': 'first_last'}
         response = self.testapp.get('/users/profile', status=200)
         result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(result, FunctionalTests.profile)
+        self.assertEqual(result, SUBMITTER)
         self.assert_cors_headers(response)
 
     def test_user_contents_401(self):

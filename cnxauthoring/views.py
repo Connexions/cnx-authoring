@@ -24,7 +24,7 @@ from openstax_accounts.interfaces import *
 
 from .models import (create_content, derive_content, revise_content,
         Document, Resource, BINDER_MEDIATYPE, DocumentNotFoundError)
-from .schemata import DocumentSchema, BinderSchema
+from .schemata import DocumentSchema, BinderSchema, UserSchema
 from .storage import storage
 from . import utils
 
@@ -95,7 +95,8 @@ def user_search(request):
 @view_config(route_name='profile', request_method='GET', renderer='json')
 @authenticated_only
 def profile(request):
-    return request.user
+    return UserSchema().bind().deserialize(
+            utils.profile_to_user_dict(request.user))
 
 def update_content_state(request, content):
     """Updates content state if it is non-terminal by checking w/ publishing service"""

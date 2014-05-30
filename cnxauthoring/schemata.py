@@ -42,7 +42,7 @@ class LicenseSchema(colander.MappingSchema):
 license_schema = LicenseSchema()
 
 
-class User(colander.MappingSchema):
+class UserSchema(colander.MappingSchema):
     id = colander.SchemaNode(
             colander.String(),
             )
@@ -69,7 +69,7 @@ class User(colander.MappingSchema):
 
 
 class Users(colander.SequenceSchema):
-    user = User()
+    user = UserSchema()
 
 
 class DocumentSchema(colander.MappingSchema):
@@ -118,7 +118,7 @@ class DocumentSchema(colander.MappingSchema):
         colander.String(),
         missing=colander.drop,
         )
-    submitter = User()
+    submitter = UserSchema()
     authors = Users(validator=colander.Length(min=1))
     publishers = Users(validator=colander.Length(min=1))
     media_type = colander.SchemaNode(
