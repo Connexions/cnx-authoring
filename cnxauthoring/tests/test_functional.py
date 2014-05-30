@@ -353,6 +353,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(get_result, {
             u'id': get_result['id'],
             u'title': u'My New Document',
+            u'containedIn': [],
             u'content': u'',
             u'created': get_result['created'],
             u'derivedFrom': None,
@@ -589,6 +590,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
+            u'containedIn': []
             })
         self.assert_cors_headers(response)
 
@@ -622,6 +624,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
+            u'containedIn': []
             })
         self.assert_cors_headers(response)
 
@@ -669,6 +672,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
+            u'containedIn': []
             })
         self.assert_cors_headers(response)
 
@@ -702,6 +706,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
+            u'containedIn': []
             })
         self.assert_cors_headers(response)
 
@@ -759,6 +764,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [u'køkken', u'Madlavning'],
             u'state': u'Draft',
             u'publication': None,
+            u'containedIn': []
             })
         self.assert_cors_headers(response)
 
@@ -808,6 +814,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [u'køkken', u'Madlavning'],
             u'state': u'Draft',
             u'publication': None,
+            u'containedIn': []
             })
         self.assert_cors_headers(response)
 
@@ -914,6 +921,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'state': u'Draft',
             u'publication': None,
             u'cnx-archive-uri': post_data['id'],
+            u'containedIn': []
             })
         self.assert_cors_headers(response)
 
@@ -977,6 +985,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'state': u'Draft',
             u'publication': None,
             u'cnx-archive-uri': post_data['id'],
+            u'containedIn': []
             })
         self.assert_cors_headers(response)
 
@@ -1021,6 +1030,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'title': post_data['title'],
             u'abstract': post_data['abstract'],
             u'language': post_data['language'],
+            u'containedIn': [],
             u'content': post_data['content'],
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
@@ -1079,6 +1089,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'id': book['id'],
             u'title': u'Book',
             u'abstract': u'Book abstract',
+            u'containedIn': [],
             u'content': u'',
             u'mediaType': u'application/vnd.org.cnx.collection',
             u'derivedFrom': None,
@@ -1269,6 +1280,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'derivedFromTitle': u'Madlavning',
             u'derivedFromUri': u'http://cnx.org/contents/{}'.format(post_data['derivedFrom']),
             u'abstract': u'',
+            u'containedIn': [],
             u'content': u'',
             u'language': u'da',
             u'mediaType': u'application/vnd.org.cnx.collection',
@@ -1309,6 +1321,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'derivedFromTitle': u'Madlavning',
             u'derivedFromUri': u'http://cnx.org/contents/{}'.format(post_data['derivedFrom']),
             u'abstract': u'',
+            u'containedIn': [],
             u'content': u'',
             u'language': u'da',
             u'mediaType': u'application/vnd.org.cnx.collection',
@@ -1770,6 +1783,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'limits': [],
                 },
             u'results': {u'items': [{u'derivedFrom': None,
+                           u'containedIn': [],
                            u'id': u'{}@draft'.format(page['id']),
                            u'mediaType': u'application/vnd.org.cnx.module',
                            u'revised': u'2014-03-13T15:21:15.677617-05:00',

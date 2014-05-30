@@ -85,6 +85,8 @@ class PostgresqlStorage(BaseStorage):
                     match_values['{field}_{json_key}'.format(
                         field=k, json_key=json_k)] = json_v
                 match_values.pop(k)
+            elif k == 'contained_in': # Array based storage , assumes singular key
+                match_clauses.append(' %(contained_in)s = ANY (contained_in) ')
             else:
                 match_clauses.append('{field} = %({field})s'.format(field=k))
 

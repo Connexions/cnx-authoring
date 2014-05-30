@@ -23,7 +23,8 @@ import requests
 from openstax_accounts.interfaces import *
 
 from .models import (create_content, derive_content, revise_content,
-        Document, Resource, BINDER_MEDIATYPE, DocumentNotFoundError)
+        Document, Binder, Resource, BINDER_MEDIATYPE, DOCUMENT_MEDIATYPE,
+        DocumentNotFoundError)
 from .schemata import DocumentSchema, BinderSchema, UserSchema
 from .storage import storage
 from . import utils
@@ -121,15 +122,27 @@ def update_content_state(request, content):
 def user_contents(request):
     """Extract of the contents that belong to the current logged in user"""
     items = []
+    binder_ids = set()
     # TODO use acls instead of filter by submitter
-    for content in storage.get_all(submitter={'id': request.unauthenticated_userid}):
+    contents = storage.get_all(submitter={'id': request.unauthenticated_userid})
+    for content in contents:
         update_content_state(request, content)
+        if isinstance(content,Binder):
+            binder_ids.add(content.id)
+
         item = content.__json__()
         document = {k: item[k] for k in  
-               ['mediaType', 'title', 'id', 'version', 'revised', 'derivedFrom','state']}
+               ['mediaType', 'title', 'id', 'version', 'revised', 'derivedFrom', 'state', 'containedIn']}
+
+        # Don't add version to published items, so they are link to archive instead of authoring (no @draft)
         if document['state'] != 'Done/Success':
             document['id'] = '@'.join([document['id'], document['version']])
+
         items.append(document)
+
+    # filter out draft docs inside draft binders that this user can see
+    items = [i for i in items if not set(i['containedIn']).intersection(binder_ids)]
+
     items.sort(key=lambda item: item['revised'], reverse=True)
     return {
             u'query': {
