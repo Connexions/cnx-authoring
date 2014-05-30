@@ -1838,6 +1838,15 @@ class FunctionalTests(BaseFunctionalTestCase):
 
 
 class PublicationTests(BaseFunctionalTestCase):
+    # When USE_MOCK_PUBLISHING_SERVICE is set to False, the publication tests
+    # will post directly to the publishing service configured in testing.ini.
+    # It can be used to do some manual integration testing between
+    # cnx-authoring and cnx-publishing.  The response from cnx-publishing will
+    # be printed out as a failure message in the tests.
+    #
+    # USE_MOCK_PUBLISHING_SERVICE should be set to True when not testing
+    # manually
+    USE_MOCK_PUBLISHING_SERVICE = True
 
     def test_publish_401(self):
         FunctionalTests.profile = None
@@ -1965,6 +1974,11 @@ class PublicationTests(BaseFunctionalTestCase):
                     page_two['id'],
                     ],
                 }
+        if not self.USE_MOCK_PUBLISHING_SERVICE:
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    expect_errors=True)
+            self.fail('\nResposne status: {}\nResponse body: {}\n'.format(
+                response.status, response.body))
         mock_output = json.dumps({u'state': u'Processing', u'publication': 143,
             u'mapping': {
                 page_one['id']: '{}@1'.format(page_one['id']),
@@ -2036,6 +2050,11 @@ class PublicationTests(BaseFunctionalTestCase):
                     '{}@draft'.format(page['id']),
                     ],
                 }
+        if not self.USE_MOCK_PUBLISHING_SERVICE:
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    expect_errors=True)
+            self.fail('\nResposne status: {}\nResponse body: {}\n'.format(
+                response.status, response.body))
         mock_output = json.dumps({u'state': u'Processing', u'publication': 144,
             u'mapping': {page['id']: '{}@1'.format(page['id'])}}).encode('utf-8')
         with mock.patch('requests.post') as patched_post:
@@ -2136,6 +2155,11 @@ class PublicationTests(BaseFunctionalTestCase):
                     page2['id'],
                     ],
                 }
+        if not self.USE_MOCK_PUBLISHING_SERVICE:
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    expect_errors=True)
+            self.fail('\nResposne status: {}\nResponse body: {}\n'.format(
+                response.status, response.body))
         mock_output = json.dumps({
             'state': 'Processing',
             'publication': 145,
@@ -2202,6 +2226,11 @@ class PublicationTests(BaseFunctionalTestCase):
                     binder['id'],
                     ],
                 }
+        if not self.USE_MOCK_PUBLISHING_SERVICE:
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    expect_errors=True)
+            self.fail('\nResposne status: {}\nResponse body: {}\n'.format(
+                response.status, response.body))
         mock_output = json.dumps({
             'state': 'Done/Success',
             'publication': 200,
@@ -2285,6 +2314,11 @@ class PublicationTests(BaseFunctionalTestCase):
                     page['id'],
                     ],
                 }
+        if not self.USE_MOCK_PUBLISHING_SERVICE:
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    expect_errors=True)
+            self.fail('\nResposne status: {}\nResponse body: {}\n'.format(
+                response.status, response.body))
         mock_output = json.dumps({
             'state': 'Done/Success',
             'publication': 201,
