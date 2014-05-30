@@ -36,8 +36,8 @@ class UserSchemaTestCase(unittest.TestCase):
         cstruct = {
             'id': 'me',
             }
-        from ..schemata import User
-        user_schema = User()
+        from ..schemata import UserSchema
+        user_schema = UserSchema()
         appstruct = user_schema.bind().deserialize(cstruct)
         self.assertEqual(appstruct, {
             'id': 'me',
