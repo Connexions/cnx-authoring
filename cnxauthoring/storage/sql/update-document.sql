@@ -17,5 +17,6 @@ UPDATE document
             submitter = %(submitter)s, subjects = %(subjects)s,
             authors = %(authors)s,
             keywords = %(keywords)s, state = %(state)s,
-            publication = %(publication)s, cnx_archive_uri = %(cnx-archive-uri)s
+            publication = %(publication)s, cnx_archive_uri = %(cnx-archive-uri)s,
+            publishers = %(publishers)s
 WHERE id  = %(id)s

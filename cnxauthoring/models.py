@@ -131,7 +131,6 @@ class Document(cnxepub.Document, BaseContent):
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         content = metadata['content']
-        utils.fix_user_fields(metadata)
         cnxepub.Document.__init__(self, id, content, metadata)
         if acls is None:
             self.acls = []
@@ -145,7 +144,6 @@ class Document(cnxepub.Document, BaseContent):
             if key in self.metadata:
                 self.metadata[key] = value
         self.content = self.metadata['content']
-        utils.fix_user_fields(self.metadata)
 
     def publish_prep(self):
         license = self.metadata['license']
@@ -214,7 +212,7 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None,
         license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None,
         derived_from_uri=None, derived_from_title=None,
         submitter=None, state=None, publication=None, cnx_archive_uri=None,
-        authors=None):
+        authors=None, publishers=None):
     metadata = {}
     metadata['title'] = title
     metadata['version'] = 'draft'
@@ -247,6 +245,7 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None,
     if cnx_archive_uri:
         metadata['cnx-archive-uri'] = cnx_archive_uri
     metadata['authors'] = authors or []
+    metadata['publishers'] = publishers or []
     return metadata
 
 
@@ -269,7 +268,6 @@ class Binder(cnxepub.Binder, BaseContent):
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         nodes, title_overrides = build_tree(tree)
-        utils.fix_user_fields(metadata)
         cnxepub.Binder.__init__(self, id, nodes=nodes,
                 metadata=metadata, title_overrides=title_overrides)
         if acls is None:
@@ -287,7 +285,6 @@ class Binder(cnxepub.Binder, BaseContent):
         for key, value in kwargs.items():
             if key in self.metadata:
                 self.metadata[key] = value
-        utils.fix_user_fields(self.metadata)
 
     def publish_prep(self):
         license = self.metadata['license']
@@ -341,5 +338,7 @@ def derive_content(request, **kwargs):
     document['created'] = None
     document['revised'] = None
     document['license'] = {'url': DEFAULT_LICENSE.url}
-    document['authors'] = [request.user]
+    document['authors'] = []
+    document['maintainers'] = []
+    document['publishers'] = []
     return document

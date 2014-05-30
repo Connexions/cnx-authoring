@@ -99,11 +99,11 @@ SUBMITTER = {
         u'email': u'me@example.com',
         u'firstname': u'User',
         u'surname': u'One',
-        u'username': u'me',
+        u'type': u'cnx-id',
         }
 
 
-class FunctionalTests(unittest.TestCase):
+class BaseFunctionalTestCase(unittest.TestCase):
     profile = None
     accounts_request_return = ''
     maxDiff = None
@@ -185,6 +185,8 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Methods'],
                 'GET, OPTIONS, PUT, POST')
 
+
+class FunctionalTests(BaseFunctionalTestCase):
     def test_login(self):
         FunctionalTests.profile = None
         def authenticated_userid(*args):
@@ -367,6 +369,7 @@ class FunctionalTests(unittest.TestCase):
             u'language': u'en',
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'abstract': u'',
             u'version': u'draft',
             u'subjects': [],
@@ -567,6 +570,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Indkøb',
@@ -599,6 +603,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Indkøb',
@@ -645,6 +650,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Tilberedning',
@@ -677,6 +683,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Tilberedning',
@@ -714,6 +721,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -762,6 +770,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -865,14 +874,31 @@ class FunctionalTests(unittest.TestCase):
                 u'firstname': u'',
                 u'surname': u'',
                 u'email': u'',
-                u'username': u'Rasmus1975',
+                u'type': u'cnx-id',
                 },
             u'authors': [{
+                u'website': u'',
+                u'surname': u'Ruby',
+                u'suffix': u'',
+                u'firstname': u'Rasmus',
+                u'title': u'',
+                u'othername': u'',
+                u'email': u'rasmus@example.com',
+                u'fullname': u'Rasmus Ruby',
                 u'id': u'Rasmus1975',
-                u'firstname': u'',
-                u'surname': u'',
-                u'email': u'',
-                u'username': u'Rasmus1975',
+                u'type': u'cnx-id',
+                }],
+            u'publishers': [{
+                u'website': u'',
+                u'surname': u'Ruby',
+                u'suffix': u'',
+                u'firstname': u'Rasmus',
+                u'title': u'',
+                u'othername': u'',
+                u'email': u'rasmus@example.com',
+                u'fullname': u'Rasmus Ruby',
+                u'id': u'Rasmus1975',
+                u'type': u'cnx-id',
                 }],
             u'id': post_data['id'].split('@')[0],
             u'derivedFrom': None,
@@ -905,14 +931,31 @@ class FunctionalTests(unittest.TestCase):
                 u'firstname': u'',
                 u'surname': u'',
                 u'email': u'',
-                u'username': u'Rasmus1975',
+                u'type': u'cnx-id',
                 },
             u'authors': [{
+                u'website': u'',
+                u'surname': u'Ruby',
+                u'suffix': u'',
+                u'firstname': u'Rasmus',
+                u'title': u'',
+                u'othername': u'',
+                u'email': u'rasmus@example.com',
+                u'fullname': u'Rasmus Ruby',
                 u'id': u'Rasmus1975',
-                u'firstname': u'',
-                u'surname': u'',
-                u'email': u'',
-                u'username': u'Rasmus1975',
+                u'type': u'cnx-id',
+                }],
+            u'publishers': [{
+                u'website': u'',
+                u'surname': u'Ruby',
+                u'suffix': u'',
+                u'firstname': u'Rasmus',
+                u'title': u'',
+                u'othername': u'',
+                u'email': u'rasmus@example.com',
+                u'fullname': u'Rasmus Ruby',
+                u'id': u'Rasmus1975',
+                u'type': u'cnx-id',
                 }],
             u'id': result['id'],
             u'derivedFrom': None,
@@ -970,6 +1013,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': None,
             u'derivedFromTitle': None,
@@ -1044,6 +1088,7 @@ class FunctionalTests(unittest.TestCase):
             u'version': u'draft',
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'license': {
                 u'abbr': u'by',
                 u'name': u'Attribution',
@@ -1218,6 +1263,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -1257,6 +1303,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -1349,6 +1396,7 @@ class FunctionalTests(unittest.TestCase):
                     'version': 'draft',
                     'submitter': SUBMITTER,
                     'authors': [SUBMITTER],
+                    'publishers': [SUBMITTER],
                     'error': False,
                     }), status=200)
 
@@ -1788,6 +1836,18 @@ class FunctionalTests(unittest.TestCase):
                 'http://localhost:8000')
         self.assert_cors_headers(response)
 
+
+class PublicationTests(BaseFunctionalTestCase):
+    # When USE_MOCK_PUBLISHING_SERVICE is set to False, the publication tests
+    # will post directly to the publishing service configured in testing.ini.
+    # It can be used to do some manual integration testing between
+    # cnx-authoring and cnx-publishing.  The response from cnx-publishing will
+    # be printed out as a failure message in the tests.
+    #
+    # USE_MOCK_PUBLISHING_SERVICE should be set to True when not testing
+    # manually
+    USE_MOCK_PUBLISHING_SERVICE = True
+
     def test_publish_401(self):
         FunctionalTests.profile = None
         response = self.testapp.post('/publish', '{}', status=401)
@@ -1914,6 +1974,11 @@ class FunctionalTests(unittest.TestCase):
                     page_two['id'],
                     ],
                 }
+        if not self.USE_MOCK_PUBLISHING_SERVICE:
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    expect_errors=True)
+            self.fail('\nResposne status: {}\nResponse body: {}\n'.format(
+                response.status, response.body))
         mock_output = json.dumps({u'state': u'Processing', u'publication': 143,
             u'mapping': {
                 page_one['id']: '{}@1'.format(page_one['id']),
@@ -1985,6 +2050,11 @@ class FunctionalTests(unittest.TestCase):
                     '{}@draft'.format(page['id']),
                     ],
                 }
+        if not self.USE_MOCK_PUBLISHING_SERVICE:
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    expect_errors=True)
+            self.fail('\nResposne status: {}\nResponse body: {}\n'.format(
+                response.status, response.body))
         mock_output = json.dumps({u'state': u'Processing', u'publication': 144,
             u'mapping': {page['id']: '{}@1'.format(page['id'])}}).encode('utf-8')
         with mock.patch('requests.post') as patched_post:
@@ -2085,6 +2155,11 @@ class FunctionalTests(unittest.TestCase):
                     page2['id'],
                     ],
                 }
+        if not self.USE_MOCK_PUBLISHING_SERVICE:
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    expect_errors=True)
+            self.fail('\nResposne status: {}\nResponse body: {}\n'.format(
+                response.status, response.body))
         mock_output = json.dumps({
             'state': 'Processing',
             'publication': 145,
@@ -2151,6 +2226,11 @@ class FunctionalTests(unittest.TestCase):
                     binder['id'],
                     ],
                 }
+        if not self.USE_MOCK_PUBLISHING_SERVICE:
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    expect_errors=True)
+            self.fail('\nResposne status: {}\nResponse body: {}\n'.format(
+                response.status, response.body))
         mock_output = json.dumps({
             'state': 'Done/Success',
             'publication': 200,
@@ -2234,6 +2314,11 @@ class FunctionalTests(unittest.TestCase):
                     page['id'],
                     ],
                 }
+        if not self.USE_MOCK_PUBLISHING_SERVICE:
+            response = self.testapp.post('/publish', json.dumps(post_data),
+                    expect_errors=True)
+            self.fail('\nResposne status: {}\nResponse body: {}\n'.format(
+                response.status, response.body))
         mock_output = json.dumps({
             'state': 'Done/Success',
             'publication': 201,
