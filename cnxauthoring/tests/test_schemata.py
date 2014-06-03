@@ -45,4 +45,5 @@ class UserSchemaTestCase(unittest.TestCase):
             'firstname': '',
             'surname': '',
             'type': 'cnx-id',
+            'fullname': '',
             })

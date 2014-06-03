@@ -99,6 +99,7 @@ SUBMITTER = {
         u'email': u'me@example.com',
         u'firstname': u'User',
         u'surname': u'One',
+        u'fullname': u'User One',
         u'type': u'cnx-id',
         }
 
@@ -873,6 +874,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'id': u'Rasmus1975',
                 u'firstname': u'',
                 u'surname': u'',
+                u'fullname': u'',
                 u'email': u'',
                 u'type': u'cnx-id',
                 },
@@ -930,6 +932,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'id': u'Rasmus1975',
                 u'firstname': u'',
                 u'surname': u'',
+                u'fullname': u'',
                 u'email': u'',
                 u'type': u'cnx-id',
                 },
