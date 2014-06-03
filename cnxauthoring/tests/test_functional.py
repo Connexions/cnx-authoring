@@ -34,7 +34,7 @@ from webtest import Upload
 from zope.interface import implementer
 
 from . import test_data
-from ..models import DEFAULT_LICENSE
+from ..models import DEFAULT_LICENSE, TZINFO
 
 
 @implementer(IAuthenticationPolicy)
@@ -1799,7 +1799,6 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         self.mock_archive()
 
-        import datetime
         one_week_ago = datetime.datetime.now() - datetime.timedelta(7)
         two_weeks_ago = datetime.datetime.now() - datetime.timedelta(14)
 
@@ -1848,6 +1847,133 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
                 'http://localhost:8000')
         self.assert_cors_headers(response)
+
+    def test_user_contents_hide_documents_inside_binders(self):
+        FunctionalTests.profile = {'username': str(uuid.uuid4())}
+        one_week_ago = datetime.datetime.now(tz=TZINFO) - datetime.timedelta(7)
+
+        mock_datetime = mock.Mock()
+        mock_datetime.now = mock.Mock(return_value=one_week_ago)
+        with mock.patch('datetime.datetime', mock_datetime):
+            response = self.testapp.post('/users/contents',
+                json.dumps({'title': 'single page document'}), status=201)
+
+        single_page = json.loads(response.body.decode('utf-8'))
+
+        with mock.patch('datetime.datetime', mock_datetime):
+            response = self.testapp.post('/users/contents',
+                json.dumps({'title': 'page in a book'}), status=201)
+        page_in_book = json.loads(response.body.decode('utf-8'))
+
+        response = self.testapp.post('/users/contents', json.dumps({
+            'mediaType': 'application/vnd.org.cnx.collection',
+            'title': 'book',
+            'tree': {
+                'contents': [
+                    {
+                        'id': '{}@draft'.format(page_in_book['id']),
+                        },
+                    ],
+                },
+            }), status=201)
+        book = json.loads(response.body.decode('utf-8'))
+
+        # since page_in_book is in book, it should not show in the workspace
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(workspace, {
+            u'query': {
+                u'limits': [],
+                },
+            u'results': {
+                u'items': [
+                    {
+                        u'containedIn': [],
+                        u'id': u'{}@draft'.format(book['id']),
+                        u'title': book['title'],
+                        u'derivedFrom': None,
+                        u'state': u'Draft',
+                        u'version': u'draft',
+                        u'revised': book['revised'],
+                        u'mediaType': u'application/vnd.org.cnx.collection',
+                        },
+                    {
+                        u'containedIn': [],
+                        u'id': u'{}@draft'.format(single_page['id']),
+                        u'title': single_page['title'],
+                        u'derivedFrom': None,
+                        u'state': u'Draft',
+                        u'version': u'draft',
+                        u'revised': single_page['revised'],
+                        u'mediaType': u'application/vnd.org.cnx.module',
+                        },
+                    ],
+                u'total': 2,
+                u'limits': [],
+                },
+            })
+
+        # remove page_in_book from book and add single_page to book
+        self.testapp.put('/contents/{}@draft.json'.format(book['id']),
+                json.dumps({
+                    'tree': {
+                        'contents': [
+                            {
+                                'id': '{}@draft'.format(single_page['id']),
+                                },
+                            ],
+                        },
+                    }), status=200)
+
+        # add page_in_book to a book by someone else
+        with mock.patch.dict(FunctionalTests.profile, {'username': 'asdf'}):
+            response = self.testapp.post('/users/contents', json.dumps({
+                'mediaType': 'application/vnd.org.cnx.collection',
+                'title': 'some other book',
+                'tree': {
+                    'contents': [
+                        {
+                            'id': '{}@draft'.format(page_in_book['id']),
+                            },
+                        ],
+                    },
+                }), status=201)
+            other_book = json.loads(response.body.decode('utf-8'))
+
+        # workspace should now show page_in_book and book
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(workspace, {
+            u'query': {
+                u'limits': [],
+                },
+            u'results': {
+                u'items': [
+                    {
+                        u'containedIn': [],
+                        u'id': u'{}@draft'.format(book['id']),
+                        u'title': book['title'],
+                        u'derivedFrom': None,
+                        u'state': u'Draft',
+                        u'version': u'draft',
+                        u'revised': book['revised'],
+                        u'mediaType': u'application/vnd.org.cnx.collection',
+                        },
+                    {
+                        u'containedIn': [other_book['id']],
+                        u'id': u'{}@draft'.format(page_in_book['id']),
+                        u'title': page_in_book['title'],
+                        u'derivedFrom': None,
+                        u'state': u'Draft',
+                        u'version': u'draft',
+                        u'revised': page_in_book['revised'],
+                        u'mediaType': u'application/vnd.org.cnx.module',
+                        },
+                    ],
+                u'total': 2,
+                u'limits': [],
+                },
+            })
 
 
 class PublicationTests(BaseFunctionalTestCase):

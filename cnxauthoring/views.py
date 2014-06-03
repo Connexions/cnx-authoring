@@ -22,6 +22,7 @@ from pyramid import httpexceptions
 import requests
 from openstax_accounts.interfaces import *
 
+from cnxepub.models import flatten_to_documents
 from .models import (create_content, derive_content, revise_content,
         Document, Binder, Resource, BINDER_MEDIATYPE, DOCUMENT_MEDIATYPE,
         DocumentNotFoundError)
@@ -253,13 +254,14 @@ def post_content_single(request, cstruct):
 
     try:
         content = storage.add(content)
+        if content.mediatype == BINDER_MEDIATYPE:
+            utils.update_containment(content)
     except:
         storage.abort()
     finally:
         storage.persist()
 
     return content
-
 
 @view_config(route_name='post-content', request_method='POST', renderer='json')
 @authenticated_only
@@ -362,6 +364,8 @@ def put_content(request):
     except DocumentNotFoundError as e:
         raise httpexceptions.HTTPBadRequest(e.message)
     storage.update(content)
+    if content.mediatype == BINDER_MEDIATYPE:
+        utils.update_containment(content)
     storage.persist()
 
     resp = request.response
@@ -481,3 +485,4 @@ def publish(request):
     except (TypeError, ValueError):
         raise httpexceptions.HTTPBadRequest('Unable to publish: '
                 'response body: {}'.format(response.content.decode('utf-8')))
+
