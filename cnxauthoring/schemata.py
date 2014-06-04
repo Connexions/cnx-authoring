@@ -63,6 +63,10 @@ class UserSchema(colander.MappingSchema):
             missing='cnx-id',
             validator=colander.OneOf(['cnx-id']),
             )
+    fullname = colander.SchemaNode(
+            colander.String(),
+            missing='',
+            )
 
     def schema_type(self, **kw):
         return colander.Mapping(unknown='preserve')

@@ -191,9 +191,13 @@ def profile_to_user_dict(profile):
     for contact_info in profile.get('contact_infos') or []:
         if contact_info.get('type') == 'EmailAddress':
             email = contact_info.get('value')
+    firstname = profile.get('first_name') or ''
+    surname = profile.get('last_name') or ''
     return {
-            'firstname': profile.get('first_name') or '',
-            'surname': profile.get('last_name') or '',
+            'firstname': firstname,
+            'surname': surname,
             'email': email or '',
             'id': profile.get('username') or '',
+            'fullname': profile.get('fullname',
+                '{} {}'.format(firstname, surname).strip()),
             }
