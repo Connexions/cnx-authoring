@@ -18,7 +18,7 @@ try:
 except ImportError:
     import urllib.parse as urlparse # renamed in python3
 
-import cnxepub.models
+import cnxepub
 from cnxquerygrammar.query_parser import grammar, DictFormater
 from parsimonious.exceptions import IncompleteParseError
 
@@ -28,9 +28,9 @@ def utf8(item):
         return [utf8(i) for i in item]
     if isinstance(item, dict):
         return {utf8(k): utf8(v) for k, v in item.items()}
-    try:
+    try: 
         return item.decode('utf-8')
-    except:
+    except: # bare except since this method is supposed to be safe anywhere
         return item
 
 def change_dict_keys(data, func):
@@ -201,3 +201,24 @@ def profile_to_user_dict(profile):
             'fullname': profile.get('fullname',
                 '{} {}'.format(firstname, surname).strip()),
             }
+
+def update_containment(binder):
+    """updates the containment status of all draft documents in this binder"""
+    from .storage import storage
+
+    b_id = binder.id
+    docs = cnxepub.flatten_to_documents(binder)
+    doc_ids = []
+    old_docs = storage.get_all(contained_in = b_id)
+    # additions
+    for doc in docs:
+        doc_ids.append(doc.id) # gather for subtractions below
+        if b_id not in doc.metadata['contained_in']:
+            doc.metadata['contained_in'].append(b_id)
+            storage.update(doc)
+    # subtractions
+    for doc in old_docs:
+        if doc.id not in doc_ids:
+            if b_id in doc.metadata['contained_in']:
+                doc.metadata['contained_in'].remove(b_id)
+                storage.update(doc)

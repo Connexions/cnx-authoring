@@ -7,10 +7,10 @@
 
 -- arguments: hash:string; mediatype:string, data:bytea
 
-UPDATE document 
-        SET license = %(license)s, language = %(language)s, 
+UPDATE document
+        SET license = %(license)s, language = %(language)s,
             created = %(created)s, abstract = %(abstract)s,
-            title = %(title)s, revised = %(revised)s, 
+            title = %(title)s, revised = %(revised)s,
             content = %(content)s, derived_from = %(derived_from)s,
             derived_from_title = %(derived_from_title)s,
             derived_from_uri = %(derived_from_uri)s,
@@ -18,5 +18,6 @@ UPDATE document
             authors = %(authors)s,
             keywords = %(keywords)s, state = %(state)s,
             publication = %(publication)s, cnx_archive_uri = %(cnx-archive-uri)s,
-            publishers = %(publishers)s
+            publishers = %(publishers)s,
+            contained_in = %(contained_in)s
 WHERE id  = %(id)s

@@ -212,7 +212,7 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None,
         license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None,
         derived_from_uri=None, derived_from_title=None,
         submitter=None, state=None, publication=None, cnx_archive_uri=None,
-        authors=None, publishers=None):
+        authors=None, publishers=None, contained_in=None):
     metadata = {}
     metadata['title'] = title
     metadata['version'] = 'draft'
@@ -242,6 +242,7 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None,
         metadata['keywords'] = keywords and [keywords] or []
     metadata['publication'] = publication
     metadata['state'] = state or 'Draft'
+    metadata['contained_in'] = contained_in or []
     if cnx_archive_uri:
         metadata['cnx-archive-uri'] = cnx_archive_uri
     metadata['authors'] = authors or []

@@ -15,7 +15,7 @@ before_install:
   # Set up postgres roles
   - sudo -u postgres psql -d postgres -c "CREATE USER cnxauthoring WITH SUPERUSER PASSWORD 'cnxauthoring';"
   # Set up the database
-  - sudo -u postgres createdb -O cnxauthoring authoring
+  - sudo -u postgres createdb -O cnxauthoring authoring-test
 
   # Install coverage
   - pip install coverage

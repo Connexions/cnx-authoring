@@ -31,6 +31,10 @@ class BaseStorage:
     def abort(self):
         """Clear any persistent error state"""
         raise NotImplementedError()
+    
+    class Error:
+        """Class of errors that are to be handled by abort"""
+        pass
 
     def search(self, **kwargs):
         """Retrieve any ``Document`` objects from storage that matches the

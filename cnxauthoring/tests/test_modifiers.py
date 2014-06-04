@@ -55,6 +55,7 @@ class ModelJSONRendering(unittest.TestCase):
             'derivedFromUri': None,
             'abstract': u'',
             'content': u'',
+            'containedIn': [],
             'license': {
                 'url': 'http://creativecommons.org/licenses/by/4.0/',
                 'abbr': 'by',
