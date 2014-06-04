@@ -28,9 +28,9 @@ def utf8(item):
         return [utf8(i) for i in item]
     if isinstance(item, dict):
         return {utf8(k): utf8(v) for k, v in item.items()}
-    try:
+    try: 
         return item.decode('utf-8')
-    except:
+    except: # bare except since this method is supposed to be safe anywhere
         return item
 
 def change_dict_keys(data, func):
