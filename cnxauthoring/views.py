@@ -249,14 +249,14 @@ def post_content_single(request, cstruct):
     for r in resources:
         try:
             storage.add(r)
-        except:
+        except storage.Error:
             storage.abort()
 
     try:
         content = storage.add(content)
         if content.mediatype == BINDER_MEDIATYPE:
             utils.update_containment(content)
-    except:
+    except storage.Error:
         storage.abort()
     finally:
         storage.persist()
@@ -316,7 +316,7 @@ def post_resource(request):
 
     try:
         resource = storage.add(resource)
-    except:
+    except storage.Error:
         storage.abort()
     finally:
         storage.persist()

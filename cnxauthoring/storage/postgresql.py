@@ -45,6 +45,8 @@ def checked_execute(cur, s, kwargs):
 
 class PostgresqlStorage(BaseStorage):
     """Utility for managing and interfacing with the the storage medium."""
+    
+    Error = psycopg2.Error
 
     def __init__(self, db_connection_string=None):
         #initialize db
