@@ -83,7 +83,7 @@ class MemoryStorage(BaseStorage):
         pass
     
 
-    def search(self, limits, type_=Document, submitter=None):
+    def search(self, limits, type_=Document, submitter_id=None):
         """Retrieve any ``Document`` objects from storage that matches the
         search terms."""
         if type_ != Document:
@@ -101,5 +101,6 @@ class MemoryStorage(BaseStorage):
             title = title.lower()
             for term in search_terms:
                 if term in title:
-                    if submitter is None or item.metadata.get('submitter') == submitter:
+                    if submitter_id is None or item.metadata.get('submitter')['id'] == submitter_id:
                         yield item
+                        break

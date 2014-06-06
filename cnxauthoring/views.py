@@ -395,7 +395,7 @@ def search_content(request):
         return empty_response
     q = utils.structured_query(q)
 
-    result = storage.search(q, submitter=request.unauthenticated_userid)
+    result = storage.search(q, submitter_id=request.unauthenticated_userid)
     items = []
     for content in result:
         document = content.__json__()
