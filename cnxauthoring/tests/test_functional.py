@@ -378,6 +378,9 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
+            u'licensors': [],
+            u'translators': [],
+            u'editors': [],
             })
         self.assertEqual(put_result, get_result)
         self.assert_cors_headers(response)
@@ -591,7 +594,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
-            u'containedIn': []
+            u'containedIn': [],
+            u'editors': [],
+            u'translators': [],
+            u'licensors': [],
             })
         self.assert_cors_headers(response)
 
@@ -625,7 +631,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
-            u'containedIn': []
+            u'containedIn': [],
+            u'editors': [],
+            u'translators': [],
+            u'licensors': [],
             })
         self.assert_cors_headers(response)
 
@@ -673,7 +682,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
-            u'containedIn': []
+            u'containedIn': [],
+            u'editors': [],
+            u'translators': [],
+            u'licensors': [],
             })
         self.assert_cors_headers(response)
 
@@ -707,7 +719,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
-            u'containedIn': []
+            u'containedIn': [],
+            u'editors': [],
+            u'translators': [],
+            u'licensors': [],
             })
         self.assert_cors_headers(response)
 
@@ -765,7 +780,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [u'køkken', u'Madlavning'],
             u'state': u'Draft',
             u'publication': None,
-            u'containedIn': []
+            u'containedIn': [],
+            u'editors': [],
+            u'translators': [],
+            u'licensors': [],
             })
         self.assert_cors_headers(response)
 
@@ -815,7 +833,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [u'køkken', u'Madlavning'],
             u'state': u'Draft',
             u'publication': None,
-            u'containedIn': []
+            u'containedIn': [],
+            u'editors': [],
+            u'translators': [],
+            u'licensors': [],
             })
         self.assert_cors_headers(response)
 
@@ -923,7 +944,21 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'state': u'Draft',
             u'publication': None,
             u'cnx-archive-uri': post_data['id'],
-            u'containedIn': []
+            u'containedIn': [],
+            u'editors': [],
+            u'translators': [],
+            u'licensors': [{
+                u'website': u'',
+                u'surname': u'Ruby',
+                u'suffix': u'',
+                u'firstname': u'Rasmus',
+                u'title': u'',
+                u'othername': u'',
+                u'email': u'rasmus@example.com',
+                u'fullname': u'Rasmus Ruby',
+                u'id': u'Rasmus1975',
+                u'type': u'cnx-id',
+                }],
             })
         self.assert_cors_headers(response)
 
@@ -988,7 +1023,21 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'state': u'Draft',
             u'publication': None,
             u'cnx-archive-uri': post_data['id'],
-            u'containedIn': []
+            u'containedIn': [],
+            u'editors': [],
+            u'translators': [],
+            u'licensors': [{
+                u'website': u'',
+                u'surname': u'Ruby',
+                u'suffix': u'',
+                u'firstname': u'Rasmus',
+                u'title': u'',
+                u'othername': u'',
+                u'email': u'rasmus@example.com',
+                u'fullname': u'Rasmus Ruby',
+                u'id': u'Rasmus1975',
+                u'type': u'cnx-id',
+                }],
             })
         self.assert_cors_headers(response)
 
@@ -1009,6 +1058,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             'content': u"Ding dong the switch is flipped.",
             'subjects': [u'Science and Technology'],
             'keywords': [u'DNA', u'resonance'],
+            'editors': [SUBMITTER],
             }
 
         response = self.testapp.post('/users/contents',
@@ -1041,6 +1091,9 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': post_data['keywords'],
             u'state': u'Draft',
             u'publication': None,
+            u'editors': [SUBMITTER],
+            u'translators': [],
+            u'licensors': [],
             })
         self.assert_cors_headers(response)
 
@@ -1132,6 +1185,9 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
+            u'editors': [],
+            u'translators': [],
+            u'licensors': [],
             })
         self.assert_cors_headers(response)
 
@@ -1267,6 +1323,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                         u'title': u'Hygiene',
                         }],
                     },
+                'licensors': [SUBMITTER],
                 }
         response = self.testapp.put(
                 '/contents/{}@draft.json'.format(result['id']),
@@ -1306,6 +1363,9 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [u'køkken', u'Madlavning'],
             u'state': u'Draft',
             u'publication': None,
+            u'editors': [],
+            u'translators': [],
+            u'licensors': [SUBMITTER],
             })
         self.assert_cors_headers(response)
 
@@ -1347,6 +1407,9 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [u'køkken', u'Madlavning'],
             u'state': u'Draft',
             u'publication': None,
+            u'editors': [],
+            u'translators': [],
+            u'licensors': [SUBMITTER],
             })
         self.assert_cors_headers(response)
 

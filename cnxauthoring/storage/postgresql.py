@@ -19,6 +19,8 @@ from .database import SQL
 psycopg2.extras.register_uuid()
 psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
 
+JSON_FIELDS = ['authors', 'publishers', 'licensors', 'editors', 'translators']
+
 # cribbed from http://stackoverflow.com/questions/19048017/python-extract-substitution-vars-from-format-string
 def get_format_keys(s):
     d = {}
@@ -138,8 +140,9 @@ class PostgresqlStorage(BaseStorage):
                 args['content'] = json.dumps(args.pop('tree'))
             if 'cnx-archive-uri' not in args:
                 args['cnx-archive-uri'] = None
-            args['authors'] = psycopg2.extras.Json(args['authors'])
-            args['publishers'] = psycopg2.extras.Json(args['publishers'])
+
+            for field in JSON_FIELDS:
+                args[field] = psycopg2.extras.Json(args[field])
             checked_execute(cursor, SQL['add-document'], args)
         else:
             raise NotImplementedError(type_name)
@@ -176,8 +179,8 @@ class PostgresqlStorage(BaseStorage):
                 args['cnx-archive-uri'] = None
             if 'tree' in args:
                 args['content'] = json.dumps(args.pop('tree'))
-            args['authors'] = psycopg2.extras.Json(args['authors'])
-            args['publishers'] = psycopg2.extras.Json(args['publishers'])
+            for field in JSON_FIELDS:
+                args[field] = psycopg2.extras.Json(args[field])
             checked_execute(cursor, SQL['update-document'], args)
         return item
 
