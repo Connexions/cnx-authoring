@@ -19,5 +19,7 @@ UPDATE document
             keywords = %(keywords)s, state = %(state)s,
             publication = %(publication)s, cnx_archive_uri = %(cnx-archive-uri)s,
             publishers = %(publishers)s,
-            contained_in = %(contained_in)s
+            contained_in = %(contained_in)s,
+            licensors = %(licensors)s,
+            editors = %(editors)s, translators = %(translators)s
 WHERE id  = %(id)s

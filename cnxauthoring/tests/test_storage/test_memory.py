@@ -19,6 +19,13 @@ SUBMITTER = {
         u'surname': u'One',
         }
 
+USER2 = {
+        u'id': u'you',
+        u'email': u'you@example.com',
+        u'firstname': u'User',
+        u'surname': u'Two',
+        }
+
 class MemoryStorageTests(unittest.TestCase):
     def setUp(self):
         from ...storage.memory import MemoryStorage
@@ -30,6 +37,9 @@ class MemoryStorageTests(unittest.TestCase):
                      content='<p>Document One contents etc</p>',
                      abstract='Summary of Document One',
                      submitter=SUBMITTER,
+                     authors=[SUBMITTER],
+                     publishers=[SUBMITTER, USER2],
+                     editors=[USER2],
                      language='en')
         self.storage.add(d)
         self.storage.persist()
@@ -42,6 +52,8 @@ class MemoryStorageTests(unittest.TestCase):
                       content='<p>Document Two contents etc</p>',
                       abstract='Summary of Document Two',
                       submitter=SUBMITTER,
+                      licensors=[SUBMITTER],
+                      translators=[USER2],
                       language='en')
         self.storage.add(d2)
         self.storage.persist()
@@ -151,7 +163,12 @@ class MemoryStorageTests(unittest.TestCase):
 
         d = self.storage.get(id=d1_id)
         self.assertEqual(d.metadata['title'], 'Document Title: One')
-        d.update(title='Document Title: Changed')
+        d.update(title='Document Title: Changed',
+                 authors=[SUBMITTER, USER2],
+                 licensors=[SUBMITTER],
+                 editors=[USER2],
+                 translators=[],
+                )
         self.storage.update(d)
 
         d = self.storage.get(id=d1_id)
