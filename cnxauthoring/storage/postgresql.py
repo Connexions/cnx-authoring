@@ -45,7 +45,7 @@ def checked_execute(cur, s, kwargs):
 
 class PostgresqlStorage(BaseStorage):
     """Utility for managing and interfacing with the the storage medium."""
-    
+
     Error = psycopg2.Error
 
     def __init__(self, db_connection_string=None):
@@ -64,12 +64,12 @@ class PostgresqlStorage(BaseStorage):
         # trusting the values
 
         in_progress = ( self.conn.status != STATUS_READY )
-        
+
         cursor = self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        
+
         type_name = type_.__name__.lower()
-        
-        # if ID is not a well formed uuid, there's no need to even hit the db 
+
+        # if ID is not a well formed uuid, there's no need to even hit the db
         if 'id' in kwargs and type(kwargs['id']) != UUID:
             try:
                 kwargs['id'] = UUID(kwargs['id'])
@@ -189,7 +189,7 @@ class PostgresqlStorage(BaseStorage):
         """Persist/commit the changes."""
         self.conn.rollback()
 
-    def search(self, limits, type_=Document, submitter=None):
+    def search(self, limits, type_=Document, submitter_id=None):
         """Retrieve any ``Document`` objects from storage that matches the
         search terms."""
         if type_ != Document:
@@ -206,8 +206,12 @@ class PostgresqlStorage(BaseStorage):
             search_terms.append(term.lower())
 
         title_terms = ['lower(title) ~ %s'] * len(search_terms)
-        where_clause = '(' + ' OR '.join(title_terms) + ") AND submitter->>'id' = %s"
-        sqlargs = search_terms + [submitter]        
+        if submitter_id is None:
+            where_clause = '(' + ' OR '.join(title_terms) + ')'
+            sqlargs = search_terms
+        else:
+            where_clause = '(' + ' OR '.join(title_terms) + ") AND submitter->>'id' = %s"
+            sqlargs = search_terms + [submitter_id]
 
         cursor.execute(SQL['search-title'].format(where_clause=where_clause), sqlargs)
         res = cursor.fetchall()

@@ -183,3 +183,94 @@ class MemoryStorageTests(unittest.TestCase):
         self.assertEqual(b.to_dict()['tree']['contents'], [
             {'id': str(d1_id), 'title': None}])
         self.assertEqual(b.metadata['title'], 'Book Title')
+
+    def test_search_single_doc(self):
+        d1_id = uuid.uuid4()
+        d1 = Document('Document Title: One (Unique Phrase)', id=d1_id, submitter=SUBMITTER)
+        self.storage.add(d1)
+        self.storage.persist()
+
+        # One term one result
+        i = 0
+        search_gen = self.storage.search([('text', 'document title: one')])
+        for doc in search_gen:
+            self.assertEqual(doc.to_dict(), d1.to_dict())
+            i += 1
+        self.assertEqual(i, 1)
+
+        # One term no results
+        search_gen = self.storage.search([('text', 'Purple')])
+        for doc in search_gen:
+            self.assertTrue(False)
+
+        # Multiple terms one result
+        search_gen = self.storage.search([('text', 'One'), ('text', 'Unique'), ('text', 'Phrase'), ('text', 'Purple')])
+        i = 0
+        for doc in search_gen:
+            self.assertEqual(doc.to_dict(), d1.to_dict())
+            i += 1
+        self.assertEqual(i, 1)
+
+    def test_search_multiple_docs(self):
+        d1_id = uuid.uuid4()
+        d1 = Document(u'DoCuMeNt Title: One 文字でわかる！', id=d1_id, submitter=SUBMITTER)
+        self.storage.add(d1)
+        self.storage.persist()
+
+        # Search for first Document added
+        i = 0
+        search_gen = self.storage.search([('text', 'Document')])
+        for doc in search_gen:
+            self.assertEqual(doc.to_dict(), d1.to_dict())
+            i += 1
+        self.assertEqual(i, 1)
+
+        # Add another Document
+        d2_id = uuid.uuid4()
+        d2 = Document(u'文字でわかる！', id=d2_id, submitter=SUBMITTER)
+        self.storage.add(d2)
+        self.storage.persist()
+
+        # Search again after adding
+        i = 0
+        expected = [d1.to_dict(), d2.to_dict()]
+        search_gen = self.storage.search([('text', u'文字でわかる！')])
+        for doc in search_gen:
+           self.assertTrue(doc.to_dict() in expected)
+           expected.remove(doc.to_dict())
+           i += 1
+        self.assertEqual(i, 2)
+
+    def test_search_multiple_submitters(self):
+        submitter2 = {
+            u'id': u'you',
+            u'email': u'you@example.com',
+            u'firstname': u'User',
+            u'surname': u'Two',
+        }
+        d1_id = uuid.uuid4()
+        d1 = Document('Document Title: One', id=d1_id, submitter=SUBMITTER)
+        self.storage.add(d1)
+        self.storage.persist()
+        d2_id = uuid.uuid4()
+        d2 = Document('Document Title: Two', id=d2_id, submitter=submitter2)
+        self.storage.add(d2)
+        self.storage.persist()
+
+        # Specify the submitter
+        i = 0
+        search_gen = self.storage.search([('text', 'Document')], submitter_id=SUBMITTER['id'])
+        for doc in search_gen:
+            self.assertEqual(doc.to_dict(), d1.to_dict())
+            i += 1
+        self.assertEqual(i, 1)
+
+        # Do not specify the submitter
+        i = 0
+        expected = [d1.to_dict(), d2.to_dict()]
+        search_gen = self.storage.search([('text', 'Document Title')])
+        for doc in search_gen:
+           self.assertTrue(doc.to_dict() in expected)
+           expected.remove(doc.to_dict())
+           i += 1
+        self.assertEqual(i, 2)
