@@ -1916,16 +1916,18 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_user_contents_hide_documents_inside_binders(self):
         FunctionalTests.profile = {'username': str(uuid.uuid4())}
+        one_day_ago = datetime.datetime.now(tz=TZINFO) - datetime.timedelta(1)
         one_week_ago = datetime.datetime.now(tz=TZINFO) - datetime.timedelta(7)
 
         mock_datetime = mock.Mock()
-        mock_datetime.now = mock.Mock(return_value=one_week_ago)
+        mock_datetime.now = mock.Mock(return_value=one_day_ago)
         with mock.patch('datetime.datetime', mock_datetime):
             response = self.testapp.post('/users/contents',
                 json.dumps({'title': 'single page document'}), status=201)
 
         single_page = json.loads(response.body.decode('utf-8'))
 
+        mock_datetime.now = mock.Mock(return_value=one_week_ago)
         with mock.patch('datetime.datetime', mock_datetime):
             response = self.testapp.post('/users/contents',
                 json.dumps({'title': 'page in a book'}), status=201)
@@ -2040,6 +2042,56 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'limits': [],
                 },
             })
+
+        # retrieve just pages, should now show all pages
+        response = self.testapp.get('/users/contents?mediaType=application/vnd.org.cnx.module', status=200)
+        workspace = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(workspace, {
+            u'query': {
+                u'limits': [],
+                },
+            u'results': {
+                u'items': [
+                    {
+                        u'containedIn': [book['id']],
+                        u'id': u'{}@draft'.format(single_page['id']),
+                        u'title': single_page['title'],
+                        u'derivedFrom': None,
+                        u'state': u'Draft',
+                        u'version': u'draft',
+                        u'revised': single_page['revised'],
+                        u'mediaType': u'application/vnd.org.cnx.module',
+                        },
+                    {
+                        u'containedIn': [other_book['id']],
+                        u'id': u'{}@draft'.format(page_in_book['id']),
+                        u'title': page_in_book['title'],
+                        u'derivedFrom': None,
+                        u'state': u'Draft',
+                        u'version': u'draft',
+                        u'revised': page_in_book['revised'],
+                        u'mediaType': u'application/vnd.org.cnx.module',
+                        },
+                    ],
+                u'total': 2,
+                u'limits': [],
+                },
+            })
+
+        # Now filter for not:Draft - should supress all
+        response = self.testapp.get('/users/contents?state=not:Draft', status=200)
+        workspace = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(workspace, {
+            u'query': {
+                u'limits': [],
+                },
+            u'results': {
+                u'items': [],
+                u'total': 0,
+                u'limits': [],
+                },
+            })
+
 
 
 class PublicationTests(BaseFunctionalTestCase):

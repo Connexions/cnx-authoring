@@ -124,16 +124,20 @@ def user_contents(request):
     """Extract of the contents that belong to the current logged in user"""
     items = []
     binder_ids = set()
+    # filter kwargs to subset of content metadata fields - avoid DB errors
+    kwargs = {k:v for k,v in request.GET.items() if k in ['mediaType','state','containedIn']}
+    if kwargs:
+        utils.change_dict_keys(kwargs, utils.camelcase_to_underscore)
     # TODO use acls instead of filter by submitter
-    contents = storage.get_all(submitter={'id': request.unauthenticated_userid})
+    contents = storage.get_all(submitter={'id': request.unauthenticated_userid},**kwargs)
     for content in contents:
         update_content_state(request, content)
         if isinstance(content,Binder):
             binder_ids.add(content.id)
 
         item = content.__json__()
-        document = {k: item[k] for k in  
-               ['mediaType', 'title', 'id', 'version', 'revised', 'derivedFrom', 'state', 'containedIn']}
+        document = {k: item[k] for k in ['mediaType', 'title', 'id', 'version',
+                                         'revised', 'derivedFrom', 'state', 'containedIn']}
 
         # Don't add version to published items, so they are link to archive instead of authoring (no @draft)
         if document['state'] != 'Done/Success':

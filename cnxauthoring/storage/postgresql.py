@@ -90,9 +90,17 @@ class PostgresqlStorage(BaseStorage):
                         field=k, json_key=json_k)] = json_v
                 match_values.pop(k)
             elif k == 'contained_in': # Array based storage , assumes singular key
-                match_clauses.append(' %(contained_in)s = ANY (contained_in) ')
+                if v.startswith('not:'):
+                    match_clauses.append(' NOT %(contained_in)s = ANY (contained_in) ')
+                    match_values[k] = v[4:]
+                else:
+                    match_clauses.append(' %(contained_in)s = ANY (contained_in) ')
             else:
-                match_clauses.append('{field} = %({field})s'.format(field=k))
+                if  str(v).startswith('not:'):
+                    match_clauses.append(' NOT {field} = %({field})s'.format(field=k))
+                    match_values[k] = str(v)[4:]
+                else:
+                    match_clauses.append('{field} = %({field})s'.format(field=k))
 
         checked_execute(cursor, SQL['get'].format(
             tablename=type_name, where_clause=' AND '.join(match_clauses)),
