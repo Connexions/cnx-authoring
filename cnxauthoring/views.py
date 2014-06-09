@@ -6,6 +6,7 @@
 # See LICENCE.txt for details.
 # ###
 import functools
+import io
 import json
 try:
     from urllib import urlencode # python 2
@@ -187,8 +188,8 @@ def get_resource(request):
     if not request.has_permission('view', resource):
         raise httpexceptions.HTTPForbidden()
     resp = request.response
-    resp.body = resource.data.read()
-    resource.data.seek(0)
+    with resource.open() as data:
+        resp.body = data.read()
     resp.content_type = resource.media_type
     if 'html' in resp.content_type:
         resp.content_type = 'application/octet-stream'
@@ -314,7 +315,7 @@ def post_resource(request):
     mediatype = file_form_field.type
     data = file_form_field.file
 
-    resource = Resource(mediatype, data)
+    resource = Resource(mediatype, io.BytesIO(data.read()))
     if not request.has_permission('create', resource):
         raise httpexceptions.HTTPForbidden()
 

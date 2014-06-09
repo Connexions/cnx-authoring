@@ -5,7 +5,7 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
-
+import io
 import unittest
 import uuid
 
@@ -85,13 +85,14 @@ class MemoryStorageTests(unittest.TestCase):
     def test_add_and_get_resource(self):
         with open(test_data('1x1.png'), 'rb') as f:
             data = f.read()
-        r = Resource('image/png', data)
+        r = Resource('image/png', io.BytesIO(data))
         self.storage.add(r)
         self.storage.persist()
 
         result = self.storage.get(type_=Resource, hash=r.hash)
         self.assertEqual(result.hash, r.hash)
-        self.assertEqual(result.data.read(), data)
+        with result.open() as f:
+            self.assertEqual(f.read(), data)
 
     def test_get_document(self):
         d1_id = uuid.uuid4()

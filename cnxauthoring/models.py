@@ -7,7 +7,6 @@
 # ###
 import datetime
 import io
-import hashlib
 import uuid
 
 import tzlocal
@@ -81,14 +80,9 @@ class Resource(cnxepub.Resource):
 
     def __init__(self, mediatype, data, filename=None):
         # ``data`` must be a buffer or file-like object.
-        try:
-            self.data = data.read()
-        except AttributeError:
-            self.data = data[:]
-        _hash = hashlib.new('sha1', self.data).hexdigest()
-        cnxepub.Resource.__init__(self, _hash, io.BytesIO(self.data),
+        cnxepub.Resource.__init__(self, 'resource_id', data,
                 mediatype, filename)
-        self._hash = _hash
+        self.id = self.hash
 
     def __acl__(self):
         return (

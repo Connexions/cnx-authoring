@@ -5,12 +5,14 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
+import io
+import json
+from uuid import UUID
+
 import psycopg2
 import psycopg2.extras
 from psycopg2 import Binary
 from psycopg2.extensions import STATUS_READY
-from uuid import UUID
-import json
 
 from .main import BaseStorage
 from ..models import Document, Resource, create_content, MEDIATYPES
@@ -119,7 +121,7 @@ class PostgresqlStorage(BaseStorage):
                 else:
                     rd = dict(r)
                     rd.pop('hash')
-                    rd['data'] = rd['data'][:]
+                    rd['data'] = io.BytesIO(rd['data'][:])
                     yield type_(**dict(rd))
 
     def add(self, item_or_items):
@@ -132,8 +134,8 @@ class PostgresqlStorage(BaseStorage):
         if type_name== 'resource':
             exists = self.get(type_=Resource, hash=item._hash)
             if not exists:
-                data = Binary(item.data.read())
-                item.data.seek(0)
+                with item.open() as f:
+                    data = Binary(f.read())
                 checked_execute(cursor, SQL['add-resource'],
                             {'hash':item._hash,'mediatype':item.media_type,'data':data})
         elif type_name in ['document','binder']:
