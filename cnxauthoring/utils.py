@@ -175,7 +175,8 @@ def derive_resources(request, document):
                 except urllib2.HTTPError:
                     continue
                 content_type = response.info().getheader('Content-Type')
-                resources[r.uri] = Resource(content_type, response)
+                resources[r.uri] = Resource(content_type,
+                        io.BytesIO(response.read()))
                 yield resources[r.uri]
             r.bind(resources[r.uri], path)
     document.metadata['content'] = document.html
