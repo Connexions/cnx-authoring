@@ -212,9 +212,9 @@ def post_content_single(request, cstruct):
             cstruct = revise_content(request, **cstruct)
         except DocumentNotFoundError:
             raise httpexceptions.HTTPNotFound()
-        # TODO users other than the submitter should be able to edit it
-        # (requires permission information from archive)
-        if cstruct['submitter']['id'] != request.unauthenticated_userid:
+        can_publish = utils.fetch_archive_content(request, archive_id,
+                extras=True)['can_publish']
+        if request.unauthenticated_userid not in can_publish:
             raise httpexceptions.HTTPForbidden(
                     'You do not have permission to edit {}'.format(archive_id))
 
