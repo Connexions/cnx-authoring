@@ -333,6 +333,24 @@ def post_resource(request):
     return location
 
 
+@view_config(route_name='delete-content', request_method='DELETE', renderer='json')
+@authenticated_only
+def delete_content(request):
+    """Modify a stored document"""
+    id = request.matchdict['id']
+    content = storage.get(id=id)
+    if content is None:
+        raise httpexceptions.HTTPNotFound()
+    if not request.has_permission('edit', content):
+        raise httpexceptions.HTTPForbidden(
+                'You do not have permission to delete {}'.format(id))
+    try:
+        resource = storage.remove(content)
+    except storage.Error:
+        storage.abort()
+    finally:
+        storage.persist()
+
 @view_config(route_name='put-content', request_method='PUT', renderer='json')
 @authenticated_only
 def put_content(request):
