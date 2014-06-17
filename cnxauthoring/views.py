@@ -116,6 +116,7 @@ def update_content_state(request, content):
                 content.update(state=result['state'])
                 storage.update(content)
                 storage.persist()
+            #FIXME what does the pass do here? We also need to deal w/ potential storage.Error
             except (TypeError, ValueError):
                 pass
 
@@ -254,19 +255,17 @@ def post_content_single(request, cstruct):
     for r in resources:
         try:
             storage.add(r)
+            storage.persist()
         except storage.Error:
             storage.abort()
-        finally:
-            storage.persist()
 
     try:
         content = storage.add(content)
         if content.mediatype == BINDER_MEDIATYPE:
             utils.update_containment(content)
+        storage.persist()
     except storage.Error:
         storage.abort()
-    finally:
-        storage.persist()
 
     return content
 
@@ -323,10 +322,9 @@ def post_resource(request):
 
     try:
         resource = storage.add(resource)
+        storage.persist()
     except storage.Error:
         storage.abort()
-    finally:
-        storage.persist()
 
     resp = request.response
     resp.status = 201
@@ -353,10 +351,9 @@ def delete_content(request):
         resource = storage.remove(content)
         if content.metadata['media_type'] == BINDER_MEDIATYPE:
             utils.update_containment(content, deletion = True)
+        storage.persist()
     except storage.Error:
         storage.abort()
-    finally:
-        storage.persist()
 
 @view_config(route_name='put-content', request_method='PUT', renderer='json')
 @authenticated_only
@@ -397,10 +394,9 @@ def put_content(request):
         storage.update(content)
         if content.mediatype == BINDER_MEDIATYPE:
             utils.update_containment(content)
-    except storage.Error, e:
-        storage.abort()
-    finally:
         storage.persist()
+    except storage.Error:
+        storage.abort()
 
     resp = request.response
     resp.status = 200
