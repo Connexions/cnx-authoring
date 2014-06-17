@@ -93,13 +93,13 @@ class MemoryStorageTests(unittest.TestCase):
         self.storage.add(r)
         self.storage.persist()
 
-        result = self.storage.get(type_ = Resource, hash = r.hash)
+        result = self.storage.get(type_=Resource, hash=r.hash)
         self.assertEqual(result.hash, r.hash)
         with result.open() as f:
             self.assertEqual(f.read(), data)
 
         self.storage.remove(r)
-        result = self.storage.get(type_ = Resource, hash = r.hash)
+        result = self.storage.get(type_=Resource, hash=r.hash)
         self.assertEqual(result, None)
 
     def test_get_and_remove_document(self):

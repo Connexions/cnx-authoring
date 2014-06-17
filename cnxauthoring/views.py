@@ -339,7 +339,7 @@ def post_resource(request):
 @view_config(route_name='delete-content', request_method='DELETE', renderer='json')
 @authenticated_only
 def delete_content(request):
-    """Modify a stored document"""
+    """delete a stored document"""
     id = request.matchdict['id']
     content = storage.get(id=id)
     if content is None:
@@ -349,7 +349,8 @@ def delete_content(request):
                 'You do not have permission to delete {}'.format(id))
     if content.metadata['media_type'] == DOCUMENT_MEDIATYPE and content.metadata['contained_in']:
         raise httpexceptions.HTTPForbidden(
-                'Content {} is contained in {} and cannot be deleted'.format(id,content.metadata['contained_in']))
+                'Content {} is contained in {} and cannot be deleted'.format(id,
+                     content.metadata['contained_in']))
     try:
         resource = storage.remove(content)
         if content.metadata['media_type'] == BINDER_MEDIATYPE:
