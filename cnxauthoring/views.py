@@ -256,6 +256,8 @@ def post_content_single(request, cstruct):
             storage.add(r)
         except storage.Error:
             storage.abort()
+        finally:
+            storage.persist()
 
     try:
         content = storage.add(content)
@@ -344,8 +346,13 @@ def delete_content(request):
     if not request.has_permission('edit', content):
         raise httpexceptions.HTTPForbidden(
                 'You do not have permission to delete {}'.format(id))
+    if content.metadata['media_type'] == DOCUMENT_MEDIATYPE and content.metadata['contained_in']:
+        raise httpexceptions.HTTPForbidden(
+                'Content {} is contained in {} and cannot be deleted'.format(id,content.metadata['contained_in']))
     try:
         resource = storage.remove(content)
+        if content.metadata['media_type'] == BINDER_MEDIATYPE:
+            utils.update_containment(content, deletion = True)
     except storage.Error:
         storage.abort()
     finally:
@@ -386,10 +393,14 @@ def put_content(request):
         content.update(**appstruct)
     except DocumentNotFoundError as e:
         raise httpexceptions.HTTPBadRequest(e.message)
-    storage.update(content)
-    if content.mediatype == BINDER_MEDIATYPE:
-        utils.update_containment(content)
-    storage.persist()
+    try:
+        storage.update(content)
+        if content.mediatype == BINDER_MEDIATYPE:
+            utils.update_containment(content)
+    except storage.Error, e:
+        storage.abort()
+    finally:
+        storage.persist()
 
     resp = request.response
     resp.status = 200
