@@ -114,10 +114,13 @@ def update_content_state(request, content):
             try:
                 result = json.loads(response.content.decode('utf-8'))
                 content.update(state=result['state'])
-                storage.update(content)
-                storage.persist()
-            #FIXME what does the pass do here? We also need to deal w/ potential storage.Error
+                try:
+                    storage.update(content)
+                    storage.persist()
+                except storage.Error:
+                    storage.abort()
             except (TypeError, ValueError):
+                # Not critical if there's a json problem here - perhaps log this
                 pass
 
 @view_config(route_name='user-contents', request_method='GET', renderer='json')
