@@ -160,7 +160,16 @@ class PostgresqlStorage(BaseStorage):
 
     def remove(self, item_or_items):
         """Removes any item or set of items from storage."""
-        raise NotImplementedError()
+        if isinstance(item_or_items, list):
+            raise NotImplementedError()
+        item = item_or_items
+        type_name= item.__class__.__name__.lower()
+        with self.conn.cursor() as cursor:
+            if type_name == 'resource':
+                checked_execute(cursor, SQL['delete-resource'], {'hash':item._hash})
+            elif type_name in ['document', 'binder']:
+                checked_execute(cursor, SQL['delete-document'], {'id':item.id})
+        return item
 
     def update(self, item_or_items):
         """Updates any item or set of items in storage."""
@@ -169,7 +178,7 @@ class PostgresqlStorage(BaseStorage):
         item = item_or_items
         type_name= item.__class__.__name__.lower()
         cursor = self.conn.cursor()
-        if type_name== 'resource':
+        if type_name == 'resource':
             checked_execute(cursor, SQL['update-resource'],
                         {'hash':item._hash,'mediatype':item.mediatype,'data':Binary(item.data)})
         elif type_name in ['document', 'binder']:

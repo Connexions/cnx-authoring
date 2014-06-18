@@ -55,12 +55,14 @@ class MemoryStorage(BaseStorage):
         collection.append(item)
         return item
 
-    def remove(self, item_or_items):
-        """Removes any item or set of items from storage."""
-        raise NotImplementedError()
-
     def update(self, item_or_items):
         """Updates any item or set of items in storage."""
+        item = self.remove(item_or_items)
+        self.add(item)
+        return item
+
+    def remove(self, item_or_items):
+        """Removes any item or set of items from storage."""
         if isinstance(item_or_items, list):
             raise NotImplementedError()
         item = item_or_items
@@ -71,7 +73,6 @@ class MemoryStorage(BaseStorage):
                 index = i
                 break
         collection.pop(index)
-        self.add(item)
         return item
 
     def persist(self):

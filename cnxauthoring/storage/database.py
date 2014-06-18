@@ -33,6 +33,8 @@ SQL = {
     'get': _read_sql_file('get'),
     'add-document': _read_sql_file('add-document'),
     'add-resource': _read_sql_file('add-resource'),
+    'delete-document': _read_sql_file('delete-document'),
+    'delete-resource': _read_sql_file('delete-resource'),
     'update-document': _read_sql_file('update-document'),
     'update-resource': _read_sql_file('update-resource'),
     'search-title': _read_sql_file('search-title'),

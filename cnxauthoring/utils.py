@@ -203,20 +203,22 @@ def profile_to_user_dict(profile):
                 '{} {}'.format(firstname, surname).strip()),
             }
 
-def update_containment(binder):
+def update_containment(binder, deletion = False):
     """updates the containment status of all draft documents in this binder"""
     from .storage import storage
 
     b_id = binder.id
-    docs = cnxepub.flatten_to_documents(binder)
     doc_ids = []
     old_docs = storage.get_all(contained_in = b_id)
+
     # additions
-    for doc in docs:
-        doc_ids.append(doc.id) # gather for subtractions below
-        if b_id not in doc.metadata['contained_in']:
-            doc.metadata['contained_in'].append(b_id)
-            storage.update(doc)
+    if not deletion:
+        docs = cnxepub.flatten_to_documents(binder)
+        for doc in docs:
+            doc_ids.append(doc.id) # gather for subtractions below
+            if b_id not in doc.metadata['contained_in']:
+                doc.metadata['contained_in'].append(b_id)
+                storage.update(doc)
     # subtractions
     for doc in old_docs:
         if doc.id not in doc_ids:

@@ -64,7 +64,7 @@ class MemoryStorageTests(unittest.TestCase):
         result = self.storage.get(id=d2_id)
         self.assertEqual(result.to_dict(), d2.to_dict())
 
-    def test_add_and_get_binder(self):
+    def test_add_get_and_remove_binder(self):
         d1_id = uuid.uuid4()
         d = Document('Document Title: One', id=d1_id, submitter=SUBMITTER)
         self.storage.add(d)
@@ -82,7 +82,11 @@ class MemoryStorageTests(unittest.TestCase):
         result = self.storage.get(id=b1_id)
         self.assertEqual(result.to_dict(), b.to_dict())
 
-    def test_add_and_get_resource(self):
+        self.storage.remove(b)
+        result = self.storage.get(id=b1_id)
+        self.assertEqual(result, None)
+
+    def test_add_get_and_remove_resource(self):
         with open(test_data('1x1.png'), 'rb') as f:
             data = f.read()
         r = Resource('image/png', io.BytesIO(data))
@@ -94,7 +98,11 @@ class MemoryStorageTests(unittest.TestCase):
         with result.open() as f:
             self.assertEqual(f.read(), data)
 
-    def test_get_document(self):
+        self.storage.remove(r)
+        result = self.storage.get(type_=Resource, hash=r.hash)
+        self.assertEqual(result, None)
+
+    def test_get_and_remove_document(self):
         d1_id = uuid.uuid4()
         result = self.storage.get(id=d1_id)
         self.assertEqual(result, None)
@@ -155,6 +163,12 @@ class MemoryStorageTests(unittest.TestCase):
 
         result = self.storage.get(submitter={'id': 'you'})
         self.assertEqual(result, None)
+
+        # remove it
+        self.storage.remove(d)
+        result = self.storage.get(id=d1_id)
+        self.assertEqual(result, None)
+
 
     def test_update_document(self):
         d1_id = uuid.uuid4()

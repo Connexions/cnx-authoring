@@ -114,9 +114,13 @@ def update_content_state(request, content):
             try:
                 result = json.loads(response.content.decode('utf-8'))
                 content.update(state=result['state'])
-                storage.update(content)
-                storage.persist()
+                try:
+                    storage.update(content)
+                    storage.persist()
+                except storage.Error:
+                    storage.abort()
             except (TypeError, ValueError):
+                # Not critical if there's a json problem here - perhaps log this
                 pass
 
 @view_config(route_name='user-contents', request_method='GET', renderer='json')
@@ -254,6 +258,7 @@ def post_content_single(request, cstruct):
     for r in resources:
         try:
             storage.add(r)
+            storage.persist()
         except storage.Error:
             storage.abort()
 
@@ -261,10 +266,9 @@ def post_content_single(request, cstruct):
         content = storage.add(content)
         if content.mediatype == BINDER_MEDIATYPE:
             utils.update_containment(content)
+        storage.persist()
     except storage.Error:
         storage.abort()
-    finally:
-        storage.persist()
 
     return content
 
@@ -321,10 +325,9 @@ def post_resource(request):
 
     try:
         resource = storage.add(resource)
+        storage.persist()
     except storage.Error:
         storage.abort()
-    finally:
-        storage.persist()
 
     resp = request.response
     resp.status = 201
@@ -332,6 +335,29 @@ def post_resource(request):
     resp.headers.add('Location', location)
     return location
 
+
+@view_config(route_name='delete-content', request_method='DELETE', renderer='json')
+@authenticated_only
+def delete_content(request):
+    """delete a stored document"""
+    id = request.matchdict['id']
+    content = storage.get(id=id)
+    if content is None:
+        raise httpexceptions.HTTPNotFound()
+    if not request.has_permission('edit', content):
+        raise httpexceptions.HTTPForbidden(
+                'You do not have permission to delete {}'.format(id))
+    if content.metadata['media_type'] == DOCUMENT_MEDIATYPE and content.metadata['contained_in']:
+        raise httpexceptions.HTTPForbidden(
+                'Content {} is contained in {} and cannot be deleted'.format(id,
+                     content.metadata['contained_in']))
+    try:
+        resource = storage.remove(content)
+        if content.metadata['media_type'] == BINDER_MEDIATYPE:
+            utils.update_containment(content, deletion = True)
+        storage.persist()
+    except storage.Error:
+        storage.abort()
 
 @view_config(route_name='put-content', request_method='PUT', renderer='json')
 @authenticated_only
@@ -368,10 +394,13 @@ def put_content(request):
         content.update(**appstruct)
     except DocumentNotFoundError as e:
         raise httpexceptions.HTTPBadRequest(e.message)
-    storage.update(content)
-    if content.mediatype == BINDER_MEDIATYPE:
-        utils.update_containment(content)
-    storage.persist()
+    try:
+        storage.update(content)
+        if content.mediatype == BINDER_MEDIATYPE:
+            utils.update_containment(content)
+        storage.persist()
+    except storage.Error:
+        storage.abort()
 
     resp = request.response
     resp.status = 200
