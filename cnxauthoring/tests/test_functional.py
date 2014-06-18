@@ -1542,6 +1542,45 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result['subjects'], update_data['subjects'])
         self.assert_cors_headers(response)
 
+    def test_delete_content_401(self):
+        FunctionalTests.profile = None
+        response = self.testapp.delete('/contents/{}@draft.json'.format(id),
+                status=401)
+        self.assert_cors_headers(response)
+
+    def test_delete_content_403(self):
+        response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'title': 'My page',
+                    }), status=201)
+        page = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+        FunctionalTests.profile = {'username': 'you'}
+        response = self.testapp.delete(
+                '/contents/{}@draft.json'.format(page['id']), status=403)
+        self.assert_cors_headers(response)
+
+    def test_delete_content(self):
+        response = self.testapp.post('/users/contents',
+                json.dumps({
+                    'title': 'My page',
+                    }), status=201)
+        page = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+        # test that it's possible to get the content we just created
+        response = self.testapp.get(
+                '/contents/{}@draft.json'.format(page['id']), status=200)
+
+        # delete the content
+        response = self.testapp.delete(
+                '/contents/{}@draft.json'.format(page['id']), status=200)
+        self.assert_cors_headers(response)
+
+        response = self.testapp.get(
+                '/contents/{}@draft.json'.format(page['id']), status=404)
+
     def test_search_content_401(self):
         FunctionalTests.profile = None
         response = self.testapp.get('/search', status=401)
