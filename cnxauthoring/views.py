@@ -88,10 +88,8 @@ def user_search(request):
     q = request.GET.get('q', '')
     if not q:
         return []
-    params = urlencode({'q': q})
     accounts = request.registry.getUtility(IOpenstaxAccounts)
-    result = accounts.request(
-            '/api/users/search.json?{}'.format(params))
+    result = accounts.search(q)
     return result
 
 

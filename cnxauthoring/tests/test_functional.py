@@ -73,10 +73,8 @@ def mock_authentication_policy(config):
 
 def mock_openstax_accounts(config):
     from openstax_accounts.interfaces import IOpenstaxAccounts
-    accounts = mock.MagicMock()
-    accounts.request.side_effect = lambda *args, **kwargs: (
-        FunctionalTests.accounts_request_return)
-    config.registry.registerUtility(accounts, IOpenstaxAccounts)
+    FunctionalTests.accounts = mock.MagicMock()
+    config.registry.registerUtility(FunctionalTests.accounts, IOpenstaxAccounts)
 
 
 USER_PROFILE = {
@@ -1783,7 +1781,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
     def test_user_search(self):
-        FunctionalTests.accounts_request_return = {
+        FunctionalTests.accounts.search.return_value = {
                 'per_page': 20,
                 'users': [
                     {'username': 'admin', 'id': 1, 'contact_infos': []}
@@ -1794,7 +1792,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 }
         response = self.testapp.get('/users/search?q=admin')
         result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(result, FunctionalTests.accounts_request_return)
+        self.assertEqual(result, FunctionalTests.accounts.search.return_value)
         self.assert_cors_headers(response)
 
     def test_profile_401(self):
