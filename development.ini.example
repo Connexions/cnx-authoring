@@ -7,7 +7,7 @@ publishing.api_key = b07
 cors.access_control_allow_credentials = true
 cors.access_control_allow_origin = http://localhost:8000 http://localhost:8080
 cors.access_control_allow_headers = Origin, Content-Type
-cors.access_control_allow_methods = GET, OPTIONS, PUT, POST
+cors.access_control_allow_methods = GET, OPTIONS, PUT, POST, DELETE
 
 storage = memory
 pickle.filename = dev.p
