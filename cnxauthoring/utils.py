@@ -141,13 +141,17 @@ def build_epub(contents, submitter, submitlog):
     return epub
 
 
-def fetch_archive_content(request, archive_id):
+def fetch_archive_content(request, archive_id, extras=False):
     from .models import DocumentNotFoundError
 
     settings = request.registry.settings
     archive_url = settings['archive.url']
-    content_url = urlparse.urljoin(archive_url,
-            '/contents/{}.json'.format(archive_id))
+    if extras:
+        content_url = urlparse.urljoin(archive_url,
+                '/extras/{}'.format(archive_id))
+    else:
+        content_url = urlparse.urljoin(archive_url,
+                '/contents/{}.json'.format(archive_id))
     try:
         response = urllib2.urlopen(content_url).read()
     except urllib2.HTTPError:
