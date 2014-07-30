@@ -70,8 +70,7 @@ def main(global_config, **settings):
     config.scan(ignore='cnxauthoring.tests')
     config.include('cnxauthoring.events.main')
 
-    config.include('openstax_accounts.openstax_accounts.main')
-    config.include('openstax_accounts.authentication_policy.main')
+    config.include('openstax_accounts.main')
     # authorization policy must be set if an authentication policy is set
     config.set_authorization_policy(ACLAuthorizationPolicy())
 

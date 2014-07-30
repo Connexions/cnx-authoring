@@ -73,10 +73,8 @@ def mock_authentication_policy(config):
 
 def mock_openstax_accounts(config):
     from openstax_accounts.interfaces import IOpenstaxAccounts
-    accounts = mock.MagicMock()
-    accounts.request.side_effect = lambda *args, **kwargs: (
-        FunctionalTests.accounts_request_return)
-    config.registry.registerUtility(accounts, IOpenstaxAccounts)
+    FunctionalTests.accounts = mock.MagicMock()
+    config.registry.registerUtility(FunctionalTests.accounts, IOpenstaxAccounts)
 
 
 USER_PROFILE = {
@@ -1812,28 +1810,119 @@ class FunctionalTests(BaseFunctionalTestCase):
     def test_user_search_no_q(self):
         response = self.testapp.get('/users/search')
         result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(result, [])
+        self.assertEqual(result, {
+            u'num_matching_users': 0,
+            u'per_page': 20,
+            u'users': [],
+            u'order_by': u'username ASC',
+            u'page': 0,
+            })
         self.assert_cors_headers(response)
 
     def test_user_search_q_empty(self):
         response = self.testapp.get('/users/search?q=')
         result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(result, [])
+        self.assertEqual(result, {
+            u'num_matching_users': 0,
+            u'per_page': 20,
+            u'users': [],
+            u'order_by': u'username ASC',
+            u'page': 0,
+            })
         self.assert_cors_headers(response)
 
     def test_user_search(self):
-        FunctionalTests.accounts_request_return = {
-                'per_page': 20,
-                'users': [
-                    {'username': 'admin', 'id': 1, 'contact_infos': []}
+        FunctionalTests.accounts.search.return_value = {
+                u'application_users': [
+                    {
+                        u'unread_updates': 1,
+                        u'application_id': 9,
+                        u'id': 14,
+                        u'user': {u'username': u'admin', u'id': 1}},
+                    {
+                        u'unread_updates': 1,
+                        u'application_id': 9,
+                        u'id': 15,
+                        u'user': {u'username': u'karenc', u'id': 6}},
+                    {
+                        u'unread_updates': 1,
+                        u'application_id': 9,
+                        u'id': 13,
+                        u'user': {u'username': u'karenchan', u'id': 4}},
+                    {
+                        u'unread_updates': 1,
+                        u'application_id': 9,
+                        u'id': 12,
+                        u'user': {
+                            u'username': u'karenchan2014',
+                            u'first_name': u'Karen', u'last_name': u'Chan',
+                            u'id': 10, u'full_name': u'Karen Chan'}},
+                    {
+                        u'unread_updates': 1,
+                        u'application_id': 9,
+                        u'id': 11,
+                        u'user': {u'username': u'user_30187', u'id': 9}}
                     ],
-                'order_by': 'username ASC',
-                'num_matching_users': 1,
-                'page': 0,
-                }
+                u'order_by': u'username ASC',
+                u'users': [
+                    {u'username': u'admin', u'id': 1},
+                    {u'username': u'karenc', u'id': 6},
+                    {u'username': u'karenchan', u'id': 4},
+                    {u'username': u'karenchan2014',
+                        u'first_name': u'Karen',
+                        u'last_name': u'Chan',
+                        u'id': 10,
+                        u'full_name': u'Karen Chan'},
+                    {u'username': u'user_30187', u'id': 9}
+                    ],
+                u'num_matching_users': 5,
+                u'per_page': 20,
+                u'page': 0}
         response = self.testapp.get('/users/search?q=admin')
         result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(result, FunctionalTests.accounts_request_return)
+        self.assertEqual(result, {
+            u'users': [
+                {
+                    u'id': u'admin',
+                    u'email': u'',
+                    u'firstname': u'',
+                    u'surname': u'',
+                    u'fullname': u'',
+                    },
+                {
+                    u'id': u'karenc',
+                    u'email': u'',
+                    u'firstname': u'',
+                    u'surname': u'',
+                    u'fullname': u'',
+                    },
+                {
+                    u'id': u'karenchan',
+                    u'email': u'',
+                    u'firstname': u'',
+                    u'surname': u'',
+                    u'fullname': u'',
+                    },
+                {
+                    u'id': u'karenchan2014',
+                    u'email': u'',
+                    u'firstname': u'Karen',
+                    u'surname': u'Chan',
+                    u'fullname': u'Karen Chan',
+                    },
+                {
+                    u'id': u'user_30187',
+                    u'email': u'',
+                    u'firstname': u'',
+                    u'surname': u'',
+                    u'fullname': u'',
+                    },
+                ],
+            u'order_by': u'username ASC',
+            u'num_matching_users': 5,
+            u'per_page': 20,
+            u'page': 0,
+            })
         self.assert_cors_headers(response)
 
     def test_profile_401(self):

@@ -87,11 +87,18 @@ def user_search(request):
     """Search for openstax accounts users"""
     q = request.GET.get('q', '')
     if not q:
-        return []
-    params = urlencode({'q': q})
+        return {
+                'per_page': 20,
+                'users': [],
+                'order_by': 'username ASC',
+                'num_matching_users': 0,
+                'page': 0,
+                }
     accounts = request.registry.getUtility(IOpenstaxAccounts)
-    result = accounts.request(
-            '/api/users/search.json?{}'.format(params))
+    result = accounts.search(q)
+    result.pop('application_users')
+    result['users'] = [utils.profile_to_user_dict(profile)
+            for profile in result['users']]
     return result
 
 
