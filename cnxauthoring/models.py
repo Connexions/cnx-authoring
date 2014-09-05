@@ -32,6 +32,20 @@ class DocumentNotFoundError(Exception):
     def __init__(self, document_id):
         self.message = 'Document Not Found: {}'.format(document_id)
 
+    def __str__(self):
+        return self.message
+
+
+
+class PublishingError(Exception):
+    def __init__(self, response):
+        self.message = 'Publishing Error: {} {}'.format(
+                response.status_code, response.content)
+
+    def __str__(self):
+        return self.message
+
+
 
 class License:
     """A declaration of authority typically assigned to things."""

@@ -6,7 +6,12 @@
 # See LICENCE.txt for details.
 # ###
 
+import json
 import unittest
+try:
+    from unittest import mock # python3
+except ImportError:
+    import mock # python2
 
 from .. import utils
 
@@ -125,4 +130,76 @@ class UtilsTests(unittest.TestCase):
         test1 = '"Phrase without quotes'
         
         self.assertEqual(utils.structured_query(test1), [('text', 'Phrase without quotes')])
-    
+
+    def test_create_acl_for(self):
+        from ..models import create_content
+
+        document = create_content(title='My Document')
+        request = mock.Mock()
+        request.registry.settings = {
+                'publishing.url': 'http://publishing/',
+                'publishing.api_key': 'trusted-publisher',
+                }
+
+        with mock.patch('requests.post') as post:
+            post.return_value.status_code = 202
+            utils.create_acl_for(request, document, ('me', 'you',))
+            self.assertEqual(post.call_count, 1)
+            (url,), kwargs = post.call_args
+            self.assertEqual(url,
+                    'http://publishing/contents/{}/permissions'
+                    .format(document.id))
+            self.assertEqual(json.loads(kwargs['data']),
+                    [{'uid': 'me', 'permission': 'publish'},
+                     {'uid': 'you', 'permission': 'publish'}])
+            self.assertEqual(kwargs['headers'], {
+                'x-api-key': 'trusted-publisher',
+                'content-type': 'application/json',
+                })
+
+    def test_accept_roles_and_license(self):
+        from ..models import create_content, DEFAULT_LICENSE
+
+        document = create_content(
+                title='My Document',
+                authors=[{'id': 'me'}],
+                publishers=[{'id': 'me'}],
+                editors=[{'id': 'me'}, {'id': 'you'}],
+                translators=[{'id': 'you'}],
+                )
+        request = mock.Mock()
+        request.registry.settings = {
+                'publishing.url': 'http://publishing/',
+                'publishing.api_key': 'trusted-publisher',
+                }
+
+        with mock.patch('requests.post') as post:
+            post.return_value.status_code = 202
+            utils.accept_roles_and_license(request, document, 'me')
+            self.assertEqual(post.call_count, 2)
+
+            (url,), kwargs = post.call_args_list[0]
+            self.assertEqual(url,
+                    'http://publishing/contents/{}/roles'.format(document.id))
+            self.assertEqual(json.loads(kwargs['data']), [
+                {u'uid': u'me', u'role': u'Publisher'},
+                {u'uid': u'me', u'role': u'Editor'},
+                {u'uid': u'me', u'role': u'Author'},
+                ])
+            self.assertEqual(kwargs['headers'], {
+                'x-api-key': 'trusted-publisher',
+                'content-type': 'application/json',
+                })
+
+            (url,), kwargs = post.call_args_list[1]
+            self.assertEqual(url,
+                    'http://publishing/contents/{}/licensors'
+                    .format(document.id))
+            self.assertEqual(json.loads(kwargs['data']), {
+                'license_url': DEFAULT_LICENSE.url,
+                'licensors': [{'uid': 'me'}],
+                })
+            self.assertEqual(kwargs['headers'], {
+                'x-api-key': 'trusted-publisher',
+                'content-type': 'application/json',
+                })
