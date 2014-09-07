@@ -67,7 +67,7 @@ class BaseFunctionalTestCase(unittest.TestCase):
     maxDiff = None
 
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         # only run once for all the tests
 
         # make sure storage is set correctly in cnxauthoring.views by reloading
@@ -76,9 +76,9 @@ class BaseFunctionalTestCase(unittest.TestCase):
             del sys.modules['cnxauthoring.views']
 
         # make sure test db is empty
-        config = ConfigParser.ConfigParser()
-        config.read(['testing.ini'])
-        test_db = config.get('app:main', 'pickle.filename')
+        cls.config = ConfigParser.ConfigParser()
+        cls.config.read(['testing.ini'])
+        test_db = cls.config.get('app:main', 'pickle.filename')
         try:
             os.remove(test_db)
         except OSError:
@@ -89,10 +89,10 @@ class BaseFunctionalTestCase(unittest.TestCase):
         app = pyramid.paster.get_app('testing.ini')
 
         from webtest import TestApp
-        self.testapp = TestApp(app)
+        cls.testapp = TestApp(app)
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         from ..storage import storage
         if hasattr(storage, 'conn'):
             storage.conn.close()
@@ -2481,9 +2481,11 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertTrue('Learn how to etc etc' in documents[0].metadata['summary'])
 
     def test_publish_derived_from_binder(self):
+        self.logout()
+        self.login('e5a07af6-09b9-4b74-aa7a-b7510bee90b8')
         self.mock_archive()
         post_data = {
-                'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+                'derivedFrom': u'e79ffde3-7fb4-4af3-9ec8-df648b391597@6.1',
             }
 
         response = self.testapp.post_json(
@@ -2525,41 +2527,30 @@ class PublicationTests(BaseFunctionalTestCase):
         parsed_epub = cnxepub.EPUB.from_file(io.BytesIO(epub))
         package = parsed_epub[0]
         publication_binder = cnxepub.adapt_package(package)
-        self.assertEqual(publication_binder.metadata['title'], 'Copy of Madlavning')
+        self.assertEqual(publication_binder.metadata['title'],
+                         'Copy of College Physics')
         self.assertEqual(publication_binder.metadata['cnx-archive-uri'], binder['id'])
         self.assertEqual(package.metadata['publication_message'],
                          'Publishing a derived book')
         self.assertEqual(publication_binder.metadata['derived_from_uri'],
-                         'http://cnx.org/contents/feda4909-5bbd-431e-a017-049aff54416d@1.1')
+                         'http://cnx.org/contents/e79ffde3-7fb4-4af3-9ec8-df648b391597@6.1')
         self.assertEqual(publication_binder.metadata['derived_from_title'],
-                         'Madlavning')
+                         'College Physics')
 
         tree = cnxepub.models.model_to_tree(publication_binder)
         self.assertEqual(tree, {
             'id': binder['id'],
-            'title': 'Copy of Madlavning',
+            'title': 'Copy of College Physics',
             'contents': [
-                {'id': '91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
-                 'title': u'Indkøb'},
-                {'id': 'subcol',
-                 'title': u'Fødevarer og Hygiejne',
-                 'contents': [
-                     {'id': 'f6b979cb-8904-4265-bf2d-f059cc362217@1',
-                      'title': u'Fødevarer'},
-                     {'id': '7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
-                      'title': u'Hygiejne'},
-                     ]},
-                {'id': 'b0db72d9-fac3-4b43-9926-7e6e801663fb@1',
-                 'title': u'Tilberedning'},
+                {'id': '209deb1f-1a46-4369-9e0d-18674cf58a3e@7',
+                 'title': u'Preface'},
                 ],
             })
 
         models = list(cnxepub.flatten_model(publication_binder))
-        self.assertEqual(len(models), 6)
-        self.assertEqual(models[0].metadata['title'], u'Copy of Madlavning')
-        self.assertEqual(models[1].metadata['title'], u'Indkøb')
-        self.assertEqual(models[2].metadata['title'], u'Fødevarer og Hygiejne')
-        self.assertEqual(models[3].metadata['title'], u'Fødevarer')
+        self.assertEqual(len(models), 2)
+        self.assertEqual(models[0].metadata['title'], u'Copy of College Physics')
+        self.assertEqual(models[1].metadata['title'], u'Preface')
 
     def test_publish_revision_single_page(self):
         self.mock_archive(content_type='image/jpeg')
