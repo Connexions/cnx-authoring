@@ -229,19 +229,23 @@ def post_content_single(request, cstruct):
             raise httpexceptions.HTTPForbidden(
                     'You do not have permission to edit {}'.format(archive_id))
 
+    uids = set([request.unauthenticated_userid])
     cstruct['submitter'] = utils.profile_to_user_dict(request.user)
     cstruct.setdefault('authors', [])
     author_ids = [i['id'] for i in cstruct['authors']]
+    uids.update(author_ids)
     if request.unauthenticated_userid not in author_ids:
         cstruct['authors'] += [utils.profile_to_user_dict(request.user)]
 
     cstruct.setdefault('publishers', [])
     publisher_ids = [i['id'] for i in cstruct['publishers']]
+    uids.update(publisher_ids)
     # publishers is known as maintainers in legacy
     for maintainer in cstruct.get('maintainers', []):
         if maintainer['id'] not in publisher_ids:
             cstruct['publishers'] += [maintainer]
             publisher_ids.append(maintainer['id'])
+            uids.add(maintainer['id'])
     if request.unauthenticated_userid not in publisher_ids:
         cstruct['publishers'] += [utils.profile_to_user_dict(request.user)]
 
@@ -257,7 +261,16 @@ def post_content_single(request, cstruct):
     if archive_id:
         appstruct['id'] = archive_id.split('@')[0]
         appstruct['cnx_archive_uri'] = archive_id
+
     content = create_content(**appstruct)
+
+    if not archive_id:
+        # new content, need to create acl entry in publishing
+        utils.create_acl_for(request, content, uids)
+        # accept roles and license
+        utils.accept_roles_and_license(
+                request, content, request.unauthenticated_userid)
+
     resources = []
     if content.mediatype != BINDER_MEDIATYPE and (derived_from or archive_id):
         resources = utils.derive_resources(request, content)

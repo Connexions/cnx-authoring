@@ -21,6 +21,7 @@ except ImportError:
 import cnxepub
 from cnxquerygrammar.query_parser import grammar, DictFormater
 from parsimonious.exceptions import IncompleteParseError
+import requests
 
 
 def utf8(item):
@@ -229,3 +230,70 @@ def update_containment(binder, deletion = False):
             if b_id in doc.metadata['contained_in']:
                 doc.metadata['contained_in'].remove(b_id)
                 storage.update(doc)
+
+def create_acl_for(request, document, uids, derived_from=False):
+    """Submit content identifiers to publishing and allow users to
+    publish
+    """
+    from .models import PublishingError, Binder
+
+    settings = request.registry.settings
+    publishing_url = settings['publishing.url']
+    api_key = settings['publishing.api_key']
+    headers = {
+            'x-api-key': api_key,
+            'content-type': 'application/json',
+            }
+    payload = [{'uid': uid, 'permission': 'publish'} for uid in uids]
+
+    acl_url = urlparse.urljoin(
+            publishing_url, '/contents/{}/permissions'.format(document.id))
+    response = requests.post(
+            acl_url, data=json.dumps(payload), headers=headers)
+    if response.status_code != 202:
+        raise PublishingError(response)
+
+def get_roles(document, uid):
+    field_to_roles = (
+            ('publishers', 'Publisher'),
+            ('editors', 'Editor'),
+            ('translators', 'Translator'),
+            ('authors', 'Author'),
+            )
+    for field, role in field_to_roles:
+        users = [u['id'] for u in document.metadata.get(field) or []]
+        if uid in users:
+            yield role
+
+def accept_roles_and_license(request, document, uid):
+    """Accept roles and license for document and user uid"""
+    from .models import PublishingError
+
+    settings = request.registry.settings
+    publishing_url = settings['publishing.url']
+    headers = {
+            'x-api-key': settings['publishing.api_key'],
+            'content-type': 'application/json',
+            }
+
+    # accept roles
+    roles_url = urlparse.urljoin(
+            publishing_url, '/contents/{}/roles'.format(document.id))
+    payload = [{'uid': uid, 'role': role}
+            for role in get_roles(document, uid)]
+    response = requests.post(roles_url, data=json.dumps(payload),
+            headers=headers)
+    if response.status_code != 202:
+        raise PublishingError(response)
+
+    # accept license
+    license_url = urlparse.urljoin(
+            publishing_url, '/contents/{}/licensors'.format(document.id))
+    payload = {
+            'license_url': document.metadata['license'].url,
+            'licensors': [{'uid': uid}],
+            }
+    response = requests.post(license_url, data=json.dumps(payload),
+            headers=headers)
+    if response.status_code != 202:
+        raise PublishingError(response)
