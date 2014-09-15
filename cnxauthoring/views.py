@@ -237,6 +237,11 @@ def post_content_single(request, cstruct):
     if request.unauthenticated_userid not in author_ids:
         cstruct['authors'] += [utils.profile_to_user_dict(request.user)]
 
+    cstruct.setdefault('licensors', [])
+    licensor_ids = [i['id'] for i in cstruct['licensors']]
+    if request.unauthenticated_userid not in licensor_ids:
+        cstruct['licensors'] += [utils.profile_to_user_dict(request.user)]
+
     cstruct.setdefault('publishers', [])
     publisher_ids = [i['id'] for i in cstruct['publishers']]
     uids.update(publisher_ids)

@@ -23,6 +23,9 @@ class DocumentSchemaTestCase(unittest.TestCase):
             'publishers': [{
                 'id': 'username',
                 }],
+            'licensors': [{
+                'id': 'username',
+                }],
             }
         from ..schemata import document_schema
         appstruct = document_schema.bind().deserialize(cstruct)
