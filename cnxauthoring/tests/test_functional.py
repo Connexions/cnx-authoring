@@ -316,7 +316,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
-            u'licensors': [],
+            u'licensors': [SUBMITTER],
             u'translators': [],
             u'editors': [],
             })
@@ -550,7 +550,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [],
+            u'licensors': [SUBMITTER],
             })
         self.assert_cors_headers(response)
 
@@ -587,7 +587,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [],
+            u'licensors': [SUBMITTER],
             })
         self.assert_cors_headers(response)
 
@@ -639,7 +639,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [],
+            u'licensors': [SUBMITTER],
             })
         self.assert_cors_headers(response)
 
@@ -676,7 +676,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [],
+            u'licensors': [SUBMITTER],
             })
         self.assert_cors_headers(response)
 
@@ -738,7 +738,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [],
+            u'licensors': [SUBMITTER],
             })
         self.assert_cors_headers(response)
 
@@ -791,7 +791,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [],
+            u'licensors': [SUBMITTER],
             })
         self.assert_cors_headers(response)
 
@@ -1053,7 +1053,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'publication': None,
             u'editors': [SUBMITTER],
             u'translators': [],
-            u'licensors': [],
+            u'licensors': [SUBMITTER],
             })
         self.assert_cors_headers(response)
 
@@ -1152,7 +1152,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'publication': None,
             u'editors': [],
             u'translators': [],
-            u'licensors': [],
+            u'licensors': [SUBMITTER],
             })
         self.assert_cors_headers(response)
 

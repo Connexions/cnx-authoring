@@ -126,7 +126,7 @@ class DocumentSchema(colander.MappingSchema):
     submitter = UserSchema()
     authors = Users(validator=colander.Length(min=1))
     publishers = Users(validator=colander.Length(min=1)) # maintainers
-    licensors = Users(missing=colander.drop)
+    licensors = Users(validator=colander.Length(min=1)) # copyright holders
     translators = Users(missing=colander.drop)
     editors = Users(missing=colander.drop)
 
