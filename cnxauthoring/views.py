@@ -272,9 +272,9 @@ def post_content_single(request, cstruct):
     if not archive_id:
         # new content, need to create acl entry in publishing
         utils.create_acl_for(request, content, uids)
-        # accept roles and license
-        utils.accept_roles_and_license(
-                request, content, request.unauthenticated_userid)
+    # accept roles and license
+    utils.accept_roles_and_license(
+            request, content, request.unauthenticated_userid)
 
     resources = []
     if content.mediatype != BINDER_MEDIATYPE and (derived_from or archive_id):

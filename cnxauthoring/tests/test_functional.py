@@ -845,7 +845,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 0)
-        self.assertEqual(self.mock_accept.call_count, 0)
+        self.assertEqual(self.mock_accept.call_count, 1)
         result = json.loads(response.body.decode('utf-8'))
         license = result.pop('license')
         self.assertEqual(license['url'], DEFAULT_LICENSE.url)
