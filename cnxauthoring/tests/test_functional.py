@@ -1564,6 +1564,65 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(page['id']), status=404)
 
+    def test_delete_content_binder(self):
+        # Create a page first
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'My page',
+            }, status=201)
+        page = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+        # Create a book with the page inside
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'My book',
+            'mediaType': 'application/vnd.org.cnx.collection',
+            'tree': {
+                'contents': [
+                    {
+                        'id': '{}@draft'.format(page['id']),
+                        'title': 'My page',
+                        },
+                    ],
+                },
+            }, status=201)
+        book_one = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+        # Create another book with the same page inside
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'My different book',
+            'mediaType': 'application/vnd.org.cnx.collection',
+            'tree': {
+                'contents': [
+                    {
+                        'id': '{}@draft'.format(page['id']),
+                        'title': 'My page',
+                        },
+                    ],
+                },
+            }, status=201)
+        book_two = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+        # Assert that the page is contained in two books
+        response = self.testapp.get(
+                '/contents/{}@draft.json'.format(page['id']))
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(sorted(result['containedIn']),
+                         sorted([book_one['id'], book_two['id']]))
+
+        # Delete book one
+        self.testapp.delete('/contents/{}@draft.json'.format(book_one['id']),
+                            status=200)
+        self.testapp.get('/contents/{}@draft.json'.format(book_one['id']),
+                         status=404)
+
+        # Assert that the page is now only contained in book two
+        response = self.testapp.get(
+                '/contents/{}@draft.json'.format(page['id']))
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['containedIn'], [book_two['id']])
+
     def test_search_content_401(self):
         self.logout()
         response = self.testapp.get('/search', status=401)
