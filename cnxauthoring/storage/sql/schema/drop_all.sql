@@ -1,2 +1,3 @@
+DROP TABLE IF EXISTS document_acl;
 DROP TABLE IF EXISTS document;
 DROP TABLE IF EXISTS resource;

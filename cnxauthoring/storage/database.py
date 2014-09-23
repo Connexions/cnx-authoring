@@ -20,6 +20,7 @@ DB_SCHEMA_DIRECTORY = os.path.join(SQL_DIRECTORY, 'schema')
 DB_SCHEMA_FILES = (
     'document.sql',
     'resource.sql',
+    'document-acl.sql',
     )
 
 DB_SCHEMA_FILE_PATHS = tuple([os.path.join(DB_SCHEMA_DIRECTORY, dsf)
@@ -32,8 +33,10 @@ def _read_sql_file(name):
 SQL = {
     'get': _read_sql_file('get'),
     'add-document': _read_sql_file('add-document'),
+    'add-document-acl': _read_sql_file('add-document-acl'),
     'add-resource': _read_sql_file('add-resource'),
     'delete-document': _read_sql_file('delete-document'),
+    'delete-document-acl': _read_sql_file('delete-document-acl'),
     'delete-resource': _read_sql_file('delete-resource'),
     'update-document': _read_sql_file('update-document'),
     'update-resource': _read_sql_file('update-resource'),

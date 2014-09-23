@@ -254,6 +254,9 @@ def post_content_single(request, cstruct):
     if request.unauthenticated_userid not in publisher_ids:
         cstruct['publishers'] += [utils.profile_to_user_dict(request.user)]
 
+    uids.update([i['id'] for i in cstruct.get('editors', [])
+                                + cstruct.get('translators', [])])
+
     if cstruct.get('media_type') == BINDER_MEDIATYPE:
         schema = BinderSchema()
     else:
@@ -275,6 +278,8 @@ def post_content_single(request, cstruct):
     # accept roles and license
     utils.accept_roles_and_license(
             request, content, request.unauthenticated_userid)
+    # get acl entry from publishing
+    utils.get_acl_for(request, content)
 
     resources = []
     if content.mediatype != BINDER_MEDIATYPE and (derived_from or archive_id):
@@ -361,25 +366,37 @@ def post_resource(request):
     return location
 
 
+@view_config(route_name='delete-user-content', request_method='DELETE', renderer='json')
 @view_config(route_name='delete-content', request_method='DELETE', renderer='json')
 @authenticated_only
 def delete_content(request):
     """delete a stored document"""
     id = request.matchdict['id']
+    user_id = request.matchdict.get('user_id')
     content = storage.get(id=id)
     if content is None:
         raise httpexceptions.HTTPNotFound()
     if not request.has_permission('edit', content):
         raise httpexceptions.HTTPForbidden(
                 'You do not have permission to delete {}'.format(id))
+    if not user_id and len(content.acls) > 1:
+        # there are other users who have permission to this document
+        raise httpexceptions.HTTPForbidden(
+                'There are other users on this document {}'.format(id))
     if content.metadata['media_type'] == DOCUMENT_MEDIATYPE and content.metadata['contained_in']:
         raise httpexceptions.HTTPForbidden(
                 'Content {} is contained in {} and cannot be deleted'.format(id,
                      content.metadata['contained_in']))
+
     try:
-        resource = storage.remove(content)
-        if content.metadata['media_type'] == BINDER_MEDIATYPE:
-            utils.update_containment(content, deletion = True)
+        if user_id and len(content.acls) > 1:
+            # just remove the user from this document
+            content.acls = [acl for acl in content.acls if acl[0] != user_id]
+            storage.update(content)
+        else:
+            resource = storage.remove(content)
+            if content.metadata['media_type'] == BINDER_MEDIATYPE:
+                utils.update_containment(content, deletion = True)
         storage.persist()
     except storage.Error:
         storage.abort()

@@ -231,11 +231,11 @@ def update_containment(binder, deletion = False):
                 doc.metadata['contained_in'].remove(b_id)
                 storage.update(doc)
 
-def create_acl_for(request, document, uids, derived_from=False):
+def create_acl_for(request, document, uids):
     """Submit content identifiers to publishing and allow users to
     publish
     """
-    from .models import PublishingError, Binder
+    from .models import PublishingError
 
     settings = request.registry.settings
     publishing_url = settings['publishing.url']
@@ -252,6 +252,27 @@ def create_acl_for(request, document, uids, derived_from=False):
             acl_url, data=json.dumps(payload), headers=headers)
     if response.status_code != 202:
         raise PublishingError(response)
+
+def get_acl_for(request, document):
+    """Get document ACL from publishing"""
+    from .models import PublishingError
+
+    settings = request.registry.settings
+    publishing_url = settings['publishing.url']
+    api_key = settings['publishing.api_key']
+    headers = {
+            'x-api-key': api_key,
+            'content-type': 'application/json',
+            }
+    acl_url = urlparse.urljoin(
+            publishing_url, '/contents/{}/permissions'.format(document.id))
+
+    response = requests.get(acl_url)
+    if response.status_code != 200:
+        raise PublishingError(response)
+    acl = response.json()
+    document.acls = [(user_permission['uid'], 'view', 'edit', 'publish')
+                     for user_permission in acl]
 
 def get_roles(document, uid):
     field_to_roles = (
