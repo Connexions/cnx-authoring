@@ -2100,6 +2100,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             })
         self.assert_cors_headers(response)
 
+        def mock_get_acl(request, document):
+            document.acls = [('user4', 'edit')]
+        self.mock_get_acl.side_effect = mock_get_acl
+
         response = self.testapp.post_json('/users/contents', {
             'title': 'document by user4',
             'created': u'2014-03-13T15:21:15.677617-05:00',
@@ -2193,6 +2197,9 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         mock_datetime = mock.Mock()
         mock_datetime.now = mock.Mock(return_value=one_day_ago)
+        def mock_get_acl(request, document):
+            document.acls = [('user5', 'edit')]
+        self.mock_get_acl.side_effect = mock_get_acl
         with mock.patch('datetime.datetime', mock_datetime):
             response = self.testapp.post_json('/users/contents',
                 {'title': 'single page document'}, status=201)
@@ -2275,6 +2282,9 @@ class FunctionalTests(BaseFunctionalTestCase):
         # add page_in_book to a book by someone else
         self.logout()
         self.login('user6')
+        def mock_get_acl(request, document):
+            document.acls = [('user6', 'edit')]
+        self.mock_get_acl.side_effect = mock_get_acl
         response = self.testapp.post_json('/users/contents', {
             'mediaType': 'application/vnd.org.cnx.collection',
             'title': 'some other book',

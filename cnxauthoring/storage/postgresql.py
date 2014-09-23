@@ -61,7 +61,8 @@ class PostgresqlStorage(BaseStorage):
         for obj in self.get_all(type_=type_, **kwargs):
             return obj
 
-    def get_all(self, type_=Document, **kwargs):
+    def get_all(self, type_=Document, user_id=None, permissions=None,
+                **kwargs):
         """Retrieve ``Document`` objects from storage."""
         # all kwargs are expected to match attributes of the stored Document.
         # We're trusting the names of the args to match table column names, but not
@@ -104,9 +105,17 @@ class PostgresqlStorage(BaseStorage):
                 else:
                     match_clauses.append('{field} = %({field})s'.format(field=k))
 
-        checked_execute(cursor, SQL['get'].format(
-            tablename=type_name, where_clause=' AND '.join(match_clauses)),
-            match_values)
+        # 1 = 1 in case where clause is empty
+        where_clause = ' AND '.join(match_clauses) or '1 = 1'
+        if type_name in ('document', 'binder') and user_id and permissions:
+            match_values.update({
+                'user_id': user_id,
+                'permissions': permissions})
+            checked_execute(cursor, SQL['get-document'].format(
+                where_clause=where_clause), match_values)
+        else:
+            checked_execute(cursor, SQL['get'].format(
+                tablename=type_name, where_clause=where_clause), match_values)
         res = cursor.fetchall()
         if not in_progress:
             self.conn.rollback() # Frees the connection
@@ -115,6 +124,9 @@ class PostgresqlStorage(BaseStorage):
                 if 'license' in r:
                     r['license'] = eval(r['license'])
                     rd = dict(r)
+                    for field in ('user_id', 'permission', 'uuid'):
+                        if field in rd:
+                            rd.pop(field)
                     if rd['media_type'] == MEDIATYPES['binder']:
                         rd['tree'] = json.loads(rd.pop('content'))
                     document = create_content(**rd)

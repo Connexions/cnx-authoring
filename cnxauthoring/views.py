@@ -141,7 +141,8 @@ def user_contents(request):
     if kwargs:
         utils.change_dict_keys(kwargs, utils.camelcase_to_underscore)
     # TODO use acls instead of filter by submitter
-    contents = storage.get_all(submitter={'id': request.unauthenticated_userid},**kwargs)
+    contents = storage.get_all(user_id=request.unauthenticated_userid,
+                               permissions=('edit',), **kwargs)
     for content in contents:
         update_content_state(request, content)
         if isinstance(content,Binder):

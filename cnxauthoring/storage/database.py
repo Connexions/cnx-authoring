@@ -32,6 +32,7 @@ def _read_sql_file(name):
         return fp.read()
 SQL = {
     'get': _read_sql_file('get'),
+    'get-document': _read_sql_file('get-document'),
     'add-document': _read_sql_file('add-document'),
     'add-document-acl': _read_sql_file('add-document-acl'),
     'add-resource': _read_sql_file('add-resource'),
