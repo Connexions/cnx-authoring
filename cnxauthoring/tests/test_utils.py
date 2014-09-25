@@ -157,6 +157,31 @@ class UtilsTests(unittest.TestCase):
                 'content-type': 'application/json',
                 })
 
+    def test_get_acl_for(self):
+        from ..models import create_content
+
+        document = create_content(title='My Document')
+        request = mock.Mock()
+        request.registry.settings = {
+                'publishing.url': 'http://publishing/',
+                'publishing.api_key': 'trusted-publisher',
+                }
+
+        with mock.patch('requests.get') as get:
+            get.return_value.status_code = 200
+            get.return_value.json.return_value = [{
+                'uuid': document.id,
+                'uid': 'me',
+                'permission': 'publish',
+                }]
+            utils.get_acl_for(request, document)
+            self.assertEqual(get.call_count, 1)
+            (url,), kwargs = get.call_args
+            self.assertEqual(url,
+                    'http://publishing/contents/{}/permissions'
+                    .format(document.id))
+            self.assertEqual(document.acls, [('me', 'view', 'edit', 'publish')])
+
     def test_accept_roles_and_license(self):
         from ..models import create_content, DEFAULT_LICENSE
 

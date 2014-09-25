@@ -25,6 +25,7 @@ class PostgresqlStorageTests(test_memory.MemoryStorageTests):
 
     def tearDown(self):
         cursor = self.storage.conn.cursor()
+        cursor.execute('delete from document_acl')
         cursor.execute('delete from document')
         cursor.execute('delete from resource')
         cursor.close()

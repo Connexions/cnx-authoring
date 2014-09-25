@@ -60,6 +60,10 @@ class ViewsTests(unittest.TestCase):
         patch2.start()
         self.addCleanup(patch2.stop)
 
+        patch3 = mock.patch('cnxauthoring.utils.get_acl_for')
+        patch3.start()
+        self.addCleanup(patch3.stop)
+
     tearDown = testing.tearDown
 
     @property

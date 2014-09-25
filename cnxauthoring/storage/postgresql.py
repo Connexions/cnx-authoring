@@ -61,7 +61,8 @@ class PostgresqlStorage(BaseStorage):
         for obj in self.get_all(type_=type_, **kwargs):
             return obj
 
-    def get_all(self, type_=Document, **kwargs):
+    def get_all(self, type_=Document, user_id=None, permissions=None,
+                **kwargs):
         """Retrieve ``Document`` objects from storage."""
         # all kwargs are expected to match attributes of the stored Document.
         # We're trusting the names of the args to match table column names, but not
@@ -104,9 +105,17 @@ class PostgresqlStorage(BaseStorage):
                 else:
                     match_clauses.append('{field} = %({field})s'.format(field=k))
 
-        checked_execute(cursor, SQL['get'].format(
-            tablename=type_name, where_clause=' AND '.join(match_clauses)),
-            match_values)
+        # 1 = 1 in case where clause is empty
+        where_clause = ' AND '.join(match_clauses) or '1 = 1'
+        if type_name in ('document', 'binder') and user_id and permissions:
+            match_values.update({
+                'user_id': user_id,
+                'permissions': permissions})
+            checked_execute(cursor, SQL['get-document'].format(
+                where_clause=where_clause), match_values)
+        else:
+            checked_execute(cursor, SQL['get'].format(
+                tablename=type_name, where_clause=where_clause), match_values)
         res = cursor.fetchall()
         if not in_progress:
             self.conn.rollback() # Frees the connection
@@ -115,9 +124,23 @@ class PostgresqlStorage(BaseStorage):
                 if 'license' in r:
                     r['license'] = eval(r['license'])
                     rd = dict(r)
+                    for field in ('user_id', 'permission', 'uuid'):
+                        if field in rd:
+                            rd.pop(field)
                     if rd['media_type'] == MEDIATYPES['binder']:
                         rd['tree'] = json.loads(rd.pop('content'))
-                    yield create_content(**rd)
+                    document = create_content(**rd)
+                    checked_execute(cursor, SQL['get'].format(
+                        tablename='document_acl',
+                        where_clause='uuid = %(uuid)s'), {'uuid': rd['id']})
+                    permissions_by_users = {}
+                    for acl in cursor.fetchall():
+                        permissions_by_users.setdefault(acl['user_id'], [])
+                        permissions_by_users[acl['user_id']].append(
+                                acl['permission'])
+                    for user_id, permissions in permissions_by_users.items():
+                        document.acls.append((user_id,) + tuple(permissions))
+                    yield document
                 else:
                     rd = dict(r)
                     rd.pop('hash')
@@ -154,6 +177,16 @@ class PostgresqlStorage(BaseStorage):
             for field in JSON_FIELDS:
                 args[field] = psycopg2.extras.Json(args[field])
             checked_execute(cursor, SQL['add-document'], args)
+
+            for acl in item.acls:
+                user_id = acl[0]
+                permissions = acl[1:]
+                for permission in permissions:
+                    checked_execute(cursor, SQL['add-document-acl'], {
+                        'uuid': item.id,
+                        'user_id': user_id,
+                        'permission': permission,
+                        })
         else:
             raise NotImplementedError(type_name)
         return item
@@ -201,6 +234,17 @@ class PostgresqlStorage(BaseStorage):
             for field in JSON_FIELDS:
                 args[field] = psycopg2.extras.Json(args[field])
             checked_execute(cursor, SQL['update-document'], args)
+            checked_execute(cursor, SQL['delete-document-acl'],
+                            {'uuid': args['id']})
+            for acl in item.acls:
+                user_id = acl[0]
+                permissions = acl[1:]
+                for permission in permissions:
+                    checked_execute(cursor, SQL['add-document-acl'], {
+                        'uuid': item.id,
+                        'user_id': user_id,
+                        'permission': permission,
+                        })
         return item
 
     def persist(self):

@@ -19,12 +19,17 @@ def declare_routes(config):
             '/{foo:(\*|search|contents|users|resources|login|callback|logout)/?.*}',
             request_method='OPTIONS')
     add_route('search-content', '/search', request_method='GET')
-    add_route('get-content-json', '/contents/{id}@draft.json', request_method='GET')
+    add_route('get-content-json', '/contents/{id}@draft.json',
+              request_method='GET')
     add_route('get-resource', '/resources/{hash}', request_method='GET')
     add_route('post-content', '/users/contents', request_method='POST')
     add_route('post-resource', '/resources', request_method='POST')
     add_route('put-content', '/contents/{id}@draft.json', request_method='PUT')
-    add_route('delete-content', '/contents/{id}@draft.json', request_method='DELETE')
+    add_route('delete-content', '/contents/{id}@draft.json',
+              request_method='DELETE')
+    add_route('delete-user-content',
+              '/contents/{id}@draft/users/{user_id}.json',
+              request_method='DELETE')
     add_route('user-search', '/users/search', request_method='GET')
     add_route('profile', '/users/profile', request_method='GET')
     add_route('user-contents', '/users/contents', request_method='GET')

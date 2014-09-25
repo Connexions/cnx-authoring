@@ -103,7 +103,7 @@ class BaseFunctionalTestCase(unittest.TestCase):
 
         self.mock_create_acl = mock.Mock()
         self.acl_patch = mock.patch('cnxauthoring.utils.create_acl_for',
-                               self.mock_create_acl)
+                                    self.mock_create_acl)
         self.acl_patch.start()
         self.addCleanup(self.acl_patch.stop)
 
@@ -113,6 +113,12 @@ class BaseFunctionalTestCase(unittest.TestCase):
                 self.mock_accept)
         self.accept_patch.start()
         self.addCleanup(self.accept_patch.stop)
+
+        self.mock_get_acl = mock.Mock()
+        self.get_acl_patch = mock.patch('cnxauthoring.utils.get_acl_for',
+                                        self.mock_get_acl)
+        self.get_acl_patch.start()
+        self.addCleanup(self.get_acl_patch.stop)
 
     def login(self, username='me', password='password', login_url='/login',
               headers=None):
@@ -845,7 +851,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 0)
-        self.assertEqual(self.mock_accept.call_count, 0)
+        self.assertEqual(self.mock_accept.call_count, 1)
         result = json.loads(response.body.decode('utf-8'))
         license = result.pop('license')
         self.assertEqual(license['url'], DEFAULT_LICENSE.url)
@@ -1564,6 +1570,136 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(page['id']), status=404)
 
+    def test_delete_content_binder(self):
+        # Create a page first
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'My page',
+            }, status=201)
+        page = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+        # Create a book with the page inside
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'My book',
+            'mediaType': 'application/vnd.org.cnx.collection',
+            'tree': {
+                'contents': [
+                    {
+                        'id': '{}@draft'.format(page['id']),
+                        'title': 'My page',
+                        },
+                    ],
+                },
+            }, status=201)
+        book_one = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+        # Create another book with the same page inside
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'My different book',
+            'mediaType': 'application/vnd.org.cnx.collection',
+            'tree': {
+                'contents': [
+                    {
+                        'id': '{}@draft'.format(page['id']),
+                        'title': 'My page',
+                        },
+                    ],
+                },
+            }, status=201)
+        book_two = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+        # Assert that the page is contained in two books
+        response = self.testapp.get(
+                '/contents/{}@draft.json'.format(page['id']))
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(sorted(result['containedIn']),
+                         sorted([book_one['id'], book_two['id']]))
+
+        # Delete book one
+        self.testapp.delete('/contents/{}@draft.json'.format(book_one['id']),
+                            status=200)
+        self.testapp.get('/contents/{}@draft.json'.format(book_one['id']),
+                         status=404)
+
+        # Assert that the page is now only contained in book two
+        response = self.testapp.get(
+                '/contents/{}@draft.json'.format(page['id']))
+        result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['containedIn'], [book_two['id']])
+
+    def test_delete_content_multiple_users(self):
+        # mock get_acl to set the acl for the document correctly
+        def mock_get_acl(request, document):
+            document.acls = [('me', 'view', 'edit', 'publish'),
+                             ('you', 'view', 'edit', 'publish')]
+        self.mock_get_acl.side_effect = mock_get_acl
+
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'Multiple users test',
+            'editors': [{'id': 'you'}],
+            }, status=201)
+        page = json.loads(response.body.decode('utf-8'))
+        self.assert_cors_headers(response)
+
+        # make sure create_acl was called with the right args
+        args, _ = self.mock_create_acl.call_args
+        self.assertEqual(args[0].__class__.__name__, 'Request')
+        self.assertEqual(args[1].__class__.__name__, 'Document')
+        self.assertEqual(args[2], set(['me', 'you']))
+
+        self.testapp.get('/contents/{}@draft.json'.format(page['id']),
+                         status=200)
+
+        self.logout()
+        self.login('you')
+
+        # make sure the editor can also view the content
+        self.testapp.get(
+                '/contents/{}@draft.json'.format(page['id']), status=200)
+
+        # make sure the editor can also edit the content
+        response = self.testapp.put_json(
+                '/contents/{}@draft.json'.format(page['id']), {
+                    'title': 'Multiple users test edited by you',
+                    }, status=200)
+
+        self.logout()
+        self.login('user1')
+
+        # someone not in acl should not be able to view the content
+        self.testapp.get(
+                '/contents/{}@draft.json'.format(page['id']), status=403)
+        self.logout()
+
+        # log back in as the submitter and check that the title has been
+        # changed
+        self.login('me')
+        response = self.testapp.get(
+                '/contents/{}@draft.json'.format(page['id']), status=200)
+        self.assertEqual(response.json['title'],
+                         'Multiple users test edited by you')
+
+        # try to delete the content should return an error
+        self.testapp.delete('/contents/{}@draft.json'.format(page['id']),
+                            status=403)
+        self.testapp.get(
+                '/contents/{}@draft.json'.format(page['id']), status=200)
+
+        # delete me from the content
+        self.testapp.delete(
+                '/contents/{}@draft/users/me.json'.format(page['id']),
+                status=200)
+        self.testapp.get(
+                '/contents/{}@draft.json'.format(page['id']), status=403)
+        self.logout()
+
+        # content should still be accessible by "you"
+        self.login('you')
+        self.testapp.get(
+                '/contents/{}@draft.json'.format(page['id']), status=200)
+
     def test_search_content_401(self):
         self.logout()
         response = self.testapp.get('/search', status=401)
@@ -1964,6 +2100,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             })
         self.assert_cors_headers(response)
 
+        def mock_get_acl(request, document):
+            document.acls = [('user4', 'edit')]
+        self.mock_get_acl.side_effect = mock_get_acl
+
         response = self.testapp.post_json('/users/contents', {
             'title': 'document by user4',
             'created': u'2014-03-13T15:21:15.677617-05:00',
@@ -2057,6 +2197,9 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         mock_datetime = mock.Mock()
         mock_datetime.now = mock.Mock(return_value=one_day_ago)
+        def mock_get_acl(request, document):
+            document.acls = [('user5', 'edit')]
+        self.mock_get_acl.side_effect = mock_get_acl
         with mock.patch('datetime.datetime', mock_datetime):
             response = self.testapp.post_json('/users/contents',
                 {'title': 'single page document'}, status=201)
@@ -2139,6 +2282,9 @@ class FunctionalTests(BaseFunctionalTestCase):
         # add page_in_book to a book by someone else
         self.logout()
         self.login('user6')
+        def mock_get_acl(request, document):
+            document.acls = [('user6', 'edit')]
+        self.mock_get_acl.side_effect = mock_get_acl
         response = self.testapp.post_json('/users/contents', {
             'mediaType': 'application/vnd.org.cnx.collection',
             'title': 'some other book',
