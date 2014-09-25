@@ -211,6 +211,7 @@ class ViewsTests(unittest.TestCase):
         # Minimal document posts require a title.
         request = testing.DummyRequest()
         request.POST = {'file': upload}
+        request.registry.settings['authoring.file_upload.limit'] = '50'
         from ..views import post_resource
         location = post_resource(request)
 

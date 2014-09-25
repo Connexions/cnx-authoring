@@ -1940,6 +1940,14 @@ class FunctionalTests(BaseFunctionalTestCase):
                 b'f572d396fae9206628714fb2ce00f72e94f2258f')
         self.assert_cors_headers(response)
 
+    def test_post_resource_exceed_size_limit(self):
+        two_mb = b'x' * 2 * 1024 * 1024
+        response = self.testapp.post('/resources',
+                # a 2MB file, size limit for tests is 1MB
+                {'file': Upload('a.txt', two_mb, 'text/plain')},
+                status=400)
+        self.assertIn(b'File uploaded has exceeded limit 1MB', response.body)
+
     def test_user_search_no_q(self):
         response = self.testapp.get('/users/search')
         result = json.loads(response.body.decode('utf-8'))

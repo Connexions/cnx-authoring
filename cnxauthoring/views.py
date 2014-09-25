@@ -353,6 +353,12 @@ def post_resource(request):
     resource = Resource(mediatype, io.BytesIO(data.read()))
     if not request.has_permission('create', resource):
         raise httpexceptions.HTTPForbidden()
+    size_limit = request.registry.settings['authoring.file_upload.limit']
+    with resource.open() as f:
+        data = f.read()
+    if len(data) > int(size_limit) * 1024 * 1024:
+        raise httpexceptions.HTTPBadRequest(
+                'File uploaded has exceeded limit {}MB'.format(size_limit))
 
     try:
         resource = storage.add(resource)
