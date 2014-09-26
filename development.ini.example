@@ -16,6 +16,15 @@ postgresql.db-connection-string = dbname=authoring user=cnxauthoring password=cn
 # size limit of file upload in MB
 authoring.file_upload.limit = 50
 
+openstax_accounts.stub = true
+openstax_accounts.stub.users =
+  charrose,charrose
+  frahablar,frahablar
+  impicky,impicky
+  marknewlyn,marknewlyn
+  ream,ream
+  rings,rings
+  sarblyth,sarblyth
 openstax_accounts.server_url = https://localhost:3000/
 openstax_accounts.application_id = a86119f2635afb0c2f1b89fc914e65e09688451168b639a18fd054f2e4b15670
 openstax_accounts.application_secret = 9bbe5046b799ce150218417493cfb014894b43c07a184ad990dd607ed92b63bb
