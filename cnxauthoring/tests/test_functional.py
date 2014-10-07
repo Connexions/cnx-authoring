@@ -27,6 +27,7 @@ except ImportError:
     import urllib.request as urllib2 # renamed in python3
 
 import cnxepub
+import pytz
 from pyramid import httpexceptions
 from pyramid.interfaces import IAuthenticationPolicy
 from pyramid.security import Everyone, Authenticated
@@ -2112,10 +2113,15 @@ class FunctionalTests(BaseFunctionalTestCase):
             document.acls = [('user4', 'edit')]
         self.mock_get_acl.side_effect = mock_get_acl
 
+        date = datetime.datetime(2014, 3, 13, 15, 21, 15, 677617)
+        date = pytz.timezone(os.environ['TZ']).localize(date)
+        posting_tzinfo = pytz.timezone('America/Whitehorse')
+        posting_date = date.astimezone(posting_tzinfo)
+        from ..utils import utf8
         response = self.testapp.post_json('/users/contents', {
             'title': 'document by user4',
-            'created': u'2014-03-13T15:21:15.677617-05:00',
-            'revised': u'2014-03-13T15:21:15.677617-05:00',
+            'created': utf8(posting_date.isoformat()),
+            'revised': utf8(posting_date.isoformat()),
             }, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 2)
         self.assertEqual(self.mock_accept.call_count, 2)
@@ -2124,20 +2130,26 @@ class FunctionalTests(BaseFunctionalTestCase):
         #user should get back the contents just posted - full content test
         response = self.testapp.get('/users/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
+        from ..models import TZINFO
+        # Localize the resulting datetime info.
+        from ..utils import utf8
+        expected_result_revised_date = date.astimezone(TZINFO)
         self.assertEqual(result, {
             u'query': {
                 u'limits': [],
                 },
-            u'results': {u'items': [{u'derivedFrom': None,
-                           u'containedIn': [],
-                           u'id': u'{}@draft'.format(page['id']),
-                           u'mediaType': u'application/vnd.org.cnx.module',
-                           u'revised': u'2014-03-13T15:21:15.677617-05:00',
-                           u'state': u'Draft',
-                           u'title': u'document by user4',
-                           u'version': u'draft'}],
-               u'limits': [],
-               u'total': 1}
+            u'results': {u'items': [
+                {u'derivedFrom': None,
+                 u'containedIn': [],
+                 u'id': u'{}@draft'.format(page['id']),
+                 u'mediaType': u'application/vnd.org.cnx.module',
+                 u'revised': utf8(expected_result_revised_date.isoformat()),
+                 u'state': u'Draft',
+                 u'title': u'document by user4',
+                 u'version': u'draft',
+                 }],
+            u'limits': [],
+            u'total': 1}
             })
 
         self.assert_cors_headers(response)
@@ -2145,8 +2157,8 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         self.mock_archive()
 
-        one_week_ago = datetime.datetime.now() - datetime.timedelta(7)
-        two_weeks_ago = datetime.datetime.now() - datetime.timedelta(14)
+        one_week_ago = datetime.datetime.now(TZINFO) - datetime.timedelta(7)
+        two_weeks_ago = datetime.datetime.now(TZINFO) - datetime.timedelta(14)
 
         mock_datetime = mock.Mock()
         mock_datetime.now = mock.Mock(return_value=one_week_ago)
