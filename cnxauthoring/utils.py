@@ -19,9 +19,10 @@ except ImportError:
     import urllib.parse as urlparse # renamed in python3
 
 import cnxepub
+import requests
+from pyramid.threadlocal import get_current_registry
 from cnxquerygrammar.query_parser import grammar, DictFormater
 from parsimonious.exceptions import IncompleteParseError
-import requests
 
 
 def utf8(item):
@@ -322,5 +323,51 @@ def accept_roles_and_license(request, document, uid):
             }
     response = requests.post(license_url, data=json.dumps(payload),
             headers=headers)
+    if response.status_code != 202:
+        raise PublishingError(response)
+
+
+PUBLISHING_ROLES_MAPPING = {
+    'Author': 'authors',
+    'Copyright Holder': 'licensors',
+    'Editor': 'editors',
+    'Illustrator': 'illustrators',
+    'Publisher': 'publishers',
+    'Translator': 'translators',
+    }
+
+
+def declare_roles(model):
+    """Annotate the roles to include role acceptance information.
+    The model is updated as part of this procedure, but it is not persisted.
+    """
+    from .models import PublishingError
+
+    settings = get_current_registry().settings
+    publishing_url = settings['publishing.url']
+    headers = {
+        'x-api-key': settings['publishing.api_key'],
+        'content-type': 'application/json',
+        }
+    url = urlparse.urljoin(publishing_url,
+                           '/contents/{}/roles'.format(model.id))
+
+    # Send roles to publishing.
+    _roles_mapping = {v: k for k, v in PUBLISHING_ROLES_MAPPING.items()}
+    role_submission_keys = ('uid', 'role', 'has_accepted',)
+    payload = []
+    for role_type in PUBLISHING_ROLES_MAPPING.values():
+        publishing_role_type = _roles_mapping[role_type]
+        _roles = []
+        for role in model.metadata[role_type]:
+            reformatted_role = (role['id'], publishing_role_type,
+                                role.get('has_accepted', None),)
+            reformatted_role = dict(zip(role_submission_keys,
+                                        reformatted_role))
+            _roles.append(reformatted_role)
+        payload.extend(_roles)
+
+    response = requests.post(url, data=json.dumps(payload),
+                             headers=headers)
     if response.status_code != 202:
         raise PublishingError(response)

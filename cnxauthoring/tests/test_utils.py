@@ -9,14 +9,22 @@
 import json
 import unittest
 try:
+    import urlparse  # python2
+except ImportError:
+    import urllib.parse as urlparse  # renamed in python3
+try:
     from unittest import mock  # python3
 except ImportError:
     import mock  # python2
+
+import httpretty
+from pyramid import testing
 
 from .. import utils
 
 
 class UtilsTests(unittest.TestCase):
+
     def test_change_dict_keys(self):
         data = {
             'id': '1234',
@@ -207,8 +215,8 @@ class UtilsTests(unittest.TestCase):
             self.assertEqual(document.acls,
                              [('me', 'view', 'edit', 'publish')])
 
-    def test_accept_roles_and_license(self):
-        from ..models import create_content, DEFAULT_LICENSE
+    def test_declare_roles(self):
+        from ..models import create_content
 
         document = create_content(
             title='My Document',
@@ -217,39 +225,82 @@ class UtilsTests(unittest.TestCase):
             editors=[{'id': 'me'}, {'id': 'you'}],
             translators=[{'id': 'you'}],
             )
-        request = mock.Mock()
-        request.registry.settings = {
+        settings = {
             'publishing.url': 'http://publishing/',
             'publishing.api_key': 'trusted-publisher',
             }
 
-        with mock.patch('requests.post') as post:
-            post.return_value.status_code = 202
-            utils.accept_roles_and_license(request, document, 'me')
-            self.assertEqual(post.call_count, 2)
+        with mock.patch('requests.get') as get:
+            publishing_records = []
+            get.return_value.status_code = 200
+            get.json.side_effect = publishing_records
+            with mock.patch('requests.post') as post:
+                post.return_value.status_code = 202
 
-            (url,), kwargs = post.call_args_list[0]
-            self.assertEqual(
-                url, 'http://publishing/contents/{}/roles'.format(document.id))
-            self.assertEqual(json.loads(kwargs['data']), [
-                {u'uid': u'me', u'role': u'Publisher', 'has_accepted': True},
-                {u'uid': u'me', u'role': u'Editor', 'has_accepted': True},
-                {u'uid': u'me', u'role': u'Author', 'has_accepted': True},
-                ])
-            self.assertEqual(kwargs['headers'], {
-                'x-api-key': 'trusted-publisher',
-                'content-type': 'application/json',
-                })
+                with testing.testConfig(settings=settings):
+                    utils.declare_roles(document)
 
-            (url,), kwargs = post.call_args_list[1]
-            self.assertEqual(url,
-                             'http://publishing/contents/{}/licensors'
-                             .format(document.id))
-            self.assertEqual(json.loads(kwargs['data']), {
-                'license_url': DEFAULT_LICENSE.url,
-                'licensors': [{'uid': 'me', 'has_accepted': True}],
-                })
-            self.assertEqual(kwargs['headers'], {
-                'x-api-key': 'trusted-publisher',
-                'content-type': 'application/json',
-                })
+                self.assertEqual(post.call_count, 1)
+
+                (url,), kwargs = post.call_args_list[0]
+                self.assertEqual(
+                    url,
+                    'http://publishing/contents/{}/roles'.format(document.id))
+                self.assertEqual(
+                    sorted(json.loads(kwargs['data']),
+                           key=lambda v: (v['uid'], v['role'],)),
+                    [{u'uid': u'me', u'role': u'Author',
+                      u'has_accepted': None},
+                     {u'uid': u'me', u'role': u'Editor',
+                      u'has_accepted': None},
+                     {u'uid': u'me', u'role': u'Publisher',
+                      u'has_accepted': None},
+                     {u'uid': u'you', u'role': u'Editor',
+                      u'has_accepted': None},
+                     {u'uid': u'you', u'role': u'Translator',
+                      u'has_accepted': None},
+                     ])
+                self.assertEqual(kwargs['headers'], {
+                    'x-api-key': 'trusted-publisher',
+                    'content-type': 'application/json',
+                    })
+
+    @httpretty.activate
+    def test_declare_roles_w_invalid_role_type(self):
+        """Ignore invalid roles"""
+        from ..models import create_content
+
+        document = create_content(
+            title='My Document',
+            authors=[{'id': 'me'}],
+            publishers=[{'id': 'me'}],
+            editors=[{'id': 'me'}, {'id': 'you'}],
+            translators=[{'id': 'you'}],
+            )
+        publishing_url = 'http://publishing/'
+        settings = {
+            'publishing.url': publishing_url,
+            'publishing.api_key': 'trusted-publisher',
+            }
+
+        publishing_records = []
+        url = urlparse.urljoin(publishing_url,
+                               '/contents/{}/roles'.format(document.id))
+        httpretty.register_uri(httpretty.GET, url,
+                               body=json.dumps(publishing_records), status=200)
+        httpretty.register_uri(httpretty.POST, url, status=202)
+
+        with testing.testConfig(settings=settings):
+            utils.declare_roles(document)
+
+        post_request = httpretty.last_request()
+        data = post_request.parse_request_body(post_request.body)
+        expected = [
+            {u'uid': u'me', u'role': u'Author', u'has_accepted': None},
+            {u'uid': u'me', u'role': u'Editor', u'has_accepted': None},
+            {u'uid': u'me', u'role': u'Publisher', u'has_accepted': None},
+            {u'uid': u'you', u'role': u'Editor', u'has_accepted': None},
+            {u'uid': u'you', u'role': u'Translator', u'has_accepted': None},
+            ]
+        self.assertEqual(sorted(data, key=lambda v: (v['uid'], v['role'],)),
+                         expected)
