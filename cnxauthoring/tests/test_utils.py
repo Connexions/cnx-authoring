@@ -304,3 +304,46 @@ class UtilsTests(unittest.TestCase):
             ]
         self.assertEqual(sorted(data, key=lambda v: (v['uid'], v['role'],)),
                          expected)
+
+    @httpretty.activate
+    def test_declare_licensors(self):
+        from ..models import create_content, DEFAULT_LICENSE
+
+        document = create_content(
+            title='My Document',
+            license={'url': DEFAULT_LICENSE.url},
+            authors=[{'id': 'me'}],
+            publishers=[{'id': 'me'}],
+            editors=[{'id': 'me'}, {'id': 'you'}],
+            translators=[{'id': 'you'}],
+            licensor_acceptance=[{'id': 'me', 'has_accepted': True},
+                                 {'id': 'you', 'has_accepted': None}],
+            )
+        publishing_url = 'http://publishing/'
+        settings = {
+            'publishing.url': publishing_url,
+            'publishing.api_key': 'trusted-publisher',
+            }
+
+        publishing_records = {
+            'license_url': DEFAULT_LICENSE.url,
+            'licensors': [],
+            }
+        url = urlparse.urljoin(publishing_url,
+                               '/contents/{}/licensors'.format(document.id))
+        httpretty.register_uri(httpretty.GET, url,
+                               body=json.dumps(publishing_records), status=200)
+        httpretty.register_uri(httpretty.POST, url, status=202)
+
+        with testing.testConfig(settings=settings):
+            utils.declare_licensors(document)
+
+        post_request = httpretty.last_request()
+        data = post_request.parse_request_body(post_request.body)
+        expected_licensors = [
+            {u'uid': u'me', u'has_accepted': True},
+            {u'uid': u'you', u'has_accepted': None},
+            ]
+        self.assertEqual(data['license_url'], DEFAULT_LICENSE.url)
+        self.assertEqual(sorted(data['licensors'], key=lambda v: v['uid']),
+                         expected_licensors)

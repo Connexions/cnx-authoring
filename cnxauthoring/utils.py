@@ -371,3 +371,47 @@ def declare_roles(model):
                              headers=headers)
     if response.status_code != 202:
         raise PublishingError(response)
+
+
+def declare_licensors(model):
+    """Declare license acceptance information on the model.
+    The model is updated as part of this procedure, but it is not persisted.
+    """
+    from .models import PublishingError
+
+    settings = get_current_registry().settings
+    publishing_url = settings['publishing.url']
+    headers = {
+        'x-api-key': settings['publishing.api_key'],
+        'content-type': 'application/json',
+        }
+    url = urlparse.urljoin(publishing_url,
+                           '/contents/{}/licensors'.format(model.id))
+
+    # Acquire a list of known roles from publishing.
+    response = requests.get(url)
+    upstream_license_info = response.json()
+    upstream = upstream_license_info.get('licensors', [])
+
+    # Scan the roles for newly added attribution. In the event that
+    #   one or more has been added, add them to the licensor_acceptance.
+    #   Ignore removals, because they shouldn't affect anything.
+    local_roles = []
+    for role_type in PUBLISHING_ROLES_MAPPING.values():
+        local_roles.extend(model.metadata.get(role_type, []))
+    local_role_ids = set([r['id'] for r in local_roles])
+    existing_licensor_ids = set([l['id'] for l in model.licensor_acceptance])
+    for new_role in local_role_ids.difference(existing_licensor_ids):
+        model.licensor_acceptance.append({'id': new_role,
+                                          'has_accepted': None})
+
+    # Send licensors to publishing.
+    payload = {
+        'license_url': model.metadata['license'].url,
+        'licensors': [{'uid': x['id'], 'has_accepted': x['has_accepted']}
+                      for x in model.licensor_acceptance],
+        }
+    response = requests.post(url, data=json.dumps(payload),
+                             headers=headers)
+    if response.status_code != 202:
+        raise PublishingError(response)

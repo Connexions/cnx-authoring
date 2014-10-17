@@ -134,16 +134,16 @@ class Document(cnxepub.Document, BaseContent):
     """
     mediatype = DOCUMENT_MEDIATYPE
 
-    def __init__(self, title, acls=None, **kwargs):
+    def __init__(self, title, acls=None,
+                 licensor_acceptance=None, **kwargs):
         metadata = build_metadata(title, **kwargs)
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         content = metadata['content']
         cnxepub.Document.__init__(self, id, content, metadata)
-        if acls is None:
-            self.acls = []
-        else:
-            self.acls = acls
+        self.acls = acls and acls or []
+        la = licensor_acceptance
+        self.licensor_acceptance = la and la or []
 
     def update(self, **kwargs):
         if 'license' in kwargs:
@@ -283,17 +283,17 @@ class Binder(cnxepub.Binder, BaseContent):
     """
     mediatype = BINDER_MEDIATYPE
 
-    def __init__(self, title, tree, acls=None, **kwargs):
+    def __init__(self, title, tree, acls=None,
+                 licensor_acceptance=None, **kwargs):
         metadata = build_metadata(title, **kwargs)
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         nodes, title_overrides = build_tree(tree)
         cnxepub.Binder.__init__(self, id, nodes=nodes,
                 metadata=metadata, title_overrides=title_overrides)
-        if acls is None:
-            self.acls = []
-        else:
-            self.acls = acls
+        self.acls = acls and acls or []
+        la = licensor_acceptance
+        self.licensor_acceptance = la and la or []
 
     def update(self, **kwargs):
         if 'license' in kwargs:
