@@ -265,8 +265,10 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None,
 def to_dict(metadata):
     result = metadata.copy()
     result['id'] = str(result['id'])
-    result['created'] = result['created'].isoformat()
-    result['revised'] = result['revised'].isoformat()
+    created = result['created']
+    revised = result['revised']
+    result['created'] = created.astimezone(TZINFO).isoformat()
+    result['revised'] = revised.astimezone(TZINFO).isoformat()
     result['license'] = result['license'].__dict__.copy()
     return result
 

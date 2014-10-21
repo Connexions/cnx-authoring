@@ -10,6 +10,7 @@ install_requires = (
         'pyramid',
         'psycopg2>=2.5',
         'requests',
+        'pytz',
         'tzlocal',
         'waitress',
         )
