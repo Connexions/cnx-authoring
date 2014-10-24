@@ -140,7 +140,6 @@ def user_contents(request):
     kwargs = {k:v for k,v in request.GET.items() if k in ['mediaType','state','containedIn']}
     if kwargs:
         utils.change_dict_keys(kwargs, utils.camelcase_to_underscore)
-    # TODO use acls instead of filter by submitter
     contents = storage.get_all(user_id=request.unauthenticated_userid,
                                permissions=('edit',), **kwargs)
     for content in contents:

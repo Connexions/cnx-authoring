@@ -7,6 +7,7 @@ __pycache__
 *.*~
 .DS_Store
 /*.log
+/*.pid
 
 # Virtualenv #
 ##############
