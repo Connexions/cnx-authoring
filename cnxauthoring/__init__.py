@@ -34,7 +34,7 @@ def declare_routes(config):
     add_route('profile', '/users/profile', request_method='GET')
     add_route('user-contents', '/users/contents', request_method='GET')
     add_route('publish', '/publish', request_method='POST')
-
+    add_route('acceptance-info', '/contents/{id}@draft/acceptance')
 
 def declare_oauth_routes(config):
     """Declaration of routing for oauth"""

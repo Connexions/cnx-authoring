@@ -165,5 +165,27 @@ class Tree(colander.MappingSchema):
         colander.List(),
         )
 
+
 class BinderSchema(DocumentSchema):
     tree = Tree()
+
+
+class RoleAcceptanceSchema(colander.MappingSchema):
+    role = colander.SchemaNode(
+        colander.String(),
+        )
+    hasAccepted = colander.SchemaNode(
+        colander.Boolean(),
+        missing=colander.drop,
+        )
+
+
+class RoleAcceptanceSequence(colander.SequenceSchema):
+    role = RoleAcceptanceSchema()
+
+
+class AcceptanceSchema(colander.MappingSchema):
+    license = colander.SchemaNode(
+        colander.Boolean(),
+        )
+    roles = RoleAcceptanceSequence()
