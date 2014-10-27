@@ -300,7 +300,7 @@ def accept_roles_and_license(request, document, uid):
     # accept roles
     roles_url = urlparse.urljoin(
             publishing_url, '/contents/{}/roles'.format(document.id))
-    payload = [{'uid': uid, 'role': role}
+    payload = [{'uid': uid, 'role': role, 'has_accepted': True}
             for role in get_roles(document, uid)]
     response = requests.post(roles_url, data=json.dumps(payload),
             headers=headers)
@@ -312,7 +312,7 @@ def accept_roles_and_license(request, document, uid):
             publishing_url, '/contents/{}/licensors'.format(document.id))
     payload = {
             'license_url': document.metadata['license'].url,
-            'licensors': [{'uid': uid}],
+            'licensors': [{'uid': uid, 'has_accepted': True}],
             }
     response = requests.post(license_url, data=json.dumps(payload),
             headers=headers)
