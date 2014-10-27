@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # ###
 # Copyright (c) 2013, Rice University
 # This software is subject to the provisions of the GNU Affero General
@@ -207,9 +207,9 @@ class UtilsTests(unittest.TestCase):
             self.assertEqual(url,
                     'http://publishing/contents/{}/roles'.format(document.id))
             self.assertEqual(json.loads(kwargs['data']), [
-                {u'uid': u'me', u'role': u'Publisher'},
-                {u'uid': u'me', u'role': u'Editor'},
-                {u'uid': u'me', u'role': u'Author'},
+                {u'uid': u'me', u'role': u'Publisher', 'has_accepted': True},
+                {u'uid': u'me', u'role': u'Editor', 'has_accepted': True},
+                {u'uid': u'me', u'role': u'Author', 'has_accepted': True},
                 ])
             self.assertEqual(kwargs['headers'], {
                 'x-api-key': 'trusted-publisher',
@@ -222,7 +222,7 @@ class UtilsTests(unittest.TestCase):
                     .format(document.id))
             self.assertEqual(json.loads(kwargs['data']), {
                 'license_url': DEFAULT_LICENSE.url,
-                'licensors': [{'uid': 'me'}],
+                'licensors': [{'uid': 'me', 'has_accepted': True}],
                 })
             self.assertEqual(kwargs['headers'], {
                 'x-api-key': 'trusted-publisher',
