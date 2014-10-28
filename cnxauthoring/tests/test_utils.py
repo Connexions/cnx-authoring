@@ -65,18 +65,18 @@ class UtilsTests(unittest.TestCase):
 
     def test_full_profile_to_dict(self):
         profile = {
-            'first_name': 'Caroline',
-            'last_name': 'Lane',
+            'first_name': u'Cäroline',
+            'last_name': u'Läne',
             'contact_infos': [
                 {'type': 'PhoneNumber', 'value': 123456789},
                 {'type': 'EmailAddress', 'value': 'something@something.com'}],
             }
         expected = {
-            'firstname': 'Caroline',
-            'surname': 'Lane',
+            'firstname': u'Cäroline',
+            'surname': u'Läne',
             'email': 'something@something.com',
             'id': '',
-            'fullname': 'Caroline Lane',
+            'fullname': u'Cäroline Läne',
             }
 
         self.assertEqual(utils.profile_to_user_dict(profile), expected)

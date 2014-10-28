@@ -205,7 +205,7 @@ def profile_to_user_dict(profile):
             'email': email or '',
             'id': profile.get('username') or '',
             'fullname': profile.get('fullname',
-                '{} {}'.format(firstname, surname).strip()),
+                u'{} {}'.format(firstname, surname).strip()),
             }
 
 def update_containment(binder, deletion = False):
