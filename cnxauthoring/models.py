@@ -148,9 +148,12 @@ class Document(cnxepub.Document, BaseContent):
     def update(self, **kwargs):
         if 'license' in kwargs:
             del kwargs['license']
+        if 'created' in kwargs:
+            del kwargs['created']
         for key, value in kwargs.items():
             if key in self.metadata:
                 self.metadata[key] = value
+        self.metadata['revised'] = datetime.datetime.now(TZINFO)
         self.content = self.metadata['content']
 
     def publish_prep(self):
@@ -293,6 +296,8 @@ class Binder(cnxepub.Binder, BaseContent):
     def update(self, **kwargs):
         if 'license' in kwargs:
             del kwargs['license']
+        if 'created' in kwargs:
+            del kwargs['created']
         if 'tree' in kwargs:
             nodes, title_overrides = build_tree(kwargs.pop('tree'))
             self._nodes = nodes
@@ -300,6 +305,7 @@ class Binder(cnxepub.Binder, BaseContent):
         for key, value in kwargs.items():
             if key in self.metadata:
                 self.metadata[key] = value
+        self.metadata['revised'] = datetime.datetime.now(TZINFO)
 
     def publish_prep(self):
         license = self.metadata['license']
