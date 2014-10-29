@@ -52,17 +52,15 @@ class ViewsTests(unittest.TestCase):
             }
         self.addCleanup(delattr, testing.DummyRequest, 'user')
 
-        patch1 = mock.patch('cnxauthoring.utils.create_acl_for')
-        patch1.start()
-        self.addCleanup(patch1.stop)
-
-        patch2 = mock.patch('cnxauthoring.utils.accept_roles_and_license')
-        patch2.start()
-        self.addCleanup(patch2.stop)
-
-        patch3 = mock.patch('cnxauthoring.utils.get_acl_for')
-        patch3.start()
-        self.addCleanup(patch3.stop)
+        for mock_target in (
+            'cnxauthoring.utils.create_acl_for',
+            'cnxauthoring.utils.get_acl_for',
+            'cnxauthoring.utils.declare_roles',
+            'cnxauthoring.utils.declare_licensors',
+            ):
+            patch = mock.patch(mock_target)
+            patch.start()
+            self.addCleanup(patch.stop)
 
     tearDown = testing.tearDown
 

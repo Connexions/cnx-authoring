@@ -215,6 +215,194 @@ class UtilsTests(unittest.TestCase):
             self.assertEqual(document.acls,
                              [('me', 'view', 'edit', 'publish')])
 
+    def test_accept_roles(self):
+        cstruct = {
+            u'submitlog': u'first version',
+            u'abstract': None,
+            u'revised': None,
+            u'derived_from_title': u'Madlavning',
+            u'parent_title': None,
+            u'keywords': [u'k\xf8kken',
+            u'Madlavning'],
+            u'subjects': [u'Arts'],
+            u'title': u'Copy of Madlavning',
+            u'parent_version': u'',
+            u'editors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'id': 'user1'},
+                {'fullname': 'User Two',
+                 'surname': u'Two',
+                 'email': u'user2@example.com',
+                 'firstname': u'User',
+                 'id': 'user2'},
+                ],
+            u'id': u'feda4909-5bbd-431e-a017-049aff54416d',
+            u'parent_id': None,
+            u'version': u'1.1',
+            u'legacy_id': u'col11368',
+            u'media_type': u'application/vnd.org.cnx.collection',
+            u'publishers': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'id': 'user1'}],
+            u'parent_authors': [],
+            u'stateid': 1,
+            u'google_analytics': None,
+            u'language': u'da',
+            u'maintainers': [],
+            u'buy_link': None,
+            u'authors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'id': 'user1'},
+                {'fullname': 'User Two',
+                 'surname': u'Two',
+                 'email': u'user2@example.com',
+                 'firstname': u'User',
+                 'id': 'user2'},
+                ],
+            u'legacy_version': u'1.1',
+            u'licensors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'id': 'user1'}],
+            u'roles': None,
+            u'license': {
+                'url': 'http://creativecommons.org/licenses/by/4.0/'
+                },
+            u'created': None,
+            u'tree': {
+                u'id': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+                u'contents': [],
+                u'title': u'Madlavning'},
+            u'doctype': u'',
+            u'illustrators': [],
+            u'translators': [],
+            u'submitter': {
+                'fullname': u'User One',
+                'surname': u'One',
+                'email': u'user1@example.com',
+                'firstname': u'User',
+                'id': 'user1'},
+            u'derived_from_uri': 'http://cnx.org/contents/'
+                'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+            }
+        utils.accept_roles(cstruct, {
+            'fullname': u'User One',
+             'surname': u'One',
+             'email': u'user1@example.com',
+             'firstname': u'User',
+             'has_accepted': True,
+             'id': 'user1'})
+        self.maxDiff = None
+        self.assertDictEqual(
+            cstruct, {
+                u'submitlog': u'first version',
+                u'abstract': None,
+                u'revised': None,
+                u'derived_from_title': u'Madlavning',
+                u'parent_title': None,
+                u'keywords': [u'k\xf8kken',
+                u'Madlavning'],
+                u'subjects': [u'Arts'],
+                u'title': u'Copy of Madlavning',
+                u'parent_version': u'',
+                u'editors': [
+                    {'fullname': u'User One',
+                     'surname': u'One',
+                     'email': u'user1@example.com',
+                     'firstname': u'User',
+                     'has_accepted': True,
+                     'id': 'user1'},
+                    {'fullname': 'User Two',
+                     'surname': u'Two',
+                     'email': u'user2@example.com',
+                     'firstname': u'User',
+                     'id': 'user2'},
+                    ],
+                u'id': u'feda4909-5bbd-431e-a017-049aff54416d',
+                u'parent_id': None,
+                u'version': u'1.1',
+                u'legacy_id': u'col11368',
+                u'media_type': u'application/vnd.org.cnx.collection',
+                u'publishers': [
+                    {'fullname': u'User One',
+                     'surname': u'One',
+                     'email': u'user1@example.com',
+                     'firstname': u'User',
+                     'has_accepted': True,
+                     'id': 'user1'}],
+                u'parent_authors': [],
+                u'stateid': 1,
+                u'google_analytics': None,
+                u'language': u'da',
+                u'maintainers': [],
+                u'buy_link': None,
+                u'authors': [
+                    {'fullname': u'User One',
+                     'surname': u'One',
+                     'email': u'user1@example.com',
+                     'firstname': u'User',
+                     'has_accepted': True,
+                     'id': 'user1'},
+                    {'fullname': 'User Two',
+                     'surname': u'Two',
+                     'email': u'user2@example.com',
+                     'firstname': u'User',
+                     'id': 'user2'},
+                    ],
+                u'legacy_version': u'1.1',
+                u'licensors': [
+                    {'fullname': u'User One',
+                     'surname': u'One',
+                     'email': u'user1@example.com',
+                     'firstname': u'User',
+                     'id': 'user1'}],
+                u'roles': None,
+                u'license': {
+                    'url': 'http://creativecommons.org/licenses/by/4.0/'
+                    },
+                u'created': None,
+                u'tree': {
+                    u'id': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+                    u'contents': [],
+                    u'title': u'Madlavning'},
+                u'doctype': u'',
+                u'illustrators': [],
+                u'translators': [],
+                u'submitter': {
+                    'fullname': u'User One',
+                    'surname': u'One',
+                    'email': u'user1@example.com',
+                    'firstname': u'User',
+                    'id': 'user1'},
+                u'derived_from_uri': ('http://cnx.org/contents/feda4909-5bbd'
+                                      '-431e-a017-049aff54416d@1.1'),
+                })
+
+    def test_accept_license(self):
+        from ..models import create_content
+
+        document = create_content(
+            title='My Document',
+            authors=[{'id': 'me'}],
+            publishers=[{'id': 'me'}],
+            editors=[{'id': 'me'}, {'id': 'you'}],
+            translators=[{'id': 'you'}],
+            )
+        utils.accept_license(document, {'id': 'me'})
+        self.assertEqual(document.licensor_acceptance,
+                         [{'id': 'me', 'has_accepted': True}])
+
     def test_declare_roles(self):
         from ..models import create_content
 

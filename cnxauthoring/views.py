@@ -142,7 +142,7 @@ def user_contents(request):
     if kwargs:
         utils.change_dict_keys(kwargs, utils.camelcase_to_underscore)
     contents = storage.get_all(user_id=request.unauthenticated_userid,
-                               permissions=('edit',), **kwargs)
+                               permissions=('edit', 'view',), **kwargs)
     for content in contents:
         update_content_state(request, content)
         if isinstance(content,Binder):
@@ -249,16 +249,20 @@ def post_content_single(request, cstruct):
     uids = set([current_uid])
     cstruct['submitter'] = utils.profile_to_user_dict(request.user)
 
+    # add logged in user to list of authors, licensors and publishers if they
+    # are empty
+    user = utils.profile_to_user_dict(request.user)
+
     cstruct.setdefault('authors', [])
     author_ids = [i['id'] for i in cstruct['authors']]
     uids.update(author_ids)
     if not author_ids:
-        cstruct['authors'] = [utils.profile_to_user_dict(request.user)]
+        cstruct['authors'] = [user]
 
     cstruct.setdefault('licensors', [])
     licensor_ids = [i['id'] for i in cstruct['licensors']]
     if not licensor_ids:
-        cstruct['licensors'] = [utils.profile_to_user_dict(request.user)]
+        cstruct['licensors'] = [user]
 
     cstruct.setdefault('publishers', [])
     publisher_ids = [i['id'] for i in cstruct['publishers']]
@@ -270,10 +274,11 @@ def post_content_single(request, cstruct):
             publisher_ids.append(maintainer['id'])
             uids.add(maintainer['id'])
     if not publisher_ids:
-        cstruct['publishers'] = [utils.profile_to_user_dict(request.user)]
+        cstruct['publishers'] = [user]
 
     uids.update([i['id'] for i in cstruct.get('editors', [])
                                 + cstruct.get('translators', [])])
+    utils.accept_roles(cstruct, user)
 
     if cstruct.get('media_type') == BINDER_MEDIATYPE:
         schema = BinderSchema()
@@ -293,9 +298,9 @@ def post_content_single(request, cstruct):
     if not archive_id:
         # new content, need to create acl entry in publishing
         utils.create_acl_for(request, content, uids)
-    # accept roles and license
-    utils.accept_roles_and_license(
-            request, content, current_uid)
+    utils.accept_license(content, user)
+    utils.declare_roles(content)
+    utils.declare_licensors(content)
     # get acl entry from publishing
     utils.get_acl_for(request, content)
 

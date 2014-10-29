@@ -293,38 +293,29 @@ def get_roles(document, uid):
         if uid in users:
             yield role
 
-def accept_roles_and_license(request, document, uid):
-    """Accept roles and license for document and user uid"""
-    from .models import PublishingError
 
-    settings = request.registry.settings
-    publishing_url = settings['publishing.url']
-    headers = {
-            'x-api-key': settings['publishing.api_key'],
-            'content-type': 'application/json',
-            }
+def accept_roles(cstruct, user):
+    """Accept roles for document and user"""
+    # accept roles for user
+    for field in cnxepub.ATTRIBUTED_ROLE_KEYS:
+        if field in cstruct:
+            value = cstruct.get(field, [])
+            for role in value:
+                if role.get('id') == user['id']:
+                    role['has_accepted'] = True
+            cstruct[field] = value
 
-    # accept roles
-    roles_url = urlparse.urljoin(
-            publishing_url, '/contents/{}/roles'.format(document.id))
-    payload = [{'uid': uid, 'role': role, 'has_accepted': True}
-            for role in get_roles(document, uid)]
-    response = requests.post(roles_url, data=json.dumps(payload),
-            headers=headers)
-    if response.status_code != 202:
-        raise PublishingError(response)
 
-    # accept license
-    license_url = urlparse.urljoin(
-            publishing_url, '/contents/{}/licensors'.format(document.id))
-    payload = {
-            'license_url': document.metadata['license'].url,
-            'licensors': [{'uid': uid, 'has_accepted': True}],
-            }
-    response = requests.post(license_url, data=json.dumps(payload),
-            headers=headers)
-    if response.status_code != 202:
-        raise PublishingError(response)
+def accept_license(document, user):
+    # accept license for user
+    for r in document.licensor_acceptance:
+        if r['id'] == user['id']:
+            r['has_accepted'] = True
+            break
+    else:
+        user_copy = user.copy()
+        user_copy['has_accepted'] = True
+        document.licensor_acceptance.append(user_copy)
 
 
 PUBLISHING_ROLES_MAPPING = {
