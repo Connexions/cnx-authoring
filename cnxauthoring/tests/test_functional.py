@@ -39,7 +39,7 @@ from ..models import DEFAULT_LICENSE, TZINFO
 
 
 USER_PROFILE = {
-        u'username': u'me',
+        u'username': u'user1',
         u'id': 1,
         u'first_name': u'User',
         u'last_name': u'One',
@@ -48,14 +48,14 @@ USER_PROFILE = {
                 u'type': u'EmailAddress',
                 u'verified': True,
                 u'id': 1,
-                u'value': u'me@example.com',
+                u'value': u'user1@example.com',
                 },
             ],
         }
 
 SUBMITTER = {
-        u'id': u'me',
-        u'email': u'me@example.com',
+        u'id': u'user1',
+        u'email': u'user1@example.com',
         u'firstname': u'User',
         u'surname': u'One',
         u'fullname': u'User One',
@@ -121,7 +121,7 @@ class BaseFunctionalTestCase(unittest.TestCase):
         self.get_acl_patch.start()
         self.addCleanup(self.get_acl_patch.stop)
 
-    def login(self, username='me', password='password', login_url='/login',
+    def login(self, username='user1', password='password', login_url='/login',
               headers=None):
         headers = headers or {}
         response = self.testapp.get(login_url, headers=headers, status=302)
@@ -1665,7 +1665,7 @@ class FunctionalTests(BaseFunctionalTestCase):
     def test_delete_content_multiple_users(self):
         # mock get_acl to set the acl for the document correctly
         def mock_get_acl(request, document):
-            document.acls = [('me', 'view', 'edit', 'publish'),
+            document.acls = [('user1', 'view', 'edit', 'publish'),
                              ('you', 'view', 'edit', 'publish')]
         self.mock_get_acl.side_effect = mock_get_acl
 
@@ -1680,7 +1680,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         args, _ = self.mock_create_acl.call_args
         self.assertEqual(args[0].__class__.__name__, 'Request')
         self.assertEqual(args[1].__class__.__name__, 'Document')
-        self.assertEqual(args[2], set(['me', 'you']))
+        self.assertEqual(args[2], set(['user1', 'you']))
 
         self.testapp.get('/contents/{}@draft.json'.format(page['id']),
                          status=200)
@@ -1699,7 +1699,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     }, status=200)
 
         self.logout()
-        self.login('user1')
+        self.login('user2')
 
         # someone not in acl should not be able to view the content
         self.testapp.get(
@@ -1708,7 +1708,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         # log back in as the submitter and check that the title has been
         # changed
-        self.login('me')
+        self.login('user1')
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(page['id']), status=200)
         self.assertEqual(response.json['title'],
@@ -1720,9 +1720,9 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.testapp.get(
                 '/contents/{}@draft.json'.format(page['id']), status=200)
 
-        # delete me from the content
+        # delete user1 from the content
         self.testapp.delete(
-                '/contents/{}@draft/users/me.json'.format(page['id']),
+                '/contents/{}@draft/users/user1.json'.format(page['id']),
                 status=200)
         self.testapp.get(
                 '/contents/{}@draft.json'.format(page['id']), status=403)
@@ -1766,7 +1766,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_search_unbalanced_quotes(self):
         self.logout()
-        self.login('user1')
+        self.login('user2')
         post_data = {'title': u'Document'}
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
