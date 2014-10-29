@@ -530,8 +530,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         content = result.pop('content')
         self.assertTrue(content.startswith('<html'))
         self.assertTrue(u'Lav en madplan for den kommende uge' in content)
-        self.assertFalse('2011-10-05' in result.pop('created'))
-        self.assertTrue(result.pop('revised') is not None)
+        self.assertNotIn('2011-10-05', result.pop('created'))
+        self.assertNotIn('2011-10-12', result.pop('revised'))
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
@@ -849,8 +849,11 @@ class FunctionalTests(BaseFunctionalTestCase):
             'keywords': [u'DNA', u'resonance'],
             }
 
-        response = self.testapp.post_json('/users/contents',
-                post_data, status=201)
+        now = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.post_json(
+                '/users/contents', post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 0)
         self.assertEqual(self.mock_accept.call_count, 1)
         result = json.loads(response.body.decode('utf-8'))
@@ -859,7 +862,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         created = result.pop('created')
         self.assertTrue(created.startswith('2011-10-05'))
         revised = result.pop('revised')
-        self.assertFalse(revised.startswith('2011'))
+        self.assertEqual(revised, now.astimezone(TZINFO).isoformat())
         content = result.pop('content')
         self.assertTrue(u'Lav en madplan for den kommende uge' in content)
 
@@ -928,8 +931,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             })
         self.assert_cors_headers(response)
 
-        response = self.testapp.get('/contents/{}@draft.json'.format(result['id']),
-                status=200)
+        response = self.testapp.get(
+            '/contents/{}@draft.json'.format(result['id']), status=200)
         result = json.loads(response.body.decode('utf-8'))
         content = result.pop('content')
         self.assertTrue(u'Lav en madplan for den kommende uge' in content)
@@ -1232,27 +1235,31 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_put_content_derived_from(self):
         post_data = {
-                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
+            'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             }
         self.mock_archive()
 
-        response = self.testapp.post_json('/users/contents',
-                post_data, status=201)
+        response = self.testapp.post_json(
+            '/users/contents', post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         self.assertEqual(self.mock_accept.call_count, 1)
         page = json.loads(response.body.decode('utf-8'))
         self.assert_cors_headers(response)
 
         post_data = {
-                'content': '<html><body><p>Page content</p></body></html>',
-                }
-        response = self.testapp.put_json(
+            'content': '<html><body><p>Page content</p></body></html>',
+            }
+        now = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(page['id']),
                 post_data, status=200)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         self.assertEqual(self.mock_accept.call_count, 1)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['content'], post_data['content'])
+        self.assertEqual(result['revised'], now.astimezone(TZINFO).isoformat())
         self.assert_cors_headers(response)
 
     def test_put_content_binder_document_not_found(self):
@@ -1287,43 +1294,50 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_put_content_binder(self):
         post_data = {
-                'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+            'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
             }
         self.mock_archive()
 
-        response = self.testapp.post_json('/users/contents',
-                post_data, status=201)
+        created = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = created
+            response = self.testapp.post_json(
+                '/users/contents', post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         self.assertEqual(self.mock_accept.call_count, 1)
         result = json.loads(response.body.decode('utf-8'))
         self.assert_cors_headers(response)
 
         update_data = {
-                'title': u'...',
-                'tree': {
-                    'contents': [{
-                        u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
-                        u'title': u'Hygiene',
-                        }],
-                    },
-                'licensors': [SUBMITTER],
-                }
-        response = self.testapp.put_json(
+            'title': u'...',
+            'tree': {
+                'contents': [{
+                    u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
+                    u'title': u'Hygiene',
+                    }],
+                },
+            'licensors': [SUBMITTER],
+            }
+        revised = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = revised
+            response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(result['id']),
                 update_data, status=200)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         self.assertEqual(self.mock_accept.call_count, 1)
         result = json.loads(response.body.decode('utf-8'))
-        self.assertTrue(result.pop('created') is not None)
-        self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
+            u'created': created.astimezone(TZINFO).isoformat(),
+            u'revised': revised.astimezone(TZINFO).isoformat(),
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
             u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
-            u'derivedFromUri': u'http://cnx.org/contents/{}'.format(post_data['derivedFrom']),
+            u'derivedFromUri': u'http://cnx.org/contents/{}'.format(
+                post_data['derivedFrom']),
             u'abstract': u'',
             u'containedIn': [],
             u'content': u'',
@@ -1337,14 +1351,14 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'version': u'4.0'},
             u'title': u'...',
             u'tree': {
-                    u'id': u'{}@draft'.format(result['id']),
-                    u'title': u'...',
-                    u'contents': [{
-                        u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
-                        u'title': u'Hygiene',
-                        }],
-                    },
-            u'subjects': [u'Arts',],
+                u'id': u'{}@draft'.format(result['id']),
+                u'title': u'...',
+                u'contents': [{
+                    u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
+                    u'title': u'Hygiene',
+                    }],
+                },
+            u'subjects': [u'Arts'],
             u'keywords': [u'køkken', u'Madlavning'],
             u'state': u'Draft',
             u'publication': None,
@@ -1355,19 +1369,19 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
         response = self.testapp.get(
-                '/contents/{}@draft.json'.format(result['id']),
-                status=200)
+            '/contents/{}@draft.json'.format(result['id']), status=200)
         result = json.loads(response.body.decode('utf-8'))
-        self.assertTrue(result.pop('created') is not None)
-        self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
+            u'created': created.astimezone(TZINFO).isoformat(),
+            u'revised': revised.astimezone(TZINFO).isoformat(),
             u'submitter': SUBMITTER,
             u'authors': [SUBMITTER],
             u'publishers': [SUBMITTER],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
-            u'derivedFromUri': u'http://cnx.org/contents/{}'.format(post_data['derivedFrom']),
+            u'derivedFromUri': u'http://cnx.org/contents/{}'.format(
+                post_data['derivedFrom']),
             u'abstract': u'',
             u'containedIn': [],
             u'content': u'',
@@ -1381,13 +1395,13 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'version': u'4.0'},
             u'title': u'...',
             u'tree': {
-                    u'id': u'{}@draft'.format(result['id']),
-                    u'title': u'...',
-                    u'contents': [{
-                        u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
-                        u'title': u'Hygiene',
-                        }],
-                    },
+                u'id': u'{}@draft'.format(result['id']),
+                u'title': u'...',
+                u'contents': [{
+                    u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
+                    u'title': u'Hygiene',
+                    }],
+                },
             u'subjects': [u'Arts'],
             u'keywords': [u'køkken', u'Madlavning'],
             u'state': u'Draft',
@@ -1400,23 +1414,27 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_put_content_binder2(self):
         response = self.testapp.post_json('/users/contents', {
-                    'title': 'Empty book',
-                    'mediaType': 'application/vnd.org.cnx.collection',
-                    'tree': {
-                        'contents': [],
-                        },
-                    }, status=201)
+            'title': 'Empty book',
+            'mediaType': 'application/vnd.org.cnx.collection',
+            'tree': {
+                'contents': [],
+                },
+            }, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         self.assertEqual(self.mock_accept.call_count, 1)
         binder = json.loads(response.body.decode('utf-8'))
+        created = binder['created']
 
-        response = self.testapp.post_json('/users/contents',
-                {'title': 'Empty page'}, status=201)
+        response = self.testapp.post_json(
+            '/users/contents', {'title': 'Empty page'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 2)
         self.assertEqual(self.mock_accept.call_count, 2)
         page = json.loads(response.body.decode('utf-8'))
 
-        response = self.testapp.put_json(
+        revised = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = revised
+            response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(binder['id']), {
                     'id': '{}@draft'.format(binder['id']),
                     'downloads': [],
@@ -1440,18 +1458,14 @@ class FunctionalTests(BaseFunctionalTestCase):
                         'id': '{}@draft'.format(binder['id']),
                         'title': 'etst book',
                         'contents': [
-                            {
-                                'id': 'f309a0f9-63fb-46ca-9585-d1e1dc96a142@3',
-                                'title': 'Introduction to Two-Dimensional Kinematics'
-                                },
-                            {
-                                'id': 'e12329e4-8d6c-49cf-aa45-6a05b26ebcba@2',
-                                'title': 'Introduction to One-Dimensional Kinematics'
-                                },
-                            {
-                                'id': '{}@draft'.format(page['id']),
-                                'title': 'test page'
-                                }
+                            {'id': 'f309a0f9-63fb-46ca-9585-d1e1dc96a142@3',
+                             'title':
+                                'Introduction to Two-Dimensional Kinematics'},
+                            {'id': 'e12329e4-8d6c-49cf-aa45-6a05b26ebcba@2',
+                             'title':
+                                'Introduction to One-Dimensional Kinematics'},
+                            {'id': '{}@draft'.format(page['id']),
+                             'title': 'test page'}
                             ]
                         },
                     'mediaType': 'application/vnd.org.cnx.collection',
@@ -1467,8 +1481,11 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(self.mock_accept.call_count, 2)
 
         response = self.testapp.get(
-                '/contents/{}@draft.json'.format(binder['id']), status=200)
+            '/contents/{}@draft.json'.format(binder['id']), status=200)
         result = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(result['created'], created)
+        self.assertEqual(
+            result['revised'], revised.astimezone(TZINFO).isoformat())
         self.assertEqual(result['tree'], {
             'id': '{}@draft'.format(binder['id']),
             'title': 'etst book',
@@ -1489,10 +1506,13 @@ class FunctionalTests(BaseFunctionalTestCase):
             })
 
     def test_put_content(self):
-        response = self.testapp.post_json('/users/contents', {
-                    'title': u'My document タイトル',
-                    'abstract': u'My document abstract',
-                    'language': u'en'}, status=201)
+        created = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = created
+            response = self.testapp.post_json('/users/contents', {
+                'title': u'My document タイトル',
+                'abstract': u'My document abstract',
+                'language': u'en'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         self.assertEqual(self.mock_accept.call_count, 1)
         document = json.loads(response.body.decode('utf-8'))
@@ -1506,7 +1526,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             'subjects': ['Science and Technology'],
             }
 
-        response = self.testapp.put_json(
+        revised = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = revised
+            response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(document['id']),
                 update_data, status=200)
         self.assertEqual(self.mock_create_acl.call_count, 1)
@@ -1519,8 +1542,13 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result['content'], update_data['content'])
         self.assertEqual(result['keywords'], update_data['keywords'])
         self.assertEqual(result['subjects'], update_data['subjects'])
+        self.assertEqual(result['created'],
+                         created.astimezone(TZINFO).isoformat())
+        self.assertEqual(result['revised'],
+                         revised.astimezone(TZINFO).isoformat())
 
-        response = self.testapp.get('/contents/{}@draft.json'.format(document['id']))
+        response = self.testapp.get(
+            '/contents/{}@draft.json'.format(document['id']))
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['id'], document['id'])
         self.assertEqual(result['title'], update_data['title'])
@@ -1529,6 +1557,10 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result['content'], update_data['content'])
         self.assertEqual(result['keywords'], update_data['keywords'])
         self.assertEqual(result['subjects'], update_data['subjects'])
+        self.assertEqual(result['created'],
+                         created.astimezone(TZINFO).isoformat())
+        self.assertEqual(result['revised'],
+                         revised.astimezone(TZINFO).isoformat())
         self.assert_cors_headers(response)
 
     def test_delete_content_401(self):
@@ -2287,15 +2319,17 @@ class FunctionalTests(BaseFunctionalTestCase):
             })
 
         # remove page_in_book from book and add single_page to book
-        self.testapp.put_json('/contents/{}@draft.json'.format(book['id']), {
-                    'tree': {
-                        'contents': [
-                            {
-                                'id': '{}@draft'.format(single_page['id']),
-                                },
-                            ],
-                        },
-                    }, status=200)
+        response = self.testapp.put_json(
+            '/contents/{}@draft.json'.format(book['id']), {
+                'tree': {
+                    'contents': [
+                        {
+                            'id': '{}@draft'.format(single_page['id']),
+                            },
+                        ],
+                    },
+                }, status=200)
+        book = json.loads(response.body.decode('utf-8'))
         self.assertEqual(self.mock_create_acl.call_count, 3)
         self.assertEqual(self.mock_accept.call_count, 3)
 
