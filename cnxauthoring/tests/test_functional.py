@@ -16,23 +16,18 @@ import os
 import sys
 import re
 import unittest
-import uuid
 try:
-    from unittest import mock
+    from unittest import mock  # python 3
 except ImportError:
-    import mock
+    import mock  # python 2
 try:
-    import urllib2 # python2
+    import urllib2  # python2
 except ImportError:
-    import urllib.request as urllib2 # renamed in python3
+    import urllib.request as urllib2  # renamed in python3
 
 import cnxepub
 import pytz
-from pyramid import httpexceptions
-from pyramid.interfaces import IAuthenticationPolicy
-from pyramid.security import Everyone, Authenticated
 from webtest import Upload
-from zope.interface import implementer
 
 from . import test_data
 from ..models import DEFAULT_LICENSE, TZINFO
