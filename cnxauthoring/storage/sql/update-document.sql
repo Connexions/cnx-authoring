@@ -21,5 +21,6 @@ UPDATE document
             publishers = %(publishers)s,
             contained_in = %(contained_in)s,
             licensors = %(licensors)s,
-            editors = %(editors)s, translators = %(translators)s
+            editors = %(editors)s, translators = %(translators)s,
+            illustrators = %(illustrators)s
 WHERE id  = %(id)s

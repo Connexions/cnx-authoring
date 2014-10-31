@@ -129,6 +129,7 @@ class DocumentSchema(colander.MappingSchema):
     licensors = Users(validator=colander.Length(min=1)) # copyright holders
     translators = Users(missing=colander.drop)
     editors = Users(missing=colander.drop)
+    illustrators = Users(missing=colander.drop)
 
     media_type = colander.SchemaNode(
         colander.String(),

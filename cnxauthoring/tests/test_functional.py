@@ -327,6 +327,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [SUBMITTER],
             u'translators': [],
             u'editors': [],
+            u'illustrators': [],
             })
         self.assertEqual(put_result, get_result)
         self.assert_cors_headers(response)
@@ -560,6 +561,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [SUBMITTER],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
@@ -598,6 +600,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [SUBMITTER],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
@@ -651,6 +654,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [SUBMITTER],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
@@ -689,6 +693,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [SUBMITTER],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
@@ -742,6 +747,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [SUBMITTER],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
@@ -780,6 +786,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [SUBMITTER],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
@@ -843,6 +850,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [SUBMITTER],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
@@ -897,6 +905,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [SUBMITTER],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
@@ -1026,6 +1035,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'id': u'Rasmus1975',
                 u'type': u'cnx-id',
                 }],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
@@ -1105,6 +1115,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'id': u'Rasmus1975',
                 u'type': u'cnx-id',
                 }],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
@@ -1162,6 +1173,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [SUBMITTER],
             u'translators': [],
             u'licensors': [SUBMITTER],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
@@ -1261,6 +1273,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [SUBMITTER],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
@@ -1463,6 +1476,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [SUBMITTER],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
@@ -1507,6 +1521,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [SUBMITTER],
+            u'illustrators': [],
             })
         self.assert_cors_headers(response)
 

@@ -53,6 +53,7 @@ class ModelJSONRendering(unittest.TestCase):
             'licensors': [],
             'editors': [],
             'translators': [],
+            'illustrators': [],
             'derivedFrom': None,
             'derivedFromTitle': None,
             'derivedFromUri': None,

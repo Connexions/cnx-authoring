@@ -218,13 +218,14 @@ def build_tree(tree):
     return nodes, title_overrides
 
 
-def build_metadata(title, id=None, content=None, abstract=None, created=None,
+def build_metadata(
+        title, id=None, content=None, abstract=None, created=None,
         revised=None, subjects=None, keywords=None,
         license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None,
         derived_from_uri=None, derived_from_title=None,
         submitter=None, state=None, publication=None, cnx_archive_uri=None,
         authors=None, publishers=None, contained_in=None, licensors=None,
-        editors=None, translators=None):
+        editors=None, translators=None, illustrators=None):
     metadata = {}
     metadata['title'] = title
     metadata['version'] = 'draft'
@@ -262,6 +263,7 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None,
     metadata['licensors'] = licensors or []
     metadata['editors'] = editors or []
     metadata['translators'] = translators or []
+    metadata['illustrators'] = illustrators or []
     return metadata
 
 
@@ -365,4 +367,5 @@ def derive_content(request, **kwargs):
     document['licensors'] = []
     document['translators'] = []
     document['editors'] = []
+    document['illustrators'] = []
     return document
