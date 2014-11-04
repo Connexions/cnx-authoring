@@ -26,6 +26,11 @@ class UtilsTests(unittest.TestCase):
                     'someOtherThing': 'value',
                     },
                 },
+            'listItem': [
+                {'itemTitle': 'itemValue'},
+                {'itemTitle2': 'itemValue2'},
+                'itemTitle3',
+                ],
             }
         utils.change_dict_keys(data, utils.camelcase_to_underscore)
         self.assertEqual(data, {
@@ -36,6 +41,11 @@ class UtilsTests(unittest.TestCase):
                     'some_other_thing': 'value',
                     },
                 },
+            'list_item': [
+                {'item_title': 'itemValue'},
+                {'item_title2': 'itemValue2'},
+                'itemTitle3',
+                ],
             })
 
     def test_camelcase_to_underscore(self):

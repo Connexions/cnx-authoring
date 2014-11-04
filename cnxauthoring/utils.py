@@ -34,6 +34,7 @@ def utf8(item):
     except: # bare except since this method is supposed to be safe anywhere
         return item
 
+
 def change_dict_keys(data, func):
     for k in data.keys():
         _k = func(k)
@@ -41,6 +42,11 @@ def change_dict_keys(data, func):
             data[_k] = data.pop(k)
         if isinstance(data[_k], dict):
             change_dict_keys(data[_k], func)
+        if isinstance(data[_k], list):
+            for i in data[_k]:
+                if isinstance(i, dict):
+                    change_dict_keys(i, func)
+
 
 def camelcase_to_underscore(camelcase):
     def replace(match):
