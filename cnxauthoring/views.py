@@ -95,7 +95,7 @@ def user_search(request):
                 'page': 0,
                 }
     accounts = request.registry.getUtility(IOpenstaxAccounts)
-    result = accounts.search(q)
+    result = accounts.search(q, order_by='last_name,first_name')
     result.pop('application_users')
     result['users'] = [utils.profile_to_user_dict(profile)
             for profile in result['users']]

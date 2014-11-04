@@ -5,7 +5,7 @@ install_requires = (
         'cnx-epub',
         'cnx-query-grammar',
         'colander',
-        'openstax-accounts>=0.10.0',
+        'openstax-accounts>=0.11.0',
         'PasteDeploy',
         'pyramid',
         'psycopg2>=2.5',
