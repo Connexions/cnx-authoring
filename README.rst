@@ -11,6 +11,11 @@ Connexions Authoring Service
 .. image:: https://travis-ci.org/Connexions/cnx-authoring.svg?branch=master
    :target: https://travis-ci.org/Connexions/cnx-authoring
 
+----
+
+.. contents:: Table of Contents
+
+
 INSTALL
 -------
 
@@ -88,6 +93,63 @@ INSTALL
    ./bin/pserve development.ini
 
 **Known bugs**: pickle storage is currently broken.
+
+
+API Documentation
+-----------------
+
++--------------------------+-------------------------------+--------------------------------+---------------------------------+
+| Path                     | Parameters                    | Results                        | Example Usage                   |
++==========================+===============================+================================+=================================+
+| POST /resources          | Upload a file using multipart | URL to access the resource is  | example-post-resources_         |
+|                          | `file`                        | header                         |                                 |
++--------------------------+-------------------------------+--------------------------------+---------------------------------+
+| GET /resources/:hash     | `hash`: SHA1 hash of the      | The resource                   | example-get-resources_          |
+|                          | resource data                 |                                |                                 |
++--------------------------+-------------------------------+--------------------------------+---------------------------------+
+
+
+Example Usage
+-------------
+
+.. _example-post-resources:
+
+**Uploading a file**
+
+Example Request::
+
+    POST /resources
+
+    ------WebKitFormBoundaryxrTkmkzY7Y1Q1rQu
+    Content-Disposition: form-data; name="file"; filename="a.txt"
+    Content-Type: text/plain
+
+    hello!
+
+    ------WebKitFormBoundaryxrTkmkzY7Y1Q1rQu--
+
+Example Response::
+
+    HTTP/1.1 201 Created
+    Location: http://trusty:8080/resources/5c372ab96c721258c5c12bb8ead291bbba5dace6
+
+.. _example-get-resources:
+
+----
+
+**Retrieving a file**
+
+Example Request::
+
+    GET /resources/5c372ab96c721258c5c12bb8ead291bbba5dace6
+
+Example Response::
+
+    HTTP/1.1 200 OK
+    Content-Length: 7
+    Content-Type: text/plain; charset=UTF-8
+
+    hello!
 
 
 Data structure
