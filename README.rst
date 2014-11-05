@@ -60,9 +60,19 @@ INSTALL
 
 7. Edit settings in ``development.ini`` as necessary.
 
-   cnx-authoring will not run without correct `openstax accounts <https://github.com/openstax/accounts>`_ settings.
+   cnx-authoring can use stub users defined in ``development.ini`` or `openstax accounts <https://github.com/openstax/accounts>`_.
 
-   A `fabric script <https://github.com/Connexions/openstax-setup>`_ has been written to help set up a dev environment for openstax/accounts.
+   If you are using stub users, you need to set ``openstax_accounts.stub = true``
+   and if you're using `webview <https://github.com/Connexions/webview>`_,
+   you need to make sure you have the following set up in the nginx config file::
+
+        location /stub-login-form {
+            proxy_pass http://localhost:8080;
+        }
+
+   If you are setting up openstax accounts locally,
+   a `fabric script <https://github.com/Connexions/openstax-setup>`_
+   has been written to help set up a dev environment for openstax/accounts.
 
 8. If you are using the postgresql storage option:
 
