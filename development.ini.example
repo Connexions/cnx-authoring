@@ -10,12 +10,12 @@ cors.access_control_allow_headers = Origin, Content-Type
 cors.access_control_allow_methods = GET, OPTIONS, PUT, POST, DELETE
 
 storage = postgresql
-pickle.filename = dev.p
 postgresql.db-connection-string = dbname=authoring user=cnxauthoring password=cnxauthoring
 
 # size limit of file upload in MB
 authoring.file_upload.limit = 50
 
+# set stub to false when using a real accounts instance
 openstax_accounts.stub = true
 openstax_accounts.stub.users =
   charrose,charrose
@@ -25,9 +25,12 @@ openstax_accounts.stub.users =
   ream,ream
   rings,rings
   sarblyth,sarblyth
-openstax_accounts.server_url = https://localhost:3000/
-openstax_accounts.application_id = a86119f2635afb0c2f1b89fc914e65e09688451168b639a18fd054f2e4b15670
-openstax_accounts.application_secret = 9bbe5046b799ce150218417493cfb014894b43c07a184ad990dd607ed92b63bb
+
+# the next 3 lines need to be set when using a real accounts instance
+#openstax_accounts.server_url = https://localhost:3000/
+#openstax_accounts.application_id = a86119f2635afb0c2f1b89fc914e65e09688451168b639a18fd054f2e4b15670
+#openstax_accounts.application_secret = 9bbe5046b799ce150218417493cfb014894b43c07a184ad990dd607ed92b63bb
+
 openstax_accounts.application_url = http://localhost:8080/
 openstax_accounts.login_path = /login
 openstax_accounts.callback_path = /callback
