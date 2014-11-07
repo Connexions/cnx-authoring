@@ -174,7 +174,7 @@ class RoleAcceptanceSchema(colander.MappingSchema):
     role = colander.SchemaNode(
         colander.String(),
         )
-    hasAccepted = colander.SchemaNode(
+    has_accepted = colander.SchemaNode(
         colander.Boolean(),
         missing=colander.drop,
         )
