@@ -18,10 +18,12 @@ from .main import BaseStorage
 from ..models import Document, Resource, create_content, MEDIATYPES
 from .database import SQL
 
+
 psycopg2.extras.register_uuid()
 psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
 
 JSON_FIELDS = ['authors', 'publishers', 'licensors', 'editors', 'translators']
+
 
 # cribbed from http://stackoverflow.com/questions/19048017/python-extract-substitution-vars-from-format-string
 def get_format_keys(s):
@@ -37,15 +39,18 @@ def get_format_keys(s):
             break
     return d.keys()
 
+
 def check_args(s, kwargs):
     format_keys = get_format_keys(s)
     for k in kwargs:
         if k not in format_keys:
             raise KeyError(k)
 
+
 def checked_execute(cur, s, kwargs):
     check_args(s, kwargs)
     cur.execute(s, kwargs)
+
 
 class PostgresqlStorage(BaseStorage):
     """Utility for managing and interfacing with the the storage medium."""
@@ -187,6 +192,16 @@ class PostgresqlStorage(BaseStorage):
                         'user_id': user_id,
                         'permission': permission,
                         })
+            for licensor in item.licensor_acceptance:
+                # licensor format: {'uid': <str>, 'has_accepted': <bool|None>}
+                params = {
+                    'uuid': item.id,
+                    'user_id': licensor['id'],
+                    'has_accepted': licensor['has_accepted'],
+                    }
+                checked_execute(cursor,
+                                SQL['add-document-licensor-acceptance'],
+                                params)
         else:
             raise NotImplementedError(type_name)
         return item
@@ -199,9 +214,16 @@ class PostgresqlStorage(BaseStorage):
         type_name= item.__class__.__name__.lower()
         with self.conn.cursor() as cursor:
             if type_name == 'resource':
-                checked_execute(cursor, SQL['delete-resource'], {'hash':item._hash})
+                checked_execute(cursor, SQL['delete-resource'],
+                                {'hash':item._hash})
             elif type_name in ['document', 'binder']:
-                checked_execute(cursor, SQL['delete-document'], {'id':item.id})
+                params = {'uuid': item.id}
+                checked_execute(cursor, SQL['delete-document-acl'], params)
+                checked_execute(cursor,
+                                SQL['delete-document-licensor-acceptance'],
+                                params)
+                checked_execute(cursor, SQL['delete-document'],
+                                {'id': item.id})
         return item
 
     def update(self, item_or_items):
@@ -245,6 +267,18 @@ class PostgresqlStorage(BaseStorage):
                         'user_id': user_id,
                         'permission': permission,
                         })
+            checked_execute(cursor, SQL['delete-document-licensor-acceptance'],
+                            {'uuid': args['id']})
+            for licensor in item.licensor_acceptance:
+                # licensor format: {'uid': <str>, 'has_accepted': <bool|None>}
+                params = {
+                    'uuid': item.id,
+                    'user_id': licensor['id'],
+                    'has_accepted': licensor['has_accepted'],
+                    }
+                checked_execute(cursor,
+                                SQL['add-document-licensor-acceptance'],
+                                params)
         return item
 
     def persist(self):
