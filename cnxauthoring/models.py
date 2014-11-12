@@ -56,6 +56,15 @@ class License:
         self.abbr = abbr
         self.version = version
 
+    def __json__(self, request=None):
+        obj_as_dict = {
+            'name': self.name,
+            'url': self.url,
+            'abbr': self.abbr,
+            'version': self.version,
+            }
+        return obj_as_dict
+
 
 _LICENSE_VALUES = (
   ('Attribution', 'by', '1.0',
