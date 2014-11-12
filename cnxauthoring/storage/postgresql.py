@@ -145,6 +145,13 @@ class PostgresqlStorage(BaseStorage):
                                 acl['permission'])
                     for user_id, permissions in permissions_by_users.items():
                         document.acls.append((user_id,) + tuple(permissions))
+                    checked_execute(cursor, SQL['get'].format(
+                        tablename='document_licensor_acceptance',
+                        where_clause='uuid = %(uuid)s'), {'uuid': rd['id']})
+                    licensor_acceptance = [
+                        {'id': r['user_id'], 'has_accepted': r['has_accepted']}
+                        for r in cursor.fetchall()]
+                    document.licensor_acceptance = licensor_acceptance
                     yield document
                 else:
                     rd = dict(r)
