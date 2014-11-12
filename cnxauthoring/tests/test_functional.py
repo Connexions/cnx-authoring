@@ -12,6 +12,7 @@ except ImportError:
 import datetime
 import json
 import io
+import mimetypes
 import os
 import sys
 import re
@@ -129,11 +130,9 @@ class BaseFunctionalTestCase(unittest.TestCase):
     def logout(self):
         self.testapp.get('/logout', status=302)
 
-    def mock_archive(self, return_value=None, content_type=None):
+    def mock_archive(self, return_value=None):
         response = mock.Mock()
         response.info = mock.Mock()
-        response.info().getheader = mock.Mock(side_effect={
-            'Content-Type': content_type}.get)
 
         # for derived from
         def patched_urlopen(url, *args, **kwargs):
@@ -151,6 +150,8 @@ class BaseFunctionalTestCase(unittest.TestCase):
                 except:
                     pass
             response.read = mock.Mock(side_effect=io.BytesIO(data).read)
+            response.info().getheader = mock.Mock(side_effect={
+                'Content-Type': mimetypes.guess_type(url)[0]}.get)
             return response
 
         urlopen = urllib2.urlopen
@@ -519,7 +520,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         post_data = {
                 'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             }
-        self.mock_archive(content_type='image/jpeg')
+        self.mock_archive()
 
         response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
@@ -843,7 +844,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(self.mock_accept.call_count, 0)
 
     def test_post_content_revision(self):
-        self.mock_archive(content_type='image/jpeg')
+        self.mock_archive()
         self.logout()
         self.login('Rasmus1975')
         post_data = {
@@ -2673,7 +2674,7 @@ class PublicationTests(BaseFunctionalTestCase):
         post_data = {
                 'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
                 }
-        self.mock_archive(content_type='image/jpeg')
+        self.mock_archive()
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
         page = json.loads(response.body.decode('utf-8'))
@@ -2926,7 +2927,7 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(models[1].metadata['title'], u'Preface')
 
     def test_publish_revision_single_page(self):
-        self.mock_archive(content_type='image/jpeg')
+        self.mock_archive()
         self.logout()
         self.login('Rasmus1975')
         post_data = {
