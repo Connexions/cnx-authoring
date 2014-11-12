@@ -453,6 +453,7 @@ def put_content(request):
     except Exception as e:
         raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
 
+    appstruct['state'] = 'Draft'
     try:
         content.update(**appstruct)
     except DocumentNotFoundError as e:
