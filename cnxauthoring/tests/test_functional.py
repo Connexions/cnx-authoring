@@ -2986,3 +2986,77 @@ class PublicationTests(BaseFunctionalTestCase):
         documents = list(cnxepub.flatten_to_documents(publication_binder))
         self.assertEqual(documents[0].id, page['id'])
         self.assertEqual(documents[0].get_uri('cnx-archive'), page['id'])
+
+    def test_edit_after_publish(self):
+        if self.USE_MOCK_PUBLISHING_SERVICE:
+            raise unittest.SkipTest('Requires a running publishing instance')
+
+        # create a new page
+        post_data = {
+            'title': 'Page one',
+            'content': '<html><body><p>Contents of Page one</p></body></html>',
+            'abstract': 'Learn how to etc etc',
+            }
+        response = self.testapp.post_json(
+            '/users/contents', post_data, status=201)
+        page_one = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+            'submitlog': u'Nueva versión!',
+            'items': [
+                page_one['id'],
+                ],
+            }
+
+        response = self.testapp.post_json(
+            '/publish', post_data, expect_errors=True)
+
+        publish = json.loads(response.body.decode('utf-8'))
+        print('publishing message: {}'.format(publish))
+        self.assertEqual(publish['state'], 'Done/Success')
+        self.assertEqual(list(publish['mapping'].values()),
+                         ['{}@1'.format(page_one['id'])])
+
+        # authoring should have the document in the db with status
+        # "Done/Success"
+        response = self.testapp.get('/contents/{}@draft.json'.format(
+            page_one['id']), status=200)
+        body = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(body['state'], 'Done/Success')
+
+        # editing the content again
+        post_data = {
+            'id': '{}@1'.format(page_one['id']),
+            'title': 'Page one v2',
+            'content': '<html><body><p>Contents of Page one</p></body></html>',
+            'abstract': 'Learn how to etc etc',
+            }
+        response = self.testapp.post_json(
+            '/users/contents', post_data, status=201)
+        page_one = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(page_one['state'], 'Draft')
+
+        # post with the same id should return the same draft
+        post_data = {
+            'id': '{}@1'.format(page_one['id']),
+            }
+        response = self.testapp.post_json(
+            '/users/contents', post_data, status=201)
+        page_one = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(page_one['state'], 'Draft')
+        self.assertEqual(page_one['title'], 'Page one v2')
+
+        # publish the next version
+        post_data = {
+            'submitlog': u'Nueva versión!',
+            'items': [
+                page_one['id'],
+                ],
+            }
+        response = self.testapp.post_json(
+            '/publish', post_data, expect_errors=True)
+        publish = json.loads(response.body.decode('utf-8'))
+        print('publishing message: {}'.format(publish))
+        self.assertEqual(publish['state'], 'Done/Success')
+        self.assertEqual(list(publish['mapping'].values()),
+                         ['{}@2'.format(page_one['id'])])

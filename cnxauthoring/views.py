@@ -130,6 +130,7 @@ def update_content_state(request, content):
                 # Not critical if there's a json problem here - perhaps log this
                 pass
 
+
 @view_config(route_name='user-contents', request_method='GET', renderer='json')
 @authenticated_only
 def user_contents(request):
@@ -228,6 +229,20 @@ def post_content_single(request, cstruct):
         if request.unauthenticated_userid not in can_publish:
             raise httpexceptions.HTTPForbidden(
                     'You do not have permission to edit {}'.format(archive_id))
+
+        content = storage.get(id=cstruct['id'].split('@')[0])
+        if content:
+            if content.metadata['state'] == 'Done/Success':
+                # remove the content in the database if it's already
+                # published successfully
+                try:
+                    storage.remove(content)
+                    storage.persist()
+                except storage.Error:
+                    storage.abort()
+            else:
+                # content in database is not yet published, return content
+                return content
 
     uids = set([request.unauthenticated_userid])
     cstruct['submitter'] = utils.profile_to_user_dict(request.user)
