@@ -101,13 +101,21 @@ class BaseFunctionalTestCase(unittest.TestCase):
         self.login()
         self.addCleanup(self.logout)
 
-        self.mock_create_acl = mock.Mock()
+        self.mock_acl_storage = {}
+
+        def create_acl(request, document, uids):
+            self.mock_acl_storage[document.id] = uids
+        self.mock_create_acl = mock.Mock(side_effect=create_acl)
         self.acl_patch = mock.patch('cnxauthoring.utils.create_acl_for',
                                     self.mock_create_acl)
         self.acl_patch.start()
         self.addCleanup(self.acl_patch.stop)
 
-        self.mock_get_acl = mock.Mock()
+        def get_acl(request, document):
+            document.acls = []
+            for uid in self.mock_acl_storage.get(document.id, []):
+                document.acls.append((uid, 'view', 'edit', 'publish'))
+        self.mock_get_acl = mock.Mock(side_effect=get_acl)
         self.get_acl_patch = mock.patch('cnxauthoring.utils.get_acl_for',
                                         self.mock_get_acl)
         self.get_acl_patch.start()
@@ -1743,12 +1751,6 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result['containedIn'], [book_two['id']])
 
     def test_delete_content_multiple_users(self):
-        # mock get_acl to set the acl for the document correctly
-        def mock_get_acl(request, document):
-            document.acls = [('user1', 'view', 'edit', 'publish'),
-                             ('you', 'view', 'edit', 'publish')]
-        self.mock_get_acl.side_effect = mock_get_acl
-
         response = self.testapp.post_json('/users/contents', {
             'title': 'Multiple users test',
             'editors': [{'id': 'you'}],
@@ -1756,21 +1758,20 @@ class FunctionalTests(BaseFunctionalTestCase):
         page = json.loads(response.body.decode('utf-8'))
         self.assert_cors_headers(response)
 
-        # make sure create_acl was called with the right args
-        args, _ = self.mock_create_acl.call_args
-        self.assertEqual(args[0].__class__.__name__, 'Request')
-        self.assertEqual(args[1].__class__.__name__, 'Document')
-        self.assertEqual(args[2], set(['user1', 'you']))
-
         self.testapp.get('/contents/{}@draft.json'.format(page['id']),
                          status=200)
 
         self.logout()
         self.login('you')
 
+        # editor should get the content in their workspace
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = json.loads(response.body.decode('utf-8'))
+        items = [i['id'] for i in workspace['results']['items']]
+        self.assertIn('{}@draft'.format(page['id']), items)
         # make sure the editor can also view the content
         self.testapp.get(
-                '/contents/{}@draft.json'.format(page['id']), status=200)
+            '/contents/{}@draft.json'.format(page['id']), status=200)
 
         # make sure the editor can also edit the content
         response = self.testapp.put_json(
@@ -1793,6 +1794,10 @@ class FunctionalTests(BaseFunctionalTestCase):
                 '/contents/{}@draft.json'.format(page['id']), status=200)
         self.assertEqual(response.json['title'],
                          'Multiple users test edited by you')
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = json.loads(response.body.decode('utf-8'))
+        items = [i['id'] for i in workspace['results']['items']]
+        self.assertIn('{}@draft'.format(page['id']), items)
 
         # try to delete the content should return an error
         self.testapp.delete('/contents/{}@draft.json'.format(page['id']),
@@ -1810,14 +1815,24 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.testapp.delete(
                 '/contents/{}@draft/users/user1.json'.format(page['id']),
                 status=200)
+        # content should not appear in user1's workspace
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = json.loads(response.body.decode('utf-8'))
+        items = [i['id'] for i in workspace['results']['items']]
+        self.assertNotIn('{}@draft'.format(page['id']), items)
+        # but content should still be accessible by user1
         self.testapp.get(
-                '/contents/{}@draft.json'.format(page['id']), status=403)
+            '/contents/{}@draft.json'.format(page['id']), status=200)
         self.logout()
 
         # content should still be accessible by "you"
         self.login('you')
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = json.loads(response.body.decode('utf-8'))
+        items = [i['id'] for i in workspace['results']['items']]
+        self.assertIn('{}@draft'.format(page['id']), items)
         self.testapp.get(
-                '/contents/{}@draft.json'.format(page['id']), status=200)
+            '/contents/{}@draft.json'.format(page['id']), status=200)
 
     def test_search_content_401(self):
         self.logout()
@@ -3007,6 +3022,9 @@ class PublicationTests(BaseFunctionalTestCase):
             'subjects': [u'Science and Technology'],
             'keywords': [u'DNA', u'resonance'],
             }
+        # Rasmus1975 has permission to publish in publishing
+        self.mock_acl_storage['91cb5f28-2b8a-4324-9373-dac1d617bc24'
+                              ] = ['Rasmus1975']
 
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)

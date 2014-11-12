@@ -119,12 +119,26 @@ class BaseContent:
 
     def __acl__(self):
         acls = [(Allow, Authenticated, ('create',))]
-        acls.append((Allow, self.metadata['submitter']['id'],
-            ('view', 'edit', 'publish')))
+        # Insert all roles as ACL members with permissions given
+        #   by role_type and acceptance state.
+        roles_acl = {}
+        for role_type_attr_name in cnxepub.ATTRIBUTED_ROLE_KEYS:
+            for role in self.metadata.get(role_type_attr_name, []):
+                permissions = ['view']
+                if role_type_attr_name == 'publishers' \
+                   and role.get('has_accepted'):
+                    permissions.append('publish')
+                if role.get('has_accepted'):
+                    permissions.append('edit')
+                roles_acl[role['id']] = set(permissions)
+        # Amend the acl from the model's local ACL record.
         for user_permissions in self.acls:
-            userid = user_permissions[0]
-            permissions = user_permissions[1:]
-            acls.append((Allow, userid, tuple(permissions)))
+            user_id = user_permissions[0]
+            permissions = set(user_permissions[1:])
+            roles_acl.setdefault(user_id, set([]))
+            roles_acl[user_id].update(permissions)
+        acls.extend([(Allow, user_id, tuple(permissions),)
+                     for user_id, permissions in roles_acl.items()])
         return acls
 
     def to_dict(self):
