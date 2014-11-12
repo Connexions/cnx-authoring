@@ -108,15 +108,14 @@ def profile(request):
     return UserSchema().bind().deserialize(
             utils.profile_to_user_dict(request.user))
 
+
 def update_content_state(request, content):
     """Updates content state if it is non-terminal by checking w/ publishing service"""
     if (content.metadata['state'] not in [None, 'Done/Success'] and
             content.metadata['publication']):
         publishing_url = request.registry.settings['publishing.url']
-        if not publishing_url.endswith('/'):
-            publishing_url = publishing_url + '/'
         response = requests.get(urlparse.urljoin(
-            publishing_url, content.metadata['publication']))
+            publishing_url, 'publications', content.metadata['publication']))
         if response.status_code == 200:
             try:
                 result = json.loads(response.content.decode('utf-8'))
@@ -469,6 +468,8 @@ def put_content(request):
         content.update(**appstruct)
     except DocumentNotFoundError as e:
         raise httpexceptions.HTTPBadRequest(e.message)
+    utils.declare_roles(content)
+    utils.declare_licensors(content)
     try:
         storage.update(content)
         if content.mediatype == BINDER_MEDIATYPE:
@@ -529,8 +530,8 @@ def post_to_publishing(request, userid, submitlog, content_ids):
     draft page to publish. As a degenerate case, it may be a single list of this
     format. In addition to binder lists, the top level list may contain document
     ids - these will be published as a 'looseleaf' set of pages."""
-
     publishing_url = request.registry.settings['publishing.url']
+    publishing_url = urlparse.urljoin(publishing_url, 'publications')
     filename = 'contents.epub'
     contents = []
     for content_id_item in content_ids:
