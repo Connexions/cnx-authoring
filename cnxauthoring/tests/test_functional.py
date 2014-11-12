@@ -3060,3 +3060,66 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(publish['state'], 'Done/Success')
         self.assertEqual(list(publish['mapping'].values()),
                          ['{}@2'.format(page_one['id'])])
+
+    def test_publish_after_error(self):
+        if self.USE_MOCK_PUBLISHING_SERVICE:
+            raise unittest.SkipTest('Requires a running publishing instance')
+
+        # create a new page
+        post_data = {
+            'title': 'Page one',
+            'content': '<html><body><p><img src="a.png" /></p></body></html>',
+            'abstract': 'Learn how to etc etc',
+            }
+        response = self.testapp.post_json(
+            '/users/contents', post_data, status=201)
+        page_one = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+            'submitlog': u'Nueva versión!',
+            'items': [
+                page_one['id'],
+                ],
+            }
+
+        response = self.testapp.post_json(
+            '/publish', post_data, expect_errors=True)
+
+        publish = json.loads(response.body.decode('utf-8'))
+        print('publishing message: {}'.format(publish))
+        self.assertEqual(publish['state'], 'Failed/Error')
+        self.assertEqual(publish['messages'][0]['type'], 'InvalidReference')
+
+        # authoring should have the document in the db with status
+        # "Failed/Error"
+        response = self.testapp.get('/contents/{}@draft.json'.format(
+            page_one['id']), status=200)
+        body = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(body['state'], 'Failed/Error')
+
+        # fix up the invalid reference
+        post_data = {
+            'id': '{}'.format(page_one['id']),
+            'title': 'Page one v2',
+            'content': '<html><body><p>Contents of Page one</p></body></html>',
+            'abstract': 'Learn how to etc etc',
+            }
+        response = self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page_one['id']), post_data)
+        page_one = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(page_one['state'], 'Draft')
+
+        # publish again
+        post_data = {
+            'submitlog': u'Nueva versión!',
+            'items': [
+                page_one['id'],
+                ],
+            }
+        response = self.testapp.post_json(
+            '/publish', post_data, expect_errors=True)
+        publish = json.loads(response.body.decode('utf-8'))
+        print('publishing message: {}'.format(publish))
+        self.assertEqual(publish['state'], 'Done/Success')
+        self.assertEqual(list(publish['mapping'].values()),
+                         ['{}@1'.format(page_one['id'])])
