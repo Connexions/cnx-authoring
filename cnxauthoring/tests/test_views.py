@@ -57,6 +57,7 @@ class ViewsTests(unittest.TestCase):
             'cnxauthoring.utils.get_acl_for',
             'cnxauthoring.utils.declare_roles',
             'cnxauthoring.utils.declare_licensors',
+            'cnxauthoring.utils.accept_roles',
             ):
             patch = mock.patch(mock_target)
             patch.start()

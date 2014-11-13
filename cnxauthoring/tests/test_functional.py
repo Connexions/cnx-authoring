@@ -60,6 +60,7 @@ SUBMITTER = {
 
 SUBMITTER_WITH_ACCEPTANCE = SUBMITTER.copy()
 SUBMITTER_WITH_ACCEPTANCE[u'hasAccepted'] = True
+SUBMITTER_WITH_ACCEPTANCE[u'requester'] = SUBMITTER['id']
 
 
 class BaseFunctionalTestCase(unittest.TestCase):
@@ -301,7 +302,11 @@ class FunctionalTests(BaseFunctionalTestCase):
                 in response.body.decode('utf-8'))
 
     def test_get_content_for_document(self):
-        response = self.testapp.post_json('/users/contents', {
+        now = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.post_json(
+                '/users/contents', {
                     'title': 'My New Document',
                     'created': u'2014-03-13T15:21:15-05:00',
                     'revised': u'2014-03-13T15:21:15-05:00',
@@ -311,6 +316,9 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.get('/contents/{}@draft.json'.format(
             put_result['id']), status=200)
         get_result = json.loads(response.body.decode('utf-8'))
+        submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
+        submitter_w_assign_date['assignmentDate'] = now.astimezone(
+            TZINFO).isoformat()
         self.assertEqual(get_result, {
             u'id': get_result['id'],
             u'title': u'My New Document',
@@ -330,15 +338,15 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.module',
             u'language': u'en',
             u'submitter': SUBMITTER,
-            u'authors': [SUBMITTER_WITH_ACCEPTANCE],
-            u'publishers': [SUBMITTER_WITH_ACCEPTANCE],
+            u'authors': [submitter_w_assign_date],
+            u'publishers': [submitter_w_assign_date],
             u'abstract': u'',
             u'version': u'draft',
             u'subjects': [],
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
-            u'licensors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'licensors': [submitter_w_assign_date],
             u'translators': [],
             u'editors': [],
             u'illustrators': [],
@@ -526,7 +534,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             }
         self.mock_archive()
 
-        response = self.testapp.post_json('/users/contents',
+        now = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         result = json.loads(response.body.decode('utf-8'))
@@ -536,10 +547,13 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertTrue(u'Lav en madplan for den kommende uge' in content)
         self.assertNotIn('2011-10-05', result.pop('created'))
         self.assertNotIn('2011-10-12', result.pop('revised'))
+        submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
+        submitter_w_assign_date['assignmentDate'] = now.astimezone(
+            TZINFO).isoformat()
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
-            u'authors': [SUBMITTER_WITH_ACCEPTANCE],
-            u'publishers': [SUBMITTER_WITH_ACCEPTANCE],
+            u'authors': [submitter_w_assign_date],
+            u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': '{}@1'.format(post_data['derivedFrom']),
             u'derivedFromTitle': u'Indkøb',
@@ -562,7 +576,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'licensors': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -577,8 +591,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
-            u'authors': [SUBMITTER_WITH_ACCEPTANCE],
-            u'publishers': [SUBMITTER_WITH_ACCEPTANCE],
+            u'authors': [submitter_w_assign_date],
+            u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': '{}@1'.format(post_data['derivedFrom']),
             u'derivedFromTitle': u'Indkøb',
@@ -601,7 +615,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'licensors': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -618,7 +632,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             }
         self.mock_archive()
 
-        response = self.testapp.post_json('/users/contents',
+        now = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         result = json.loads(response.body.decode('utf-8'))
@@ -628,10 +645,13 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertTrue(u'Lav en madplan for den kommende uge' in content)
         self.assertNotIn('2011-10-05', result.pop('created'))
         self.assertNotIn('2011-10-12', result.pop('revised'))
+        submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
+        submitter_w_assign_date['assignmentDate'] = now.astimezone(
+            TZINFO).isoformat()
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
-            u'authors': [SUBMITTER_WITH_ACCEPTANCE],
-            u'publishers': [SUBMITTER_WITH_ACCEPTANCE],
+            u'authors': [submitter_w_assign_date],
+            u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Indkøb',
@@ -654,7 +674,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'licensors': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -669,8 +689,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
-            u'authors': [SUBMITTER_WITH_ACCEPTANCE],
-            u'publishers': [SUBMITTER_WITH_ACCEPTANCE],
+            u'authors': [submitter_w_assign_date],
+            u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Indkøb',
@@ -693,7 +713,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'licensors': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -710,8 +730,11 @@ class FunctionalTests(BaseFunctionalTestCase):
             }
         self.mock_archive()
 
-        response = self.testapp.post_json('/users/contents',
-                post_data, status=201)
+        now = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.post_json('/users/contents',
+                    post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         result = json.loads(response.body.decode('utf-8'))
         self.maxDiff = None
@@ -720,10 +743,13 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertTrue(content.startswith('<html'))
         self.assertFalse('2011-10-12' in result.pop('created'))
         self.assertTrue(result.pop('revised') is not None)
+        submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
+        submitter_w_assign_date['assignmentDate'] = now.astimezone(
+            TZINFO).isoformat()
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
-            u'authors': [SUBMITTER_WITH_ACCEPTANCE],
-            u'publishers': [SUBMITTER_WITH_ACCEPTANCE],
+            u'authors': [submitter_w_assign_date],
+            u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Tilberedning',
@@ -746,7 +772,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'licensors': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -761,8 +787,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
-            u'authors': [SUBMITTER_WITH_ACCEPTANCE],
-            u'publishers': [SUBMITTER_WITH_ACCEPTANCE],
+            u'authors': [submitter_w_assign_date],
+            u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Tilberedning',
@@ -785,7 +811,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'licensors': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -796,17 +822,23 @@ class FunctionalTests(BaseFunctionalTestCase):
                 'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
             }
 
-        response = self.testapp.post_json('/users/contents',
+        now = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         result = json.loads(response.body.decode('utf-8'))
         self.maxDiff = None
         self.assertFalse('2011-10-12' in result.pop('created'))
         self.assertTrue(result.pop('revised') is not None)
+        submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
+        submitter_w_assign_date['assignmentDate'] = now.astimezone(
+            TZINFO).isoformat()
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
-            u'authors': [SUBMITTER_WITH_ACCEPTANCE],
-            u'publishers': [SUBMITTER_WITH_ACCEPTANCE],
+            u'authors': [submitter_w_assign_date],
+            u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -848,7 +880,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'licensors': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -860,8 +892,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
-            u'authors': [SUBMITTER_WITH_ACCEPTANCE],
-            u'publishers': [SUBMITTER_WITH_ACCEPTANCE],
+            u'authors': [submitter_w_assign_date],
+            u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -903,7 +935,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'licensors': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -954,6 +986,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             }
 
         now = datetime.datetime.now(TZINFO)
+        formatted_now = now.astimezone(TZINFO).isoformat()
         with mock.patch('datetime.datetime') as mock_datetime:
             mock_datetime.now.return_value = now
             response = self.testapp.post_json(
@@ -1001,6 +1034,8 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'fullname': u'Rasmus Ruby',
                 u'id': u'Rasmus1975',
                 u'type': u'cnx-id',
+                u'requester': u'Rasmus1975',
+                u'assignmentDate': formatted_now,
                 u'hasAccepted': True,
                 }],
             u'id': post_data['id'].split('@')[0],
@@ -1076,6 +1111,8 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'fullname': u'Rasmus Ruby',
                 u'id': u'Rasmus1975',
                 u'type': u'cnx-id',
+                u'requester': u'Rasmus1975',
+                u'assignmentDate': formatted_now,
                 u'hasAccepted': True,
                 }],
             u'id': result['id'],
@@ -1137,7 +1174,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             'editors': [SUBMITTER],
             }
 
-        response = self.testapp.post_json('/users/contents',
+        now = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         result = json.loads(response.body.decode('utf-8'))
@@ -1148,10 +1188,13 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertTrue(created.startswith('2014-03-13T15:21:15.677617'))
         revised = result.pop('revised')
         self.assertTrue(revised.startswith('2014-03-13T15:21:15.677617'))
+        submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
+        submitter_w_assign_date['assignmentDate'] = now.astimezone(
+            TZINFO).isoformat()
         self.assertEqual(result, {
             u'submitter': SUBMITTER,
-            u'authors': [SUBMITTER_WITH_ACCEPTANCE],
-            u'publishers': [SUBMITTER_WITH_ACCEPTANCE],
+            u'authors': [submitter_w_assign_date],
+            u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': None,
             u'derivedFromTitle': None,
@@ -1167,27 +1210,34 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'keywords': post_data['keywords'],
             u'state': u'Draft',
             u'publication': None,
-            u'editors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'editors': [submitter_w_assign_date],
             u'translators': [],
-            u'licensors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'licensors': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
 
     def test_post_content_binder(self):
-        response = self.testapp.post_json('/users/contents',
+        now = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.post_json('/users/contents',
                 {'title': 'Page one'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         page1 = json.loads(response.body.decode('utf-8'))
         self.assert_cors_headers(response)
 
-        response = self.testapp.post_json('/users/contents',
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.post_json('/users/contents',
                 {'title': 'Page two'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 2)
         page2 = json.loads(response.body.decode('utf-8'))
         self.assert_cors_headers(response)
 
-        response = self.testapp.post_json('/users/contents', {
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.post_json('/users/contents', {
                     'title': 'Book',
                     'abstract': 'Book abstract',
                     'language': 'de',
@@ -1220,6 +1270,9 @@ class FunctionalTests(BaseFunctionalTestCase):
         result = json.loads(response.body.decode('utf-8'))
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
+        submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
+        submitter_w_assign_date['assignmentDate'] = now.astimezone(
+            TZINFO).isoformat()
         self.assertEqual(result, {
             u'id': book['id'],
             u'title': u'Book',
@@ -1233,8 +1286,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'language': u'de',
             u'version': u'draft',
             u'submitter': SUBMITTER,
-            u'authors': [SUBMITTER_WITH_ACCEPTANCE],
-            u'publishers': [SUBMITTER_WITH_ACCEPTANCE],
+            u'authors': [submitter_w_assign_date],
+            u'publishers': [submitter_w_assign_date],
             u'license': {
                 u'abbr': u'by',
                 u'name': u'Attribution',
@@ -1266,7 +1319,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'publication': None,
             u'editors': [],
             u'translators': [],
-            u'licensors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'licensors': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -1420,12 +1473,15 @@ class FunctionalTests(BaseFunctionalTestCase):
                 update_data, status=200)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         result = json.loads(response.body.decode('utf-8'))
+        submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
+        submitter_w_assign_date['assignmentDate'] = created.astimezone(
+            TZINFO).isoformat()
         self.assertEqual(result, {
             u'created': created.astimezone(TZINFO).isoformat(),
             u'revised': revised.astimezone(TZINFO).isoformat(),
             u'submitter': SUBMITTER,
-            u'authors': [SUBMITTER_WITH_ACCEPTANCE],
-            u'publishers': [SUBMITTER_WITH_ACCEPTANCE],
+            u'authors': [submitter_w_assign_date],
+            u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -1457,7 +1513,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'publication': None,
             u'editors': [],
             u'translators': [],
-            u'licensors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'licensors': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -1469,8 +1525,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'created': created.astimezone(TZINFO).isoformat(),
             u'revised': revised.astimezone(TZINFO).isoformat(),
             u'submitter': SUBMITTER,
-            u'authors': [SUBMITTER_WITH_ACCEPTANCE],
-            u'publishers': [SUBMITTER_WITH_ACCEPTANCE],
+            u'authors': [submitter_w_assign_date],
+            u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
             u'derivedFromTitle': u'Madlavning',
@@ -1502,7 +1558,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'publication': None,
             u'editors': [],
             u'translators': [],
-            u'licensors': [SUBMITTER_WITH_ACCEPTANCE],
+            u'licensors': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)

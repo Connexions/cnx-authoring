@@ -5,8 +5,9 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
-import functools
 import io
+import datetime
+import functools
 import json
 try:
     from urllib import urlencode # python 2
@@ -248,9 +249,14 @@ def post_content_single(request, cstruct):
     uids = set([current_uid])
     cstruct['submitter'] = utils.profile_to_user_dict(request.user)
 
-    # add logged in user to list of authors, licensors and publishers if they
-    # are empty
+    # Add the logged in user to list of authors, licensors and publishers if
+    # they are empty
     user = utils.profile_to_user_dict(request.user)
+    user.update({
+        'requester': request.authenticated_userid,
+        'assignment_date': datetime.datetime.now(utils.TZINFO).isoformat(),
+        'has_accepted': True,
+        })
 
     cstruct.setdefault('authors', [])
     author_ids = [i['id'] for i in cstruct['authors']]
@@ -614,7 +620,7 @@ def get_acceptance_info(request):
         raise httpexceptions.HTTPForbidden(
             'You do not have permission to view {}'.format(content_id))
 
-    tobe_accepted_roles = set([])
+    tobe_accepted_roles = []
     for role_key in ATTRIBUTED_ROLE_KEYS:
         try:
             roles = content.metadata[role_key]
@@ -623,17 +629,23 @@ def get_acceptance_info(request):
         for role in roles:
             has_accepted = role.get('has_accepted', None)
             if role['id'] == user_id and has_accepted in (None, False,):
-                tobe_accepted_roles.add((role_key, has_accepted,))
+                role_info = {
+                    'role': role_key,
+                    'has_accepted': has_accepted,
+                    'requester': role['requester'],
+                    'assignment_date': role['assignment_date'],
+                    }
+                tobe_accepted_roles.append(role_info)
 
-    roles = [dict(zip(('role', 'has_accepted',), role))
-             for role in tobe_accepted_roles]
     info = {
         'license': content.metadata['license'],
-        'roles': roles,
+        'user': None,
+        'roles': tobe_accepted_roles,
         'title': content.metadata['title'],
         'id': content.id,
         'url': request.route_url('get-content-json', id=content.id),
         }
+    utils.change_dict_keys(info, utils.underscore_to_camelcase)
 
     resp = request.response
     resp.status = 200

@@ -6,6 +6,7 @@
 # See LICENCE.txt for details.
 # ###
 
+import datetime
 import json
 import unittest
 try:
@@ -215,7 +216,8 @@ class UtilsTests(unittest.TestCase):
             self.assertEqual(document.acls,
                              [('me', 'view', 'edit', 'publish')])
 
-    def test_accept_roles(self):
+    @mock.patch('cnxauthoring.utils.get_current_request')
+    def test_accept_roles(self, mock_request):
         cstruct = {
             u'submitlog': u'first version',
             u'abstract': None,
@@ -296,13 +298,18 @@ class UtilsTests(unittest.TestCase):
             u'derived_from_uri': 'http://cnx.org/contents/'
                 'feda4909-5bbd-431e-a017-049aff54416d@1.1',
             }
-        utils.accept_roles(cstruct, {
-            'fullname': u'User One',
-             'surname': u'One',
-             'email': u'user1@example.com',
-             'firstname': u'User',
-             'has_accepted': True,
-             'id': 'user1'})
+        now = datetime.datetime.now(utils.TZINFO)
+        formatted_now = now.astimezone(utils.TZINFO).isoformat()
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_request().authenticated_userid = 'user1'
+            mock_datetime.now.return_value = now
+            utils.accept_roles(cstruct, {
+                'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'has_accepted': True,
+                 'id': 'user1'})
         self.maxDiff = None
         self.assertDictEqual(
             cstruct, {
@@ -322,6 +329,8 @@ class UtilsTests(unittest.TestCase):
                      'email': u'user1@example.com',
                      'firstname': u'User',
                      'has_accepted': True,
+                     'assignment_date': formatted_now,
+                     'requester': 'user1',
                      'id': 'user1'},
                     {'fullname': 'User Two',
                      'surname': u'Two',
@@ -340,6 +349,8 @@ class UtilsTests(unittest.TestCase):
                      'email': u'user1@example.com',
                      'firstname': u'User',
                      'has_accepted': True,
+                     'assignment_date': formatted_now,
+                     'requester': 'user1',
                      'id': 'user1'}],
                 u'parent_authors': [],
                 u'stateid': 1,
@@ -353,6 +364,8 @@ class UtilsTests(unittest.TestCase):
                      'email': u'user1@example.com',
                      'firstname': u'User',
                      'has_accepted': True,
+                     'assignment_date': formatted_now,
+                     'requester': 'user1',
                      'id': 'user1'},
                     {'fullname': 'User Two',
                      'surname': u'Two',
@@ -403,7 +416,9 @@ class UtilsTests(unittest.TestCase):
         self.assertEqual(document.licensor_acceptance,
                          [{'id': 'me', 'has_accepted': True}])
 
-    def test_declare_roles(self):
+    @mock.patch('cnxauthoring.utils.get_current_request')
+    @mock.patch('cnxauthoring.utils.notify_role_for_acceptance')
+    def test_declare_roles(self, mock_notify, mock_request):
         from ..models import create_content
 
         document = create_content(
@@ -426,6 +441,7 @@ class UtilsTests(unittest.TestCase):
                 post.return_value.status_code = 202
 
                 with testing.testConfig(settings=settings):
+                    mock_request().authenticated_userid = 'user1'
                     utils.declare_roles(document)
 
                 self.assertEqual(post.call_count, 1)
@@ -454,7 +470,9 @@ class UtilsTests(unittest.TestCase):
                     })
 
     @httpretty.activate
-    def test_declare_roles_w_invalid_role_type(self):
+    @mock.patch('cnxauthoring.utils.get_current_request')
+    @mock.patch('cnxauthoring.utils.notify_role_for_acceptance')
+    def test_declare_roles_w_invalid_role_type(self, mock_notify, mock_request):
         """Ignore invalid roles"""
         from ..models import create_content
 
@@ -479,6 +497,7 @@ class UtilsTests(unittest.TestCase):
         httpretty.register_uri(httpretty.POST, url, status=202)
 
         with testing.testConfig(settings=settings):
+            mock_request().authenticated_userid = 'user1'
             utils.declare_roles(document)
 
         post_request = httpretty.last_request()

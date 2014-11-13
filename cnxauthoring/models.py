@@ -9,15 +9,13 @@ import datetime
 import io
 import uuid
 
-import tzlocal
 import cnxepub.models as cnxepub
 from pyramid.security import Allow, Authenticated
 
 from . import utils
+# BBB 12-Nov-2014 Moved TZINFO to utils
+from .utils import TZINFO
 
-
-# Timezone info initialized from the system timezone.
-TZINFO = tzlocal.get_localzone()
 
 DOCUMENT_MEDIATYPE = "application/vnd.org.cnx.module"
 BINDER_MEDIATYPE = "application/vnd.org.cnx.collection"

@@ -5,10 +5,11 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
-import datetime
 import io
-import json
 import re
+import datetime
+import json
+import logging
 try:
     import urllib2 # python2
 except ImportError:
@@ -20,9 +21,16 @@ except ImportError:
 
 import cnxepub
 import requests
-from pyramid.threadlocal import get_current_registry
+import tzlocal
+from openstax_accounts.interfaces import IOpenstaxAccounts
+from pyramid.threadlocal import get_current_registry, get_current_request
 from cnxquerygrammar.query_parser import grammar, DictFormater
 from parsimonious.exceptions import IncompleteParseError
+
+
+# Timezone info initialized from the system timezone.
+TZINFO = tzlocal.get_localzone()
+logger = logging.getLogger('cnxauthoring')
 
 
 def utf8(item):
@@ -294,15 +302,32 @@ def get_roles(document, uid):
             yield role
 
 
+def notify_role_for_acceptance(user_id, model):
+    """Notify the given ``user_id`` on ``model`` that s/he has been
+    assigned a role on said model and can now accept the role.
+    """
+    accounts = get_current_registry().getUtility(IOpenstaxAccounts)
+
+    # role['notify_sent'] = now
+
+    subject = '???'
+    body = '???'
+    accounts.send_message(user_id, subject, body)
+
+
 def accept_roles(cstruct, user):
     """Accept roles for document and user"""
     # accept roles for user
+    authenticated_userid = get_current_request().authenticated_userid
+    now = datetime.datetime.now(TZINFO).isoformat()
     for field in cnxepub.ATTRIBUTED_ROLE_KEYS:
         if field in cstruct:
             value = cstruct.get(field, [])
             for role in value:
                 if role.get('id') == user['id']:
                     role['has_accepted'] = True
+                    role['requester'] = authenticated_userid
+                    role['assignment_date'] = now
             cstruct[field] = value
 
 
@@ -334,6 +359,7 @@ def declare_roles(model):
     """
     from .models import PublishingError
 
+    authenticated_userid = get_current_request().authenticated_userid
     settings = get_current_registry().settings
     publishing_url = settings['publishing.url']
     headers = {
@@ -346,13 +372,22 @@ def declare_roles(model):
     # Send roles to publishing.
     _roles_mapping = {v: k for k, v in PUBLISHING_ROLES_MAPPING.items()}
     role_submission_keys = ('uid', 'role', 'has_accepted',)
+    tobe_notified = set([])
     payload = []
     for role_type in PUBLISHING_ROLES_MAPPING.values():
         publishing_role_type = _roles_mapping[role_type]
         _roles = []
         for role in model.metadata[role_type]:
+            has_accepted = role.get('has_accepted', None)
+            # Assume this is a new record when the requester is missing.
+            if role.get('requester', None) is None:
+                role['requester'] = authenticated_userid
+                now = datetime.datetime.now(TZINFO).isoformat()
+                role['assignment_date'] = now
+                if has_accepted is None:
+                    tobe_notified.add(role['id'])
             reformatted_role = (role['id'], publishing_role_type,
-                                role.get('has_accepted', None),)
+                                has_accepted,)
             reformatted_role = dict(zip(role_submission_keys,
                                         reformatted_role))
             _roles.append(reformatted_role)
@@ -362,6 +397,11 @@ def declare_roles(model):
                              headers=headers)
     if response.status_code != 202:
         raise PublishingError(response)
+
+    # Notify any new roles that they need to accept the assigned attribution.
+    logger.debug("Sending notification message to {}".format(', '.join(tobe_notified)))
+    for user_id in tobe_notified:
+        notify_role_for_acceptance(user_id, model)
 
 
 def declare_licensors(model):

@@ -77,6 +77,18 @@ class RoleSchema(UserSchema):
         colander.Boolean(),
         missing=colander.drop,
         )
+    requester = colander.SchemaNode(
+        colander.String(),
+        missing=colander.drop,
+        )
+    assignment_date = colander.SchemaNode(
+        colander.String(),
+        missing=colander.drop,
+        )
+    notify_sent = colander.SchemaNode(
+        colander.String(),
+        missing=colander.drop,
+        )
 
 
 class RoleSequence(colander.SequenceSchema):
