@@ -235,6 +235,11 @@ def create_acl_for(request, document, uids):
     """Submit content identifiers to publishing and allow users to
     publish
     """
+
+    #set local roles
+    document.acls = [(uid, 'view', 'edit') for uid in uids]
+
+    # Create publishing role
     from .models import PublishingError
 
     settings = request.registry.settings
@@ -276,11 +281,14 @@ def get_acl_for(request, document):
         if response.status_code != 200:
             raise PublishingError(response)
         acl = response.json()
-        #FIXME
-        # This should only be merging 'publish' acls from publishing - view and edit
+        # Merging 'publish' acls from publishing - view and edit
         # are local to authoring
-        document.acls = [(user_permission['uid'], 'view', 'edit', 'publish')
-                         for user_permission in acl]
+        dacls=dict([(a[0],a[1:]) for a in document.acls])
+        for user_permission in acl:
+            uid = user_permission['uid']
+            if 'publish' not in dacls[uid]:
+                daclsi[uid] += ('publish',)
+        document.acls = [(a,)+dacls[a] for a in dacls]
     except requests.ConnectionError:
         #Publishing is down - clean up later
         pass
