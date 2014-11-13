@@ -26,7 +26,7 @@ from openstax_accounts.interfaces import *
 from cnxepub.models import flatten_to_documents
 from .models import (create_content, derive_content, revise_content,
         Document, Binder, Resource, BINDER_MEDIATYPE, DOCUMENT_MEDIATYPE,
-        DocumentNotFoundError)
+        DocumentNotFoundError, PublishingError)
 from .schemata import DocumentSchema, BinderSchema, UserSchema
 from .storage import storage
 from . import utils
@@ -115,20 +115,26 @@ def update_content_state(request, content):
         publishing_url = request.registry.settings['publishing.url']
         if not publishing_url.endswith('/'):
             publishing_url = publishing_url + '/'
-        response = requests.get(urlparse.urljoin(
-            publishing_url, content.metadata['publication']))
-        if response.status_code == 200:
-            try:
-                result = json.loads(response.content.decode('utf-8'))
-                content.update(state=result['state'])
+        try:
+            response = requests.get(urlparse.urljoin(
+                publishing_url, content.metadata['publication']))
+            if response.status_code == 200:
                 try:
-                    storage.update(content)
-                    storage.persist()
-                except storage.Error:
-                    storage.abort()
-            except (TypeError, ValueError):
-                # Not critical if there's a json problem here - perhaps log this
-                pass
+                    result = json.loads(response.content.decode('utf-8'))
+                    content.update(state=result['state'])
+                    try:
+                        storage.update(content)
+                        storage.persist()
+                    except storage.Error:
+                        storage.abort()
+                except (TypeError, ValueError):
+                    # Not critical if there's a json problem here - perhaps log this
+                    pass
+            else:
+                #some issue w/ publishing - let's just not update state right now.
+                raise PublishingError(response)
+        except requests.ConnectionError:
+            pass
 
 @view_config(route_name='user-contents', request_method='GET', renderer='json')
 @authenticated_only
@@ -536,6 +542,9 @@ def post_to_publishing(request, userid, submitlog, content_ids):
         contents.append(content)
 
     upload_data = utils.build_epub(contents, userid, submitlog)
+#    with open('/tmp/upload.epub','w') as f:
+#        f.write(upload_data.read())
+#        upload_data.seek(0)
     files = {
         'epub': (filename, upload_data.read(), 'application/epub+zip'),
         }

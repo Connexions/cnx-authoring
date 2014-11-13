@@ -248,10 +248,14 @@ def create_acl_for(request, document, uids):
 
     acl_url = urlparse.urljoin(
             publishing_url, '/contents/{}/permissions'.format(document.id))
-    response = requests.post(
-            acl_url, data=json.dumps(payload), headers=headers)
-    if response.status_code != 202:
-        raise PublishingError(response)
+    try:
+        response = requests.post(
+                acl_url, data=json.dumps(payload), headers=headers)
+        if response.status_code != 202:
+            raise PublishingError(response)
+    except requests.ConnectionError:
+        # Publishing is down, have to clean up later
+        pass
 
 def get_acl_for(request, document):
     """Get document ACL from publishing"""
@@ -267,12 +271,19 @@ def get_acl_for(request, document):
     acl_url = urlparse.urljoin(
             publishing_url, '/contents/{}/permissions'.format(document.id))
 
-    response = requests.get(acl_url)
-    if response.status_code != 200:
-        raise PublishingError(response)
-    acl = response.json()
-    document.acls = [(user_permission['uid'], 'view', 'edit', 'publish')
-                     for user_permission in acl]
+    try:
+        response = requests.get(acl_url)
+        if response.status_code != 200:
+            raise PublishingError(response)
+        acl = response.json()
+        #FIXME
+        # This should only be merging 'publish' acls from publishing - view and edit
+        # are local to authoring
+        document.acls = [(user_permission['uid'], 'view', 'edit', 'publish')
+                         for user_permission in acl]
+    except requests.ConnectionError:
+        #Publishing is down - clean up later
+        pass
 
 def get_roles(document, uid):
     field_to_roles = (
@@ -302,19 +313,23 @@ def accept_roles_and_license(request, document, uid):
             publishing_url, '/contents/{}/roles'.format(document.id))
     payload = [{'uid': uid, 'role': role, 'has_accepted': True}
             for role in get_roles(document, uid)]
-    response = requests.post(roles_url, data=json.dumps(payload),
-            headers=headers)
-    if response.status_code != 202:
-        raise PublishingError(response)
+    try:
+        response = requests.post(roles_url, data=json.dumps(payload),
+                headers=headers)
+        if response.status_code != 202:
+            raise PublishingError(response)
 
-    # accept license
-    license_url = urlparse.urljoin(
-            publishing_url, '/contents/{}/licensors'.format(document.id))
-    payload = {
-            'license_url': document.metadata['license'].url,
-            'licensors': [{'uid': uid, 'has_accepted': True}],
-            }
-    response = requests.post(license_url, data=json.dumps(payload),
-            headers=headers)
-    if response.status_code != 202:
-        raise PublishingError(response)
+        # accept license
+        license_url = urlparse.urljoin(
+                publishing_url, '/contents/{}/licensors'.format(document.id))
+        payload = {
+                'license_url': document.metadata['license'].url,
+                'licensors': [{'uid': uid, 'has_accepted': True}],
+                }
+        response = requests.post(license_url, data=json.dumps(payload),
+                headers=headers)
+        if response.status_code != 202:
+            raise PublishingError(response)
+    except requests.ConnectionError:
+        #Publishing is down - clean up later
+        pass
