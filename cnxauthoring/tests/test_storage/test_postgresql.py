@@ -5,21 +5,17 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
-
-try:
-    import ConfigParser
-except ImportError:
-    import configparser as ConfigParser
-
 from . import test_memory
-from ...storage.database import CONNECTION_SETTINGS_KEY, initdb
+from ..testing import integration_test_settings
+
 
 class PostgresqlStorageTests(test_memory.MemoryStorageTests):
+
     def setUp(self):
+        from ...storage.database import CONNECTION_SETTINGS_KEY, initdb
         from ...storage.postgresql import PostgresqlStorage
-        config = ConfigParser.ConfigParser()
-        config.read(['testing.ini'])
-        test_db = config.get('app:main', CONNECTION_SETTINGS_KEY)
+        settings = integration_test_settings()
+        test_db = settings[CONNECTION_SETTINGS_KEY]
         initdb({CONNECTION_SETTINGS_KEY: test_db}, clear=True)
         self.storage = PostgresqlStorage(db_connection_string=test_db)
 
