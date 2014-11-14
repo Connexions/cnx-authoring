@@ -542,9 +542,6 @@ def post_to_publishing(request, userid, submitlog, content_ids):
         contents.append(content)
 
     upload_data = utils.build_epub(contents, userid, submitlog)
-#    with open('/tmp/upload.epub','w') as f:
-#        f.write(upload_data.read())
-#        upload_data.seek(0)
     files = {
         'epub': (filename, upload_data.read(), 'application/epub+zip'),
         }

@@ -287,7 +287,7 @@ def get_acl_for(request, document):
         for user_permission in acl:
             uid = user_permission['uid']
             if 'publish' not in dacls[uid]:
-                daclsi[uid] += ('publish',)
+                dacls[uid] += ('publish',)
         document.acls = [(a,)+dacls[a] for a in dacls]
     except requests.ConnectionError:
         #Publishing is down - clean up later
