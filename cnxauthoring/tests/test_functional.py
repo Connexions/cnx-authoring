@@ -24,6 +24,7 @@ except ImportError:
 
 import cnxepub
 import pytz
+from pyramid.settings import asbool
 from webtest import Upload
 
 from .testing import integration_test_settings, test_data
@@ -65,7 +66,7 @@ class BaseFunctionalTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        settings = integration_test_settings()
+        cls.settings = settings = integration_test_settings()
         # only run once for all the tests
 
         # make sure storage is set correctly in cnxauthoring.views by reloading
@@ -86,47 +87,13 @@ class BaseFunctionalTestCase(unittest.TestCase):
             storage.conn.close()
 
     def setUp(self):
+        # All tests start with a login.
         self.login()
         self.addCleanup(self.logout)
 
-        self.mock_acl_storage = {}
-
-        def create_acl(request, document):
-            uids = [i['id'] for i in document.metadata['publishers']
-                    if i.get('has_accepted')]
-            self.mock_acl_storage[document.id] = uids
-        self.mock_create_acl = mock.Mock(side_effect=create_acl)
-        self.acl_patch = mock.patch('cnxauthoring.utils.create_acl_for',
-                                    self.mock_create_acl)
-        self.acl_patch.start()
-
-        import cnxauthoring.utils
-        utils_get_acl_for = cnxauthoring.utils.get_acl_for
-        def get_acl(request, document):
-            with mock.patch('requests.get') as mock_get:
-                response = mock_get()
-                response.status_code = 200
-                response.json.return_value = [
-                    {'uid': uid}
-                    for uid in self.mock_acl_storage.get(document.id, [])]
-                utils_get_acl_for(request, document)
-        self.mock_get_acl = mock.Mock(side_effect=get_acl)
-        self.get_acl_patch = mock.patch('cnxauthoring.utils.get_acl_for',
-                                        self.mock_get_acl)
-        self.get_acl_patch.start()
-
-        self.mock_declare_roles = mock.Mock()
-        self.declare_roles_patch = mock.patch(
-            'cnxauthoring.utils.declare_roles', self.mock_declare_roles)
-        self.declare_roles_patch.start()
-
-        self.mock_declare_licensors = mock.Mock()
-        self.declare_licensors_patch = mock.patch(
-            'cnxauthoring.utils.declare_licensors',
-            self.mock_declare_licensors)
-        self.declare_licensors_patch.start()
-
-        self.addCleanup(mock._patch_stopall)
+        if asbool(self.settings.get('testing.mock_cnx_services', True)):
+            self.mock_archive()
+            self.mock_publishing()
 
     def login(self, username='user1', password='password', login_url='/login',
               headers=None):
@@ -168,6 +135,49 @@ class BaseFunctionalTestCase(unittest.TestCase):
         urlopen = urllib2.urlopen
         urllib2.urlopen = patched_urlopen
         self.addCleanup(setattr, urllib2, 'urlopen', urlopen)
+
+    def mock_publishing(self):
+        self.mock_acl_storage = {}
+
+        def create_acl(request, document):
+            uids = [i['id'] for i in document.metadata['publishers']
+                    if i.get('has_accepted')]
+            self.mock_acl_storage[document.id] = uids
+
+        self.mock_create_acl = mock.Mock(side_effect=create_acl)
+        self.acl_patch = mock.patch('cnxauthoring.utils.create_acl_for',
+                                    self.mock_create_acl)
+        self.acl_patch.start()
+
+        import cnxauthoring.utils
+        utils_get_acl_for = cnxauthoring.utils.get_acl_for
+
+        def get_acl(request, document):
+            with mock.patch('requests.get') as mock_get:
+                response = mock_get()
+                response.status_code = 200
+                response.json.return_value = [
+                    {'uid': uid}
+                    for uid in self.mock_acl_storage.get(document.id, [])]
+                utils_get_acl_for(request, document)
+
+        self.mock_get_acl = mock.Mock(side_effect=get_acl)
+        self.get_acl_patch = mock.patch('cnxauthoring.utils.get_acl_for',
+                                        self.mock_get_acl)
+        self.get_acl_patch.start()
+
+        self.mock_declare_roles = mock.Mock()
+        self.declare_roles_patch = mock.patch(
+            'cnxauthoring.utils.declare_roles', self.mock_declare_roles)
+        self.declare_roles_patch.start()
+
+        self.mock_declare_licensors = mock.Mock()
+        self.declare_licensors_patch = mock.patch(
+            'cnxauthoring.utils.declare_licensors',
+            self.mock_declare_licensors)
+        self.declare_licensors_patch.start()
+
+        self.addCleanup(mock._patch_stopall)
 
     def assert_cors_headers(self, response):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
