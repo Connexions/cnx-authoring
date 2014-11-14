@@ -350,7 +350,6 @@ def revise_content(request, **kwargs):
 
 
 def derive_content(request, **kwargs):
-    import pdb; pdb.set_trace()
     derived_from = kwargs['derived_from']
     document = utils.fetch_archive_content(request, derived_from)
     document['derived_from_title'] = document['title']
