@@ -400,6 +400,9 @@ def delete_content(request):
     if not request.has_permission('edit', content):
         raise httpexceptions.HTTPForbidden(
                 'You do not have permission to delete {}'.format(id))
+    if user_id and user_id != request.authenticated_userid:
+        raise httpexceptions.HTTPForbidden(
+            'You can only remove yourself from this document {}'.format(id))
     if not user_id and len(content.acls) > 1:
         # there are other users who have permission to this document
         raise httpexceptions.HTTPForbidden(

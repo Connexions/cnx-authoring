@@ -1727,6 +1727,12 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.testapp.get(
                 '/contents/{}@draft.json'.format(page['id']), status=200)
 
+        # delete user2 from the content should fail, because user can only
+        # remove themselves from the content
+        self.testapp.delete(
+            '/contents/{}@draft/users/user2.json'.format(page['id']),
+            status=403)
+
         # delete user1 from the content
         self.testapp.delete(
                 '/contents/{}@draft/users/user1.json'.format(page['id']),
