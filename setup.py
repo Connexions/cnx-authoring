@@ -17,9 +17,12 @@ install_requires = (
         )
 
 tests_require = (
+        'cnx-archive',
+        'cnx-publishing',
         'HTTPretty',
         'mock',   # only required for python2
         'WebTest',
+        'wsgi_intercept',
         )
 
 setup(
