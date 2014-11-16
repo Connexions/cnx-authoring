@@ -2975,76 +2975,30 @@ class PublicationTests(BaseFunctionalTestCase):
                 '/users/contents', post_data, status=201)
         page_two = json.loads(response.body.decode('utf-8'))
 
+        # User makes a publication of the two pages...
         post_data = {
                 'submitlog': u'Nueva versión!',
-                'items': [
-                    page_one['id'],
-                    page_two['id'],
-                    ],
+                'items': (page_one['id'], page_two['id'],),
                 }
-        if not self.USE_MOCK_PUBLISHING_SERVICE:
-            response = self.testapp.post_json(
-                    '/publish', post_data, expect_errors=True)
-            self.fail('\nResposne status: {}\nResponse body: {}\n'.format(
-                response.status, response.body))
-        mock_output = json.dumps({u'state': u'Processing', u'publication': 143,
-            u'mapping': {
-                page_one['id']: '{}@1'.format(page_one['id']),
-                page_two['id']: '{}@1'.format(page_two['id']),
-                },
-            }).encode('utf-8')
-        with mock.patch('requests.post') as patched_post:
-            patched_post.return_value = mock.Mock(
-                status_code=200, content=mock_output)
-            response = self.testapp.post_json(
-                '/publish', post_data, status=200)
-            self.assertEqual(patched_post.call_count, 1)
-            args, kwargs = patched_post.call_args
-        self.assertEqual(args, ('http://localhost:6543/publications',))
-        self.assertEqual(kwargs['headers'], {'x-api-key': 'b07'})
-
-        filename, epub, content_type = kwargs['files']['epub']
-        self.assertEqual(filename, 'contents.epub')
-        self.assertEqual(content_type, 'application/epub+zip')
-        parsed_epub = cnxepub.EPUB.from_file(io.BytesIO(epub))
-        package = parsed_epub[0]
-        binder = cnxepub.adapt_package(package)
-        self.assertEqual(binder.metadata, {'title': 'Publications binder'})
-        self.assertEqual(package.metadata['publication_message'],
-            u'Nueva versión!')
-
-        documents = list(cnxepub.flatten_to_documents(binder))
-        self.assertEqual(documents[0].id, page_one['id'])
-        self.assertEqual(documents[0].metadata['title'], u'Page one')
-        self.assertEqual(documents[0].metadata['language'], u'en')
-        self.assertIn('Learn how to etc etc', documents[0].metadata['summary'])
-
-        self.assertEqual(documents[1].id, page_two['id'])
-        self.assertEqual(documents[1].metadata['title'], u'Página dos')
-        self.assertEqual(documents[1].metadata['language'], u'es')
-
-        self.assertEqual(json.loads(response.body.decode('utf-8')),
-                json.loads(mock_output.decode('utf-8')))
-
+        response = self.testapp.post_json(
+            '/publish', post_data, status=200)
+        self.assertEqual(response.json[u'state'], u'Done/Success')
+        expected_mapping = {
+            page_one['id']: '{}@1'.format(page_one['id']),
+            page_two['id']: '{}@1'.format(page_two['id']),
+            }
+        self.assertEqual(response.json[u'mapping'], expected_mapping)
         self.assert_cors_headers(response)
 
-        with mock.patch('requests.get') as patched_get:
-            patched_get.return_value = mock.Mock(
-                status_code=200, content=mock_output)
-            response = self.testapp.get('/contents/{}@draft.json'
-                    .format(page_one['id']))
-        result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(result['state'], 'Processing')
-        self.assertEqual(result['publication'], '143')
+        # Grab the publication id for followup assertions.
+        publication_id = response.json['publication']
 
-        with mock.patch('requests.get') as patched_get:
-            patched_get.return_value = mock.Mock(
-                status_code=200, content=mock_output)
-            response = self.testapp.get('/contents/{}@draft.json'
-                    .format(page_two['id']))
-        result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(result['state'], 'Processing')
-        self.assertEqual(result['publication'], '143')
+        for page in (page_one, page_two,):
+            url = '/contents/{}@draft.json'.format(page['id'])
+            response = self.testapp.get(url)
+            self.assertEqual(response.json['state'], 'Done/Success')
+            self.assertEqual(response.json['publication'],
+                             str(publication_id))
 
     def test_publish_derived_from_single_page(self):
         post_data = {
