@@ -3118,67 +3118,28 @@ class PublicationTests(BaseFunctionalTestCase):
         binder = json.loads(response.body.decode('utf-8'))
 
         post_data = {
-                'submitlog': 'Publishing a book is working?',
-                'items': [
-                    binder['id'],
-                    page1['id'],
-                    page2['id'],
-                    ],
-                }
-        if not self.USE_MOCK_PUBLISHING_SERVICE:
-            response = self.testapp.post_json(
-                    '/publish', post_data, expect_errors=True)
-            self.fail('\nResposne status: {}\nResponse body: {}\n'.format(
-                response.status, response.body))
-        mock_output = json.dumps({
-            'state': 'Processing',
-            'publication': 145,
-            'mapping': {
-                binder['id']: '{}@1.1'.format(binder['id']),
-                page1['id']: '{}@1'.format(page1['id']),
-                page2['id']: '{}@1'.format(page2['id']),
-                }
-            }).encode('utf-8')
-        with mock.patch('requests.post') as patched_post:
-            patched_post.return_value = mock.Mock(
-                status_code=200, content=mock_output)
-            response = self.testapp.post_json(
-                    '/publish', post_data, status=200)
-            self.assertEqual(patched_post.call_count, 1)
-            args, kwargs = patched_post.call_args
+            'submitlog': 'Publishing a book is working?',
+            'items': (binder['id'], page1['id'], page2['id'],),
+            }
+        response = self.testapp.post_json('/publish', post_data, status=200)
+        self.assertEqual(response.json[u'state'], u'Done/Success')
+        expected_mapping = {
+            binder['id']: '{}@1.1'.format(binder['id']),
+            page1['id']: '{}@1'.format(page1['id']),
+            page2['id']: '{}@1'.format(page2['id']),
+            }
+        self.assertEqual(response.json[u'mapping'], expected_mapping)
+        self.assert_cors_headers(response)
 
-        self.assertEqual(args, ('http://localhost:6543/publications',))
-        self.assertEqual(kwargs['headers'], {'x-api-key': 'b07'})
-        filename, epub, content_type = kwargs['files']['epub']
-        self.assertEqual(filename, 'contents.epub')
-        self.assertEqual(content_type, 'application/epub+zip')
-        parsed_epub = cnxepub.EPUB.from_file(io.BytesIO(epub))
-        package = parsed_epub[0]
-        publication_binder = cnxepub.adapt_package(package)
-        self.assertEqual(publication_binder.metadata['title'], 'Book')
-        self.assertIn('Book abstract', publication_binder.metadata['summary'])
-        self.assertEqual(publication_binder.metadata['cnx-archive-uri'],
-                         binder['id'])
-        self.assertEqual(package.metadata['publication_message'],
-                         u'Publishing a book is working?')
+        # Grab the publication id for followup assertions.
+        publication_id = response.json['publication']
 
-        tree = cnxepub.models.model_to_tree(publication_binder)
-        self.assertEqual(tree, {
-            'id': binder['id'],
-            'title': 'Book',
-            'contents': [
-                {'id': page1['id'], 'title': 'Page one'},
-                {'id': 'subcol', 'title': 'New section', 'contents': [
-                    {'id': page2['id'], 'title': 'Page two'},
-                    ]},
-                ],
-            })
-
-        documents = list(cnxepub.flatten_to_documents(publication_binder))
-        self.assertEqual(documents[0].id, page1['id'])
-        self.assertEqual(documents[0].metadata['title'], u'Page one')
-        self.assertEqual(documents[0].metadata['language'], u'en')
-        self.assertIn('Learn how to etc etc', documents[0].metadata['summary'])
+        for page in (binder, page1, page2,):
+            url = '/contents/{}@draft.json'.format(page['id'])
+            response = self.testapp.get(url)
+            self.assertEqual(response.json['state'], 'Done/Success')
+            self.assertEqual(response.json['publication'],
+                             str(publication_id))
 
     def test_publish_derived_from_binder(self):
         self.logout()
