@@ -245,18 +245,20 @@ def post_content_single(request, cstruct):
                 # content in database is not yet published, return content
                 return content
 
-    uids = set([request.unauthenticated_userid])
+    current_uid = request.unauthenticated_userid
+    uids = set([current_uid])
     cstruct['submitter'] = utils.profile_to_user_dict(request.user)
+
     cstruct.setdefault('authors', [])
     author_ids = [i['id'] for i in cstruct['authors']]
     uids.update(author_ids)
-    if request.unauthenticated_userid not in author_ids:
-        cstruct['authors'] += [utils.profile_to_user_dict(request.user)]
+    if not author_ids:
+        cstruct['authors'] = [utils.profile_to_user_dict(request.user)]
 
     cstruct.setdefault('licensors', [])
     licensor_ids = [i['id'] for i in cstruct['licensors']]
-    if request.unauthenticated_userid not in licensor_ids:
-        cstruct['licensors'] += [utils.profile_to_user_dict(request.user)]
+    if not licensor_ids:
+        cstruct['licensors'] = [utils.profile_to_user_dict(request.user)]
 
     cstruct.setdefault('publishers', [])
     publisher_ids = [i['id'] for i in cstruct['publishers']]
@@ -267,8 +269,8 @@ def post_content_single(request, cstruct):
             cstruct['publishers'] += [maintainer]
             publisher_ids.append(maintainer['id'])
             uids.add(maintainer['id'])
-    if request.unauthenticated_userid not in publisher_ids:
-        cstruct['publishers'] += [utils.profile_to_user_dict(request.user)]
+    if not publisher_ids:
+        cstruct['publishers'] = [utils.profile_to_user_dict(request.user)]
 
     uids.update([i['id'] for i in cstruct.get('editors', [])
                                 + cstruct.get('translators', [])])
@@ -293,7 +295,7 @@ def post_content_single(request, cstruct):
         utils.create_acl_for(request, content, uids)
     # accept roles and license
     utils.accept_roles_and_license(
-            request, content, request.unauthenticated_userid)
+            request, content, current_uid)
     # get acl entry from publishing
     utils.get_acl_for(request, content)
 
