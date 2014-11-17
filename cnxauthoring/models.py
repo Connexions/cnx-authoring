@@ -354,7 +354,7 @@ def derive_content(request, **kwargs):
     document = utils.fetch_archive_content(request, derived_from)
     document['derived_from_title'] = document['title']
     # TODO not hardcode this url
-    document['derived_from_uri'] = 'http://cnx.org/contents/{}'.format(derived_from)
+    document['derived_from_uri'] = 'http://cnx.org/contents/{}@{}'.format(document['id'],document['version'])
     document['title'] = u'Copy of {}'.format(document['title'])
     document['created'] = None
     document['revised'] = None

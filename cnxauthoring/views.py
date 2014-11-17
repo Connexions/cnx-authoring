@@ -215,6 +215,7 @@ def post_content_single(request, cstruct):
     if derived_from:
         try:
             cstruct = derive_content(request, **cstruct)
+            derived_from = '{}@{}'.format(cstruct['id'],cstruct['version'])
         except DocumentNotFoundError:
             raise httpexceptions.HTTPBadRequest(
                     'Derive failed: {}'.format(derived_from))

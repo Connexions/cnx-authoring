@@ -516,6 +516,97 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertTrue(b'Derive failed' in response.body)
         self.assert_cors_headers(response)
 
+    def test_post_content_derived_from_no_version(self):
+        post_data = {
+                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24',
+            }
+        self.mock_archive()
+
+        response = self.testapp.post_json('/users/contents',
+                post_data, status=201)
+        self.assertEqual(self.mock_create_acl.call_count, 1)
+        self.assertEqual(self.mock_accept.call_count, 1)
+        result = json.loads(response.body.decode('utf-8'))
+        self.maxDiff = None
+        content = result.pop('content')
+        self.assertTrue(content.startswith('<html'))
+        self.assertTrue(u'Lav en madplan for den kommende uge' in content)
+        self.assertNotIn('2011-10-05', result.pop('created'))
+        self.assertNotIn('2011-10-12', result.pop('revised'))
+        self.assertEqual(result, {
+            u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
+            u'id': result['id'],
+            u'derivedFrom': '{}@1'.format(post_data['derivedFrom']),
+            u'derivedFromTitle': u'Indkøb',
+            u'derivedFromUri': u'http://cnx.org/contents/{}@1'.format(
+                post_data['derivedFrom']),
+            u'title': u'Copy of Indkøb',
+            u'abstract': u'',
+            u'language': u'da',
+            u'mediaType': u'application/vnd.org.cnx.module',
+            u'version': u'draft',
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0'},
+            u'subjects': [],
+            u'keywords': [],
+            u'state': u'Draft',
+            u'publication': None,
+            u'containedIn': [],
+            u'editors': [],
+            u'translators': [],
+            u'licensors': [SUBMITTER],
+            })
+        self.assert_cors_headers(response)
+
+        response = self.testapp.get('/contents/{}@draft.json'.format(
+            result['id']), status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        content = result.pop('content')
+        self.assertTrue(u'Lav en madplan for den kommende uge' in content)
+        self.assertTrue(content.startswith('<html'))
+        self.assertTrue(result.pop('created') is not None)
+        self.assertTrue(result.pop('revised') is not None)
+        self.assertEqual(result, {
+            u'submitter': SUBMITTER,
+            u'authors': [SUBMITTER],
+            u'publishers': [SUBMITTER],
+            u'id': result['id'],
+            u'derivedFrom': '{}@1'.format(post_data['derivedFrom']),
+            u'derivedFromTitle': u'Indkøb',
+            u'derivedFromUri': u'http://cnx.org/contents/{}@1'.format(
+                post_data['derivedFrom']),
+            u'title': u'Copy of Indkøb',
+            u'abstract': u'',
+            u'language': u'da',
+            u'mediaType': u'application/vnd.org.cnx.module',
+            u'version': u'draft',
+            u'license': {
+                u'abbr': u'by',
+                u'name': u'Attribution',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0'},
+            u'subjects': [],
+            u'keywords': [],
+            u'state': u'Draft',
+            u'publication': None,
+            u'containedIn': [],
+            u'editors': [],
+            u'translators': [],
+            u'licensors': [SUBMITTER],
+            })
+        self.assert_cors_headers(response)
+
+        # Check that resources are saved
+        resource_path = re.search('(/resources/[^"]*)"', content).group(1)
+        response = self.testapp.get(resource_path, status=200)
+        self.assertEqual(response.content_type, 'image/jpeg')
+        self.assert_cors_headers(response)
+
     def test_post_content_derived_from(self):
         post_data = {
                 'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
