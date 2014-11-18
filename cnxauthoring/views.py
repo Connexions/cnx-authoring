@@ -709,6 +709,9 @@ def post_acceptance_info(request):
         storage.update(content)
         storage.persist()
 
+    utils.declare_roles(content)
+    utils.declare_licensors(content)
+
     resp = request.response
     resp.status = 200
     return resp

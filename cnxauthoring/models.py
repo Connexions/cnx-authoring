@@ -366,6 +366,10 @@ def create_content(**appstruct):
 def revise_content(request, **kwargs):
     archive_id = kwargs['id']
     document = utils.fetch_archive_content(request, archive_id)
+    # all the roles have been accepted
+    for role_type in cnxepub.ATTRIBUTED_ROLE_KEYS + ('licensors',):
+        for role in document.get(role_type, []):
+            role['has_accepted'] = True
     document.update(kwargs)
     document['revised'] = None
     document['license'] = {'url': DEFAULT_LICENSE.url}

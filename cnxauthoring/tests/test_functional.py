@@ -1022,6 +1022,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'fullname': u'User One',
                 u'id': u'user1',
                 u'type': u'cnx-id',
+                u'hasAccepted': True,
                 }],
             u'publishers': [{
                 u'website': u'',
@@ -1066,6 +1067,9 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'fullname': u'Rasmus Ruby',
                 u'id': u'Rasmus1975',
                 u'type': u'cnx-id',
+                u'requester': u'Rasmus1975',
+                u'assignmentDate': formatted_now,
+                u'hasAccepted': True,
                 }],
             u'illustrators': [],
             })
@@ -1099,6 +1103,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'fullname': u'User One',
                 u'id': u'user1',
                 u'type': u'cnx-id',
+                u'hasAccepted': True,
                 }],
             u'publishers': [{
                 u'website': u'',
@@ -1149,6 +1154,9 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'fullname': u'Rasmus Ruby',
                 u'id': u'Rasmus1975',
                 u'type': u'cnx-id',
+                u'requester': u'Rasmus1975',
+                u'assignmentDate': formatted_now,
+                u'hasAccepted': True,
                 }],
             u'illustrators': [],
             })
@@ -3267,3 +3275,74 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(publish['state'], 'Done/Success')
         self.assertEqual(list(publish['mapping'].values()),
                          ['{}@1'.format(page_one['id'])])
+
+    def test_publish_w_multiple_users(self):
+        if self.USE_MOCK_PUBLISHING_SERVICE:
+            raise unittest.SkipTest('Requires a running publishing instance')
+
+        # create a new page
+        post_data = {
+            'title': 'Page one',
+            'content': '<html><body><p>Contents of Page one</p></body></html>',
+            'abstract': 'Learn how to etc etc',
+            }
+        response = self.testapp.post_json(
+            '/users/contents', post_data, status=201)
+        page = json.loads(response.body.decode('utf-8'))
+
+        # add an editor
+        post_data = {
+            'editors': [{'id': 'user2'}],
+            }
+        self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']), post_data,
+            status=200)
+
+        # edit some more
+        post_data = {
+            'title': 'Page one with an editor',
+            }
+        self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']), post_data,
+            status=200)
+
+        post_data = {
+            'submitlog': u'Nueva versión!',
+            'items': [page['id']],
+            }
+        response = self.testapp.post_json(
+            '/publish', post_data, status=200)
+        # publication should be waiting for acceptance
+        publish = json.loads(response.body.decode('utf-8'))
+        print('publishing message: {}'.format(publish))
+        self.assertEqual(publish['state'], 'Waiting for acceptance')
+        self.assertEqual(list(publish['mapping'].values()),
+                         ['{}@1'.format(page['id'])])
+
+        # login as user2 and accept roles
+        self.logout()
+        self.login('user2')
+
+        post_data = {
+            'license': True,
+            'roles': [{'role': 'editors', 'hasAccepted': True}],
+            }
+        self.testapp.post_json(
+            '/contents/{}@draft/acceptance'.format(page['id']),
+            post_data, status=200)
+
+        # publish the content again
+        self.logout()
+        self.login('user1')
+        post_data = {
+            'submitlog': u'Nueva versión!',
+            'items': [page['id']],
+            }
+        response = self.testapp.post_json(
+            '/publish', post_data, status=200)
+        # publication should be waiting for acceptance
+        publish = json.loads(response.body.decode('utf-8'))
+        print('publishing message: {}'.format(publish))
+        self.assertEqual(publish['state'], 'Done/Success')
+        self.assertEqual(list(publish['mapping'].values()),
+                         ['{}@1'.format(page['id'])])

@@ -302,16 +302,29 @@ def get_roles(document, uid):
             yield role
 
 
-def notify_role_for_acceptance(user_id, model):
+def notify_role_for_acceptance(user_id, requester, model):
     """Notify the given ``user_id`` on ``model`` that s/he has been
     assigned a role on said model and can now accept the role.
     """
     accounts = get_current_registry().getUtility(IOpenstaxAccounts)
+    settings = get_current_registry().settings
+    base_url = settings['openstax_accounts.application_url']
+    link = urlparse.urljoin(base_url, '/contents/{}@draft/users/acceptance'
+                            .format(model.id))
 
-    # role['notify_sent'] = now
+    subject = 'Requesting action on OpenStax CNX content'
+    body = '''\
+Hello {name},
 
-    subject = '???'
-    body = '???'
+{requester} added you to content titled {title}.
+Please go to the following link to accept your roles and license:
+{link}
+
+Thank you from your friends at OpenStax CNX
+'''.format(name=user_id,
+           requester=requester,
+           title=model.metadata['title'],
+           link=link)
     accounts.send_message(user_id, subject, body)
 
 
@@ -320,7 +333,7 @@ def accept_roles(cstruct, user):
     # accept roles for user
     authenticated_userid = get_current_request().authenticated_userid
     now = datetime.datetime.now(TZINFO).isoformat()
-    for field in cnxepub.ATTRIBUTED_ROLE_KEYS:
+    for field in cnxepub.ATTRIBUTED_ROLE_KEYS + ('licensors',):
         if field in cstruct:
             value = cstruct.get(field, [])
             for role in value:
@@ -401,7 +414,7 @@ def declare_roles(model):
     # Notify any new roles that they need to accept the assigned attribution.
     logger.debug("Sending notification message to {}".format(', '.join(tobe_notified)))
     for user_id in tobe_notified:
-        notify_role_for_acceptance(user_id, model)
+        notify_role_for_acceptance(user_id, authenticated_userid, model)
 
 
 def declare_licensors(model):
