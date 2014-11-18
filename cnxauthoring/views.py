@@ -5,8 +5,9 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
-import functools
 import io
+import datetime
+import functools
 import json
 try:
     from urllib import urlencode # python 2
@@ -23,11 +24,11 @@ from pyramid import httpexceptions
 import requests
 from openstax_accounts.interfaces import *
 
-from cnxepub.models import flatten_to_documents
+from cnxepub.models import ATTRIBUTED_ROLE_KEYS
 from .models import (create_content, derive_content, revise_content,
         Document, Binder, Resource, BINDER_MEDIATYPE, DOCUMENT_MEDIATYPE,
         DocumentNotFoundError)
-from .schemata import DocumentSchema, BinderSchema, UserSchema
+from .schemata import AcceptanceSchema, DocumentSchema, BinderSchema, UserSchema
 from .storage import storage
 from . import utils
 
@@ -108,15 +109,14 @@ def profile(request):
     return UserSchema().bind().deserialize(
             utils.profile_to_user_dict(request.user))
 
+
 def update_content_state(request, content):
     """Updates content state if it is non-terminal by checking w/ publishing service"""
     if (content.metadata['state'] not in [None, 'Done/Success'] and
             content.metadata['publication']):
         publishing_url = request.registry.settings['publishing.url']
-        if not publishing_url.endswith('/'):
-            publishing_url = publishing_url + '/'
         response = requests.get(urlparse.urljoin(
-            publishing_url, content.metadata['publication']))
+            publishing_url, 'publications', content.metadata['publication']))
         if response.status_code == 200:
             try:
                 result = json.loads(response.content.decode('utf-8'))
@@ -142,7 +142,7 @@ def user_contents(request):
     if kwargs:
         utils.change_dict_keys(kwargs, utils.camelcase_to_underscore)
     contents = storage.get_all(user_id=request.unauthenticated_userid,
-                               permissions=('edit',), **kwargs)
+                               permissions=('edit', 'view',), **kwargs)
     for content in contents:
         update_content_state(request, content)
         if isinstance(content,Binder):
@@ -249,16 +249,25 @@ def post_content_single(request, cstruct):
     uids = set([current_uid])
     cstruct['submitter'] = utils.profile_to_user_dict(request.user)
 
+    # Add the logged in user to list of authors, licensors and publishers if
+    # they are empty
+    user = utils.profile_to_user_dict(request.user)
+    user.update({
+        'requester': request.authenticated_userid,
+        'assignment_date': datetime.datetime.now(utils.TZINFO).isoformat(),
+        'has_accepted': True,
+        })
+
     cstruct.setdefault('authors', [])
     author_ids = [i['id'] for i in cstruct['authors']]
     uids.update(author_ids)
     if not author_ids:
-        cstruct['authors'] = [utils.profile_to_user_dict(request.user)]
+        cstruct['authors'] = [user]
 
     cstruct.setdefault('licensors', [])
     licensor_ids = [i['id'] for i in cstruct['licensors']]
     if not licensor_ids:
-        cstruct['licensors'] = [utils.profile_to_user_dict(request.user)]
+        cstruct['licensors'] = [user]
 
     cstruct.setdefault('publishers', [])
     publisher_ids = [i['id'] for i in cstruct['publishers']]
@@ -270,10 +279,11 @@ def post_content_single(request, cstruct):
             publisher_ids.append(maintainer['id'])
             uids.add(maintainer['id'])
     if not publisher_ids:
-        cstruct['publishers'] = [utils.profile_to_user_dict(request.user)]
+        cstruct['publishers'] = [user]
 
     uids.update([i['id'] for i in cstruct.get('editors', [])
                                 + cstruct.get('translators', [])])
+    utils.accept_roles(cstruct, user)
 
     if cstruct.get('media_type') == BINDER_MEDIATYPE:
         schema = BinderSchema()
@@ -293,9 +303,9 @@ def post_content_single(request, cstruct):
     if not archive_id:
         # new content, need to create acl entry in publishing
         utils.create_acl_for(request, content, uids)
-    # accept roles and license
-    utils.accept_roles_and_license(
-            request, content, current_uid)
+    utils.accept_license(content, user)
+    utils.declare_roles(content)
+    utils.declare_licensors(content)
     # get acl entry from publishing
     utils.get_acl_for(request, content)
 
@@ -464,6 +474,8 @@ def put_content(request):
         content.update(**appstruct)
     except DocumentNotFoundError as e:
         raise httpexceptions.HTTPBadRequest(e.message)
+    utils.declare_roles(content)
+    utils.declare_licensors(content)
     try:
         storage.update(content)
         if content.mediatype == BINDER_MEDIATYPE:
@@ -524,8 +536,8 @@ def post_to_publishing(request, userid, submitlog, content_ids):
     draft page to publish. As a degenerate case, it may be a single list of this
     format. In addition to binder lists, the top level list may contain document
     ids - these will be published as a 'looseleaf' set of pages."""
-
     publishing_url = request.registry.settings['publishing.url']
+    publishing_url = urlparse.urljoin(publishing_url, 'publications')
     filename = 'contents.epub'
     contents = []
     for content_id_item in content_ids:
@@ -590,3 +602,116 @@ def publish(request):
         raise httpexceptions.HTTPBadRequest('Unable to publish: '
                 'response body: {}'.format(response.content.decode('utf-8')))
 
+
+@view_config(route_name='acceptance-info', request_method='GET',
+             renderer='json')
+@authenticated_only
+def get_acceptance_info(request):
+    """Retrieve role and license acceptance info
+    on the routed content for the authenticated user.
+    """
+    content_id = request.matchdict['id']
+    user_id = request.authenticated_userid
+    content = storage.get(id=content_id)
+
+    if content is None:
+        raise httpexceptions.HTTPNotFound()
+    elif not request.has_permission('view', content):
+        raise httpexceptions.HTTPForbidden(
+            'You do not have permission to view {}'.format(content_id))
+
+    tobe_accepted_roles = []
+    for role_key in ATTRIBUTED_ROLE_KEYS:
+        try:
+            roles = content.metadata[role_key]
+        except KeyError:
+            continue
+        for role in roles:
+            has_accepted = role.get('has_accepted', None)
+            if role['id'] == user_id and has_accepted in (None, False,):
+                role_info = {
+                    'role': role_key,
+                    'has_accepted': has_accepted,
+                    'requester': role['requester'],
+                    'assignment_date': role['assignment_date'],
+                    }
+                tobe_accepted_roles.append(role_info)
+
+    info = {
+        'license': content.metadata['license'],
+        'user': None,
+        'roles': tobe_accepted_roles,
+        'title': content.metadata['title'],
+        'id': content.id,
+        'url': request.route_url('get-content-json', id=content.id),
+        }
+    utils.change_dict_keys(info, utils.underscore_to_camelcase)
+
+    resp = request.response
+    resp.status = 200
+    return info
+
+
+@view_config(route_name='acceptance-info', request_method='POST')
+@authenticated_only
+def post_acceptance_info(request):
+    """Post role and license acceptance info
+    on the routed content for the authenticated user.
+
+    This should receive JSON in the format::
+
+    {'license': <true|false>,
+     'roles': [{'role': <str>, 'hasAccepted': <true|false>}, ...]}
+
+    """
+    content_id = request.matchdict['id']
+    user_id = request.authenticated_userid
+    content = storage.get(id=content_id)
+
+    if content is None:
+        raise httpexceptions.HTTPNotFound()
+    elif not request.has_permission('view', content):
+        raise httpexceptions.HTTPForbidden(
+            'You do not have permission to view {}'.format(content_id))
+
+    try:
+        cstruct = request.json_body
+    except (TypeError, ValueError):
+        raise httpexceptions.HTTPBadRequest('Invalid JSON')
+
+    schema = AcceptanceSchema()
+    utils.change_dict_keys(cstruct, utils.camelcase_to_underscore)
+    try:
+        appstruct = schema.bind().deserialize(cstruct)
+    except Exception as e:
+        raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
+
+    # Mark the license acceptance.
+    has_accepted_license = appstruct.get('license', False)
+    if not has_accepted_license:
+        raise httpexceptions.HTTPBadRequest('Must accept the license')
+    for licensor in content.licensor_acceptance:
+        if licensor['id'] == user_id:
+            licensor['has_accepted'] = has_accepted_license
+
+    # Find and mark the roles as accepted.
+    tobe_accepted_roles = set([])
+    for role_acceptance in appstruct['roles']:
+        role_type = role_acceptance['role']
+        has_accepted = role_acceptance['has_accepted']
+        for i, role in enumerate(content.metadata.get(role_type, [])):
+            if role['id'] == user_id:
+                tobe_accepted_roles.add((role_type, has_accepted, i,))
+
+    for role_type, has_accepted, index in tobe_accepted_roles:
+        content.metadata[role_type][index]['has_accepted'] = has_accepted
+    if tobe_accepted_roles:
+        storage.update(content)
+        storage.persist()
+
+    utils.declare_roles(content)
+    utils.declare_licensors(content)
+
+    resp = request.response
+    resp.status = 200
+    return resp

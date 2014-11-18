@@ -20,12 +20,13 @@ class PostgresqlStorageTests(test_memory.MemoryStorageTests):
         config = ConfigParser.ConfigParser()
         config.read(['testing.ini'])
         test_db = config.get('app:main', CONNECTION_SETTINGS_KEY)
-        initdb({CONNECTION_SETTINGS_KEY:test_db},clear=True)
+        initdb({CONNECTION_SETTINGS_KEY: test_db}, clear=True)
         self.storage = PostgresqlStorage(db_connection_string=test_db)
 
     def tearDown(self):
         cursor = self.storage.conn.cursor()
         cursor.execute('delete from document_acl')
+        cursor.execute('delete from document_licensor_acceptance')
         cursor.execute('delete from document')
         cursor.execute('delete from resource')
         cursor.close()

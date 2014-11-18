@@ -9,15 +9,13 @@ import datetime
 import io
 import uuid
 
-import tzlocal
 import cnxepub.models as cnxepub
 from pyramid.security import Allow, Authenticated
 
 from . import utils
+# BBB 12-Nov-2014 Moved TZINFO to utils
+from .utils import TZINFO
 
-
-# Timezone info initialized from the system timezone.
-TZINFO = tzlocal.get_localzone()
 
 DOCUMENT_MEDIATYPE = "application/vnd.org.cnx.module"
 BINDER_MEDIATYPE = "application/vnd.org.cnx.collection"
@@ -55,6 +53,15 @@ class License:
         self.url = url
         self.abbr = abbr
         self.version = version
+
+    def __json__(self, request=None):
+        obj_as_dict = {
+            'name': self.name,
+            'url': self.url,
+            'abbr': self.abbr,
+            'version': self.version,
+            }
+        return obj_as_dict
 
 
 _LICENSE_VALUES = (
@@ -110,12 +117,26 @@ class BaseContent:
 
     def __acl__(self):
         acls = [(Allow, Authenticated, ('create',))]
-        acls.append((Allow, self.metadata['submitter']['id'],
-            ('view', 'edit', 'publish')))
+        # Insert all roles as ACL members with permissions given
+        #   by role_type and acceptance state.
+        roles_acl = {}
+        for role_type_attr_name in cnxepub.ATTRIBUTED_ROLE_KEYS:
+            for role in self.metadata.get(role_type_attr_name, []):
+                permissions = ['view']
+                if role_type_attr_name == 'publishers' \
+                   and role.get('has_accepted'):
+                    permissions.append('publish')
+                if role.get('has_accepted'):
+                    permissions.append('edit')
+                roles_acl[role['id']] = set(permissions)
+        # Amend the acl from the model's local ACL record.
         for user_permissions in self.acls:
-            userid = user_permissions[0]
-            permissions = user_permissions[1:]
-            acls.append((Allow, userid, tuple(permissions)))
+            user_id = user_permissions[0]
+            permissions = set(user_permissions[1:])
+            roles_acl.setdefault(user_id, set([]))
+            roles_acl[user_id].update(permissions)
+        acls.extend([(Allow, user_id, tuple(permissions),)
+                     for user_id, permissions in roles_acl.items()])
         return acls
 
     def to_dict(self):
@@ -134,16 +155,16 @@ class Document(cnxepub.Document, BaseContent):
     """
     mediatype = DOCUMENT_MEDIATYPE
 
-    def __init__(self, title, acls=None, **kwargs):
+    def __init__(self, title, acls=None,
+                 licensor_acceptance=None, **kwargs):
         metadata = build_metadata(title, **kwargs)
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         content = metadata['content']
         cnxepub.Document.__init__(self, id, content, metadata)
-        if acls is None:
-            self.acls = []
-        else:
-            self.acls = acls
+        self.acls = acls and acls or []
+        la = licensor_acceptance
+        self.licensor_acceptance = la and la or []
 
     def update(self, **kwargs):
         if 'license' in kwargs:
@@ -218,13 +239,14 @@ def build_tree(tree):
     return nodes, title_overrides
 
 
-def build_metadata(title, id=None, content=None, abstract=None, created=None,
+def build_metadata(
+        title, id=None, content=None, abstract=None, created=None,
         revised=None, subjects=None, keywords=None,
         license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None,
         derived_from_uri=None, derived_from_title=None,
         submitter=None, state=None, publication=None, cnx_archive_uri=None,
         authors=None, publishers=None, contained_in=None, licensors=None,
-        editors=None, translators=None):
+        editors=None, translators=None, illustrators=None):
     metadata = {}
     metadata['title'] = title
     metadata['version'] = 'draft'
@@ -262,6 +284,7 @@ def build_metadata(title, id=None, content=None, abstract=None, created=None,
     metadata['licensors'] = licensors or []
     metadata['editors'] = editors or []
     metadata['translators'] = translators or []
+    metadata['illustrators'] = illustrators or []
     return metadata
 
 
@@ -281,17 +304,17 @@ class Binder(cnxepub.Binder, BaseContent):
     """
     mediatype = BINDER_MEDIATYPE
 
-    def __init__(self, title, tree, acls=None, **kwargs):
+    def __init__(self, title, tree, acls=None,
+                 licensor_acceptance=None, **kwargs):
         metadata = build_metadata(title, **kwargs)
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         nodes, title_overrides = build_tree(tree)
         cnxepub.Binder.__init__(self, id, nodes=nodes,
                 metadata=metadata, title_overrides=title_overrides)
-        if acls is None:
-            self.acls = []
-        else:
-            self.acls = acls
+        self.acls = acls and acls or []
+        la = licensor_acceptance
+        self.licensor_acceptance = la and la or []
 
     def update(self, **kwargs):
         if 'license' in kwargs:
@@ -343,6 +366,10 @@ def create_content(**appstruct):
 def revise_content(request, **kwargs):
     archive_id = kwargs['id']
     document = utils.fetch_archive_content(request, archive_id)
+    # all the roles have been accepted
+    for role_type in cnxepub.ATTRIBUTED_ROLE_KEYS + ('licensors',):
+        for role in document.get(role_type, []):
+            role['has_accepted'] = True
     document.update(kwargs)
     document['revised'] = None
     document['license'] = {'url': DEFAULT_LICENSE.url}
@@ -365,4 +392,5 @@ def derive_content(request, **kwargs):
     document['licensors'] = []
     document['translators'] = []
     document['editors'] = []
+    document['illustrators'] = []
     return document

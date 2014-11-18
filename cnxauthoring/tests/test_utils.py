@@ -6,17 +6,26 @@
 # See LICENCE.txt for details.
 # ###
 
+import datetime
 import json
 import unittest
+try:
+    import urlparse  # python2
+except ImportError:
+    import urllib.parse as urlparse  # renamed in python3
 try:
     from unittest import mock  # python3
 except ImportError:
     import mock  # python2
 
+import httpretty
+from pyramid import testing
+
 from .. import utils
 
 
 class UtilsTests(unittest.TestCase):
+
     def test_change_dict_keys(self):
         data = {
             'id': '1234',
@@ -26,6 +35,11 @@ class UtilsTests(unittest.TestCase):
                     'someOtherThing': 'value',
                     },
                 },
+            'listItem': [
+                {'itemTitle': 'itemValue'},
+                {'itemTitle2': 'itemValue2'},
+                'itemTitle3',
+                ],
             }
         utils.change_dict_keys(data, utils.camelcase_to_underscore)
         self.assertEqual(data, {
@@ -36,6 +50,11 @@ class UtilsTests(unittest.TestCase):
                     'some_other_thing': 'value',
                     },
                 },
+            'list_item': [
+                {'item_title': 'itemValue'},
+                {'item_title2': 'itemValue2'},
+                'itemTitle3',
+                ],
             })
 
     def test_camelcase_to_underscore(self):
@@ -197,8 +216,197 @@ class UtilsTests(unittest.TestCase):
             self.assertEqual(document.acls,
                              [('me', 'view', 'edit', 'publish')])
 
-    def test_accept_roles_and_license(self):
-        from ..models import create_content, DEFAULT_LICENSE
+    @mock.patch('cnxauthoring.utils.get_current_request')
+    def test_accept_roles(self, mock_request):
+        cstruct = {
+            u'submitlog': u'first version',
+            u'abstract': None,
+            u'revised': None,
+            u'derived_from_title': u'Madlavning',
+            u'parent_title': None,
+            u'keywords': [u'k\xf8kken',
+            u'Madlavning'],
+            u'subjects': [u'Arts'],
+            u'title': u'Copy of Madlavning',
+            u'parent_version': u'',
+            u'editors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'id': 'user1'},
+                {'fullname': 'User Two',
+                 'surname': u'Two',
+                 'email': u'user2@example.com',
+                 'firstname': u'User',
+                 'id': 'user2'},
+                ],
+            u'id': u'feda4909-5bbd-431e-a017-049aff54416d',
+            u'parent_id': None,
+            u'version': u'1.1',
+            u'legacy_id': u'col11368',
+            u'media_type': u'application/vnd.org.cnx.collection',
+            u'publishers': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'id': 'user1'}],
+            u'parent_authors': [],
+            u'stateid': 1,
+            u'google_analytics': None,
+            u'language': u'da',
+            u'maintainers': [],
+            u'buy_link': None,
+            u'authors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'id': 'user1'},
+                {'fullname': 'User Two',
+                 'surname': u'Two',
+                 'email': u'user2@example.com',
+                 'firstname': u'User',
+                 'id': 'user2'},
+                ],
+            u'legacy_version': u'1.1',
+            u'licensors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'id': 'user1'}],
+            u'roles': None,
+            u'license': {
+                'url': 'http://creativecommons.org/licenses/by/4.0/'
+                },
+            u'created': None,
+            u'tree': {
+                u'id': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+                u'contents': [],
+                u'title': u'Madlavning'},
+            u'doctype': u'',
+            u'illustrators': [],
+            u'translators': [],
+            u'submitter': {
+                'fullname': u'User One',
+                'surname': u'One',
+                'email': u'user1@example.com',
+                'firstname': u'User',
+                'id': 'user1'},
+            u'derived_from_uri': 'http://cnx.org/contents/'
+                'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+            }
+        now = datetime.datetime.now(utils.TZINFO)
+        formatted_now = now.astimezone(utils.TZINFO).isoformat()
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_request().authenticated_userid = 'user1'
+            mock_datetime.now.return_value = now
+            utils.accept_roles(cstruct, {
+                'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'has_accepted': True,
+                 'id': 'user1'})
+        self.maxDiff = None
+        self.assertDictEqual(
+            cstruct, {
+                u'submitlog': u'first version',
+                u'abstract': None,
+                u'revised': None,
+                u'derived_from_title': u'Madlavning',
+                u'parent_title': None,
+                u'keywords': [u'k\xf8kken',
+                u'Madlavning'],
+                u'subjects': [u'Arts'],
+                u'title': u'Copy of Madlavning',
+                u'parent_version': u'',
+                u'editors': [
+                    {'fullname': u'User One',
+                     'surname': u'One',
+                     'email': u'user1@example.com',
+                     'firstname': u'User',
+                     'has_accepted': True,
+                     'assignment_date': formatted_now,
+                     'requester': 'user1',
+                     'id': 'user1'},
+                    {'fullname': 'User Two',
+                     'surname': u'Two',
+                     'email': u'user2@example.com',
+                     'firstname': u'User',
+                     'id': 'user2'},
+                    ],
+                u'id': u'feda4909-5bbd-431e-a017-049aff54416d',
+                u'parent_id': None,
+                u'version': u'1.1',
+                u'legacy_id': u'col11368',
+                u'media_type': u'application/vnd.org.cnx.collection',
+                u'publishers': [
+                    {'fullname': u'User One',
+                     'surname': u'One',
+                     'email': u'user1@example.com',
+                     'firstname': u'User',
+                     'has_accepted': True,
+                     'assignment_date': formatted_now,
+                     'requester': 'user1',
+                     'id': 'user1'}],
+                u'parent_authors': [],
+                u'stateid': 1,
+                u'google_analytics': None,
+                u'language': u'da',
+                u'maintainers': [],
+                u'buy_link': None,
+                u'authors': [
+                    {'fullname': u'User One',
+                     'surname': u'One',
+                     'email': u'user1@example.com',
+                     'firstname': u'User',
+                     'has_accepted': True,
+                     'assignment_date': formatted_now,
+                     'requester': 'user1',
+                     'id': 'user1'},
+                    {'fullname': 'User Two',
+                     'surname': u'Two',
+                     'email': u'user2@example.com',
+                     'firstname': u'User',
+                     'id': 'user2'},
+                    ],
+                u'legacy_version': u'1.1',
+                u'licensors': [
+                    {'fullname': u'User One',
+                     'surname': u'One',
+                     'email': u'user1@example.com',
+                     'has_accepted': True,
+                     'assignment_date': formatted_now,
+                     'requester': 'user1',
+                     'firstname': u'User',
+                     'id': 'user1'}],
+                u'roles': None,
+                u'license': {
+                    'url': 'http://creativecommons.org/licenses/by/4.0/'
+                    },
+                u'created': None,
+                u'tree': {
+                    u'id': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+                    u'contents': [],
+                    u'title': u'Madlavning'},
+                u'doctype': u'',
+                u'illustrators': [],
+                u'translators': [],
+                u'submitter': {
+                    'fullname': u'User One',
+                    'surname': u'One',
+                    'email': u'user1@example.com',
+                    'firstname': u'User',
+                    'id': 'user1'},
+                u'derived_from_uri': ('http://cnx.org/contents/feda4909-5bbd'
+                                      '-431e-a017-049aff54416d@1.1'),
+                })
+
+    def test_accept_license(self):
+        from ..models import create_content
 
         document = create_content(
             title='My Document',
@@ -207,39 +415,145 @@ class UtilsTests(unittest.TestCase):
             editors=[{'id': 'me'}, {'id': 'you'}],
             translators=[{'id': 'you'}],
             )
-        request = mock.Mock()
-        request.registry.settings = {
+        utils.accept_license(document, {'id': 'me'})
+        self.assertEqual(document.licensor_acceptance,
+                         [{'id': 'me', 'has_accepted': True}])
+
+    @mock.patch('cnxauthoring.utils.get_current_request')
+    @mock.patch('cnxauthoring.utils.notify_role_for_acceptance')
+    def test_declare_roles(self, mock_notify, mock_request):
+        from ..models import create_content
+
+        document = create_content(
+            title='My Document',
+            authors=[{'id': 'me'}],
+            publishers=[{'id': 'me'}],
+            editors=[{'id': 'me'}, {'id': 'you'}],
+            translators=[{'id': 'you'}],
+            )
+        settings = {
             'publishing.url': 'http://publishing/',
             'publishing.api_key': 'trusted-publisher',
             }
 
-        with mock.patch('requests.post') as post:
-            post.return_value.status_code = 202
-            utils.accept_roles_and_license(request, document, 'me')
-            self.assertEqual(post.call_count, 2)
+        with mock.patch('requests.get') as get:
+            publishing_records = []
+            get.return_value.status_code = 200
+            get.json.side_effect = publishing_records
+            with mock.patch('requests.post') as post:
+                post.return_value.status_code = 202
 
-            (url,), kwargs = post.call_args_list[0]
-            self.assertEqual(
-                url, 'http://publishing/contents/{}/roles'.format(document.id))
-            self.assertEqual(json.loads(kwargs['data']), [
-                {u'uid': u'me', u'role': u'Publisher', 'has_accepted': True},
-                {u'uid': u'me', u'role': u'Editor', 'has_accepted': True},
-                {u'uid': u'me', u'role': u'Author', 'has_accepted': True},
-                ])
-            self.assertEqual(kwargs['headers'], {
-                'x-api-key': 'trusted-publisher',
-                'content-type': 'application/json',
-                })
+                with testing.testConfig(settings=settings):
+                    mock_request().authenticated_userid = 'user1'
+                    utils.declare_roles(document)
 
-            (url,), kwargs = post.call_args_list[1]
-            self.assertEqual(url,
-                             'http://publishing/contents/{}/licensors'
-                             .format(document.id))
-            self.assertEqual(json.loads(kwargs['data']), {
-                'license_url': DEFAULT_LICENSE.url,
-                'licensors': [{'uid': 'me', 'has_accepted': True}],
-                })
-            self.assertEqual(kwargs['headers'], {
-                'x-api-key': 'trusted-publisher',
-                'content-type': 'application/json',
-                })
+                self.assertEqual(post.call_count, 1)
+
+                (url,), kwargs = post.call_args_list[0]
+                self.assertEqual(
+                    url,
+                    'http://publishing/contents/{}/roles'.format(document.id))
+                self.assertEqual(
+                    sorted(json.loads(kwargs['data']),
+                           key=lambda v: (v['uid'], v['role'],)),
+                    [{u'uid': u'me', u'role': u'Author',
+                      u'has_accepted': None},
+                     {u'uid': u'me', u'role': u'Editor',
+                      u'has_accepted': None},
+                     {u'uid': u'me', u'role': u'Publisher',
+                      u'has_accepted': None},
+                     {u'uid': u'you', u'role': u'Editor',
+                      u'has_accepted': None},
+                     {u'uid': u'you', u'role': u'Translator',
+                      u'has_accepted': None},
+                     ])
+                self.assertEqual(kwargs['headers'], {
+                    'x-api-key': 'trusted-publisher',
+                    'content-type': 'application/json',
+                    })
+
+    @httpretty.activate
+    @mock.patch('cnxauthoring.utils.get_current_request')
+    @mock.patch('cnxauthoring.utils.notify_role_for_acceptance')
+    def test_declare_roles_w_invalid_role_type(self, mock_notify, mock_request):
+        """Ignore invalid roles"""
+        from ..models import create_content
+
+        document = create_content(
+            title='My Document',
+            authors=[{'id': 'me'}],
+            publishers=[{'id': 'me'}],
+            editors=[{'id': 'me'}, {'id': 'you'}],
+            translators=[{'id': 'you'}],
+            )
+        publishing_url = 'http://publishing/'
+        settings = {
+            'publishing.url': publishing_url,
+            'publishing.api_key': 'trusted-publisher',
+            }
+
+        publishing_records = []
+        url = urlparse.urljoin(publishing_url,
+                               '/contents/{}/roles'.format(document.id))
+        httpretty.register_uri(httpretty.GET, url,
+                               body=json.dumps(publishing_records), status=200)
+        httpretty.register_uri(httpretty.POST, url, status=202)
+
+        with testing.testConfig(settings=settings):
+            mock_request().authenticated_userid = 'user1'
+            utils.declare_roles(document)
+
+        post_request = httpretty.last_request()
+        data = post_request.parse_request_body(post_request.body)
+        expected = [
+            {u'uid': u'me', u'role': u'Author', u'has_accepted': None},
+            {u'uid': u'me', u'role': u'Editor', u'has_accepted': None},
+            {u'uid': u'me', u'role': u'Publisher', u'has_accepted': None},
+            {u'uid': u'you', u'role': u'Editor', u'has_accepted': None},
+            {u'uid': u'you', u'role': u'Translator', u'has_accepted': None},
+            ]
+        self.assertEqual(sorted(data, key=lambda v: (v['uid'], v['role'],)),
+                         expected)
+
+    @httpretty.activate
+    def test_declare_licensors(self):
+        from ..models import create_content, DEFAULT_LICENSE
+
+        document = create_content(
+            title='My Document',
+            license={'url': DEFAULT_LICENSE.url},
+            authors=[{'id': 'me'}],
+            publishers=[{'id': 'me'}],
+            editors=[{'id': 'me'}, {'id': 'you'}],
+            translators=[{'id': 'you'}],
+            licensor_acceptance=[{'id': 'me', 'has_accepted': True},
+                                 {'id': 'you', 'has_accepted': None}],
+            )
+        publishing_url = 'http://publishing/'
+        settings = {
+            'publishing.url': publishing_url,
+            'publishing.api_key': 'trusted-publisher',
+            }
+
+        publishing_records = {
+            'license_url': DEFAULT_LICENSE.url,
+            'licensors': [],
+            }
+        url = urlparse.urljoin(publishing_url,
+                               '/contents/{}/licensors'.format(document.id))
+        httpretty.register_uri(httpretty.GET, url,
+                               body=json.dumps(publishing_records), status=200)
+        httpretty.register_uri(httpretty.POST, url, status=202)
+
+        with testing.testConfig(settings=settings):
+            utils.declare_licensors(document)
+
+        post_request = httpretty.last_request()
+        data = post_request.parse_request_body(post_request.body)
+        expected_licensors = [
+            {u'uid': u'me', u'has_accepted': True},
+            {u'uid': u'you', u'has_accepted': None},
+            ]
+        self.assertEqual(data['license_url'], DEFAULT_LICENSE.url)
+        self.assertEqual(sorted(data['licensors'], key=lambda v: v['uid']),
+                         expected_licensors)

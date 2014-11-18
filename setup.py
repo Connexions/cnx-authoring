@@ -16,6 +16,7 @@ install_requires = (
         )
 
 tests_require = (
+        'HTTPretty',
         'mock',   # only required for python2
         'WebTest',
         )

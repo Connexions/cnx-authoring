@@ -5,10 +5,11 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
-import datetime
 import io
-import json
 import re
+import datetime
+import json
+import logging
 try:
     import urllib2 # python2
 except ImportError:
@@ -19,9 +20,17 @@ except ImportError:
     import urllib.parse as urlparse # renamed in python3
 
 import cnxepub
+import requests
+import tzlocal
+from openstax_accounts.interfaces import IOpenstaxAccounts
+from pyramid.threadlocal import get_current_registry, get_current_request
 from cnxquerygrammar.query_parser import grammar, DictFormater
 from parsimonious.exceptions import IncompleteParseError
-import requests
+
+
+# Timezone info initialized from the system timezone.
+TZINFO = tzlocal.get_localzone()
+logger = logging.getLogger('cnxauthoring')
 
 
 def utf8(item):
@@ -34,6 +43,7 @@ def utf8(item):
     except: # bare except since this method is supposed to be safe anywhere
         return item
 
+
 def change_dict_keys(data, func):
     for k in data.keys():
         _k = func(k)
@@ -41,6 +51,11 @@ def change_dict_keys(data, func):
             data[_k] = data.pop(k)
         if isinstance(data[_k], dict):
             change_dict_keys(data[_k], func)
+        if isinstance(data[_k], list):
+            for i in data[_k]:
+                if isinstance(i, dict):
+                    change_dict_keys(i, func)
+
 
 def camelcase_to_underscore(camelcase):
     def replace(match):
@@ -286,35 +301,167 @@ def get_roles(document, uid):
         if uid in users:
             yield role
 
-def accept_roles_and_license(request, document, uid):
-    """Accept roles and license for document and user uid"""
+
+def notify_role_for_acceptance(user_id, requester, model):
+    """Notify the given ``user_id`` on ``model`` that s/he has been
+    assigned a role on said model and can now accept the role.
+    """
+    accounts = get_current_registry().getUtility(IOpenstaxAccounts)
+    settings = get_current_registry().settings
+    base_url = settings['openstax_accounts.application_url']
+    link = urlparse.urljoin(base_url, '/contents/{}@draft/users/acceptance'
+                            .format(model.id))
+
+    subject = 'Requesting action on OpenStax CNX content'
+    body = '''\
+Hello {name},
+
+{requester} added you to content titled {title}.
+Please go to the following link to accept your roles and license:
+{link}
+
+Thank you from your friends at OpenStax CNX
+'''.format(name=user_id,
+           requester=requester,
+           title=model.metadata['title'],
+           link=link)
+    accounts.send_message(user_id, subject, body)
+
+
+def accept_roles(cstruct, user):
+    """Accept roles for document and user"""
+    # accept roles for user
+    authenticated_userid = get_current_request().authenticated_userid
+    now = datetime.datetime.now(TZINFO).isoformat()
+    for field in cnxepub.ATTRIBUTED_ROLE_KEYS + ('licensors',):
+        if field in cstruct:
+            value = cstruct.get(field, [])
+            for role in value:
+                if role.get('id') == user['id']:
+                    role['has_accepted'] = True
+                    role['requester'] = authenticated_userid
+                    role['assignment_date'] = now
+            cstruct[field] = value
+
+
+def accept_license(document, user):
+    # accept license for user
+    for r in document.licensor_acceptance:
+        if r['id'] == user['id']:
+            r['has_accepted'] = True
+            break
+    else:
+        user_copy = user.copy()
+        user_copy['has_accepted'] = True
+        document.licensor_acceptance.append(user_copy)
+
+
+PUBLISHING_ROLES_MAPPING = {
+    'Author': 'authors',
+    'Copyright Holder': 'licensors',
+    'Editor': 'editors',
+    'Illustrator': 'illustrators',
+    'Publisher': 'publishers',
+    'Translator': 'translators',
+    }
+
+
+def declare_roles(model):
+    """Annotate the roles to include role acceptance information.
+    The model is updated as part of this procedure, but it is not persisted.
+    """
     from .models import PublishingError
 
-    settings = request.registry.settings
+    authenticated_userid = get_current_request().authenticated_userid
+    settings = get_current_registry().settings
     publishing_url = settings['publishing.url']
     headers = {
-            'x-api-key': settings['publishing.api_key'],
-            'content-type': 'application/json',
-            }
+        'x-api-key': settings['publishing.api_key'],
+        'content-type': 'application/json',
+        }
+    url = urlparse.urljoin(publishing_url,
+                           '/contents/{}/roles'.format(model.id))
 
-    # accept roles
-    roles_url = urlparse.urljoin(
-            publishing_url, '/contents/{}/roles'.format(document.id))
-    payload = [{'uid': uid, 'role': role, 'has_accepted': True}
-            for role in get_roles(document, uid)]
-    response = requests.post(roles_url, data=json.dumps(payload),
-            headers=headers)
+    # Send roles to publishing.
+    _roles_mapping = {v: k for k, v in PUBLISHING_ROLES_MAPPING.items()}
+    role_submission_keys = ('uid', 'role', 'has_accepted',)
+    tobe_notified = set([])
+    payload = []
+    for role_type in PUBLISHING_ROLES_MAPPING.values():
+        publishing_role_type = _roles_mapping[role_type]
+        _roles = []
+        for role in model.metadata[role_type]:
+            has_accepted = role.get('has_accepted', None)
+            # Assume this is a new record when the requester is missing.
+            if role.get('requester', None) is None:
+                role['requester'] = authenticated_userid
+                now = datetime.datetime.now(TZINFO).isoformat()
+                role['assignment_date'] = now
+                if has_accepted is None:
+                    tobe_notified.add(role['id'])
+            reformatted_role = (role['id'], publishing_role_type,
+                                has_accepted,)
+            reformatted_role = dict(zip(role_submission_keys,
+                                        reformatted_role))
+            _roles.append(reformatted_role)
+        payload.extend(_roles)
+
+    response = requests.post(url, data=json.dumps(payload),
+                             headers=headers)
     if response.status_code != 202:
         raise PublishingError(response)
 
-    # accept license
-    license_url = urlparse.urljoin(
-            publishing_url, '/contents/{}/licensors'.format(document.id))
-    payload = {
-            'license_url': document.metadata['license'].url,
-            'licensors': [{'uid': uid, 'has_accepted': True}],
+    # Notify any new roles that they need to accept the assigned attribution.
+    logger.debug("Sending notification message to {}".format(', '.join(tobe_notified)))
+    for user_id in tobe_notified:
+        notify_role_for_acceptance(user_id, authenticated_userid, model)
+
+
+def declare_licensors(model):
+    """Declare license acceptance information on the model.
+    The model is updated as part of this procedure, but it is not persisted.
+    """
+    from .models import PublishingError
+
+    settings = get_current_registry().settings
+    publishing_url = settings['publishing.url']
+    headers = {
+        'x-api-key': settings['publishing.api_key'],
+        'content-type': 'application/json',
+        }
+    url = urlparse.urljoin(publishing_url,
+                           '/contents/{}/licensors'.format(model.id))
+
+    # Acquire a list of known roles from publishing.
+    response = requests.get(url)
+    if response.status_code >= 400:
+        upstream_license_info = {
+            'license_url': None,
+            'licensors': [],
             }
-    response = requests.post(license_url, data=json.dumps(payload),
-            headers=headers)
+    else:
+        upstream_license_info = response.json()
+    upstream = upstream_license_info.get('licensors', [])
+
+    # Scan the roles for newly added attribution. In the event that
+    #   one or more has been added, add them to the licensor_acceptance.
+    #   Ignore removals, because they shouldn't affect anything.
+    local_roles = []
+    for role_type in PUBLISHING_ROLES_MAPPING.values():
+        local_roles.extend(model.metadata.get(role_type, []))
+    local_role_ids = set([r['id'] for r in local_roles])
+    existing_licensor_ids = set([l['id'] for l in model.licensor_acceptance])
+    for new_role in local_role_ids.difference(existing_licensor_ids):
+        model.licensor_acceptance.append({'id': new_role,
+                                          'has_accepted': None})
+
+    # Send licensors to publishing.
+    payload = {
+        'license_url': model.metadata['license'].url,
+        'licensors': [{'uid': x['id'], 'has_accepted': x['has_accepted']}
+                      for x in model.licensor_acceptance],
+        }
+    response = requests.post(url, data=json.dumps(payload),
+                             headers=headers)
     if response.status_code != 202:
         raise PublishingError(response)

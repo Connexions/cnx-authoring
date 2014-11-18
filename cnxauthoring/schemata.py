@@ -72,8 +72,27 @@ class UserSchema(colander.MappingSchema):
         return colander.Mapping(unknown='preserve')
 
 
-class Users(colander.SequenceSchema):
-    user = UserSchema()
+class RoleSchema(UserSchema):
+    has_accepted = colander.SchemaNode(
+        colander.Boolean(),
+        missing=colander.drop,
+        )
+    requester = colander.SchemaNode(
+        colander.String(),
+        missing=colander.drop,
+        )
+    assignment_date = colander.SchemaNode(
+        colander.String(),
+        missing=colander.drop,
+        )
+    notify_sent = colander.SchemaNode(
+        colander.String(),
+        missing=colander.drop,
+        )
+
+
+class RoleSequence(colander.SequenceSchema):
+    role = RoleSchema()
 
 
 class DocumentSchema(colander.MappingSchema):
@@ -124,11 +143,12 @@ class DocumentSchema(colander.MappingSchema):
         )
 
     submitter = UserSchema()
-    authors = Users(validator=colander.Length(min=1))
-    publishers = Users(validator=colander.Length(min=1)) # maintainers
-    licensors = Users(validator=colander.Length(min=1)) # copyright holders
-    translators = Users(missing=colander.drop)
-    editors = Users(missing=colander.drop)
+    authors = RoleSequence(validator=colander.Length(min=1))
+    publishers = RoleSequence(validator=colander.Length(min=1)) # maintainers
+    licensors = RoleSequence(validator=colander.Length(min=1)) # copyright holders
+    translators = RoleSequence(missing=colander.drop)
+    editors = RoleSequence(missing=colander.drop)
+    illustrators = RoleSequence(missing=colander.drop)
 
     media_type = colander.SchemaNode(
         colander.String(),
@@ -157,5 +177,27 @@ class Tree(colander.MappingSchema):
         colander.List(),
         )
 
+
 class BinderSchema(DocumentSchema):
     tree = Tree()
+
+
+class RoleAcceptanceSchema(colander.MappingSchema):
+    role = colander.SchemaNode(
+        colander.String(),
+        )
+    has_accepted = colander.SchemaNode(
+        colander.Boolean(),
+        missing=colander.drop,
+        )
+
+
+class RoleAcceptanceSequence(colander.SequenceSchema):
+    role = RoleAcceptanceSchema()
+
+
+class AcceptanceSchema(colander.MappingSchema):
+    license = colander.SchemaNode(
+        colander.Boolean(),
+        )
+    roles = RoleAcceptanceSequence()
