@@ -406,16 +406,15 @@ def post_resource(request):
 def delete_content(request):
     """delete a stored document"""
     id = request.matchdict['id']
-    user_id = request.matchdict.get('user_id')
+    user_id = None
+    if request.matchdict.get('user'):
+        user_id = request.authenticated_userid
     content = storage.get(id=id)
     if content is None:
         raise httpexceptions.HTTPNotFound()
     if not request.has_permission('edit', content):
         raise httpexceptions.HTTPForbidden(
                 'You do not have permission to delete {}'.format(id))
-    if user_id and user_id != request.authenticated_userid:
-        raise httpexceptions.HTTPForbidden(
-            'You can only remove yourself from this document {}'.format(id))
     if not user_id and len(content.acls) > 1:
         # there are other users who have permission to this document
         raise httpexceptions.HTTPForbidden(

@@ -1719,13 +1719,13 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_delete_content_401(self):
         self.logout()
-        response = self.testapp.delete('/contents/{}@draft.json'.format(id),
-                status=401)
+        response = self.testapp.delete('/contents/{}@draft'.format(id),
+                                       status=401)
         self.assert_cors_headers(response)
 
     def test_delete_content_403(self):
-        response = self.testapp.post_json('/users/contents',
-                {'title': 'My page'}, status=201)
+        response = self.testapp.post_json(
+            '/users/contents', {'title': 'My page'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         page = json.loads(response.body.decode('utf-8'))
         self.assert_cors_headers(response)
@@ -1733,27 +1733,27 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.logout()
         self.login('you')
         response = self.testapp.delete(
-                '/contents/{}@draft.json'.format(page['id']), status=403)
+            '/contents/{}@draft'.format(page['id']), status=403)
         self.assert_cors_headers(response)
 
     def test_delete_content(self):
-        response = self.testapp.post_json('/users/contents',
-                {'title': 'My page'}, status=201)
+        response = self.testapp.post_json(
+            '/users/contents', {'title': 'My page'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         page = json.loads(response.body.decode('utf-8'))
         self.assert_cors_headers(response)
 
         # test that it's possible to get the content we just created
         response = self.testapp.get(
-                '/contents/{}@draft.json'.format(page['id']), status=200)
+            '/contents/{}@draft.json'.format(page['id']), status=200)
 
         # delete the content
         response = self.testapp.delete(
-                '/contents/{}@draft.json'.format(page['id']), status=200)
+            '/contents/{}@draft'.format(page['id']), status=200)
         self.assert_cors_headers(response)
 
         response = self.testapp.get(
-                '/contents/{}@draft.json'.format(page['id']), status=404)
+            '/contents/{}@draft.json'.format(page['id']), status=404)
 
     def test_delete_content_binder(self):
         # Create a page first
@@ -1797,20 +1797,20 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         # Assert that the page is contained in two books
         response = self.testapp.get(
-                '/contents/{}@draft.json'.format(page['id']))
+            '/contents/{}@draft.json'.format(page['id']))
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(sorted(result['containedIn']),
                          sorted([book_one['id'], book_two['id']]))
 
         # Delete book one
-        self.testapp.delete('/contents/{}@draft.json'.format(book_one['id']),
+        self.testapp.delete('/contents/{}@draft'.format(book_one['id']),
                             status=200)
         self.testapp.get('/contents/{}@draft.json'.format(book_one['id']),
                          status=404)
 
         # Assert that the page is now only contained in book two
         response = self.testapp.get(
-                '/contents/{}@draft.json'.format(page['id']))
+            '/contents/{}@draft.json'.format(page['id']))
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['containedIn'], [book_two['id']])
 
@@ -1839,23 +1839,23 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         # make sure the editor can also edit the content
         response = self.testapp.put_json(
-                '/contents/{}@draft.json'.format(page['id']), {
-                    'title': 'Multiple users test edited by you',
-                    }, status=200)
+            '/contents/{}@draft.json'.format(page['id']), {
+                'title': 'Multiple users test edited by you',
+                }, status=200)
 
         self.logout()
         self.login('user2')
 
         # someone not in acl should not be able to view the content
         self.testapp.get(
-                '/contents/{}@draft.json'.format(page['id']), status=403)
+            '/contents/{}@draft.json'.format(page['id']), status=403)
         self.logout()
 
         # log back in as the submitter and check that the title has been
         # changed
         self.login('user1')
         response = self.testapp.get(
-                '/contents/{}@draft.json'.format(page['id']), status=200)
+            '/contents/{}@draft.json'.format(page['id']), status=200)
         self.assertEqual(response.json['title'],
                          'Multiple users test edited by you')
         response = self.testapp.get('/users/contents', status=200)
@@ -1864,21 +1864,14 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertIn('{}@draft'.format(page['id']), items)
 
         # try to delete the content should return an error
-        self.testapp.delete('/contents/{}@draft.json'.format(page['id']),
+        self.testapp.delete('/contents/{}@draft'.format(page['id']),
                             status=403)
         self.testapp.get(
-                '/contents/{}@draft.json'.format(page['id']), status=200)
-
-        # delete user2 from the content should fail, because user can only
-        # remove themselves from the content
-        self.testapp.delete(
-            '/contents/{}@draft/users/user2.json'.format(page['id']),
-            status=403)
+            '/contents/{}@draft.json'.format(page['id']), status=200)
 
         # delete user1 from the content
         self.testapp.delete(
-                '/contents/{}@draft/users/user1.json'.format(page['id']),
-                status=200)
+            '/contents/{}@draft/users/me'.format(page['id']), status=200)
         # content should not appear in user1's workspace
         response = self.testapp.get('/users/contents', status=200)
         workspace = json.loads(response.body.decode('utf-8'))
