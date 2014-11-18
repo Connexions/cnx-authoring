@@ -5,9 +5,11 @@
 -- See LICENCE.txt for details.
 -- ###
 
-SELECT *
+WITH docids as (SELECT distinct id
 FROM document d JOIN document_acl da ON d.id = da.uuid
 WHERE {where_clause}
   AND da.user_id = %(user_id)s
   AND da.permission IN %(permissions)s
-ORDER BY d.revised DESC;
+) 
+select * from document join docids on document.id = docids.id
+ORDER BY revised DESC;
