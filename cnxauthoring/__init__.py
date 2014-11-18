@@ -28,7 +28,7 @@ def declare_routes(config):
     add_route('delete-content', '/contents/{id}@draft',
               request_method='DELETE')
     add_route('delete-user-content',
-              '/contents/{id}@draft/users/{user_id}',
+              '/contents/{id}@draft/users/{user:(me)}',
               request_method='DELETE')
     add_route('user-search', '/users/search', request_method='GET')
     add_route('profile', '/users/profile', request_method='GET')

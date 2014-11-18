@@ -1869,16 +1869,9 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.testapp.get(
             '/contents/{}@draft.json'.format(page['id']), status=200)
 
-        # delete user2 from the content should fail, because user can only
-        # remove themselves from the content
-        self.testapp.delete(
-            '/contents/{}@draft/users/user2'.format(page['id']),
-            status=403)
-
         # delete user1 from the content
         self.testapp.delete(
-            '/contents/{}@draft/users/user1'.format(page['id']),
-            status=200)
+            '/contents/{}@draft/users/me'.format(page['id']), status=200)
         # content should not appear in user1's workspace
         response = self.testapp.get('/users/contents', status=200)
         workspace = json.loads(response.body.decode('utf-8'))
