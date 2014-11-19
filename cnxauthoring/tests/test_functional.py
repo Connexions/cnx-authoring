@@ -3391,11 +3391,15 @@ class PublicationTests(BaseFunctionalTestCase):
         post_data = {
             'title': 'My Page',
             }
-        response = self.testapp.post_json('/users/contents', post_data,
-                                          status=201)
+        created = datetime.datetime.now(TZINFO)
+        formatted_created = created.astimezone(TZINFO).isoformat()
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = created
+            response = self.testapp.post_json(
+                '/users/contents', post_data, status=201)
         page = json.loads(response.body.decode('utf-8'))
 
-        # there should be no roles to accept for user1
+        # user1 has accepted all their roles
         response = self.testapp.get(
             '/contents/{}@draft/acceptance'.format(page['id']))
         acceptance = json.loads(response.body.decode('utf-8'))
@@ -3411,7 +3415,18 @@ class PublicationTests(BaseFunctionalTestCase):
             u'id': page['id'],
             u'title': u'My Page',
             u'user': u'user1',
-            u'roles': [],
+            u'roles': [{u'assignmentDate': formatted_created,
+                        u'hasAccepted': True,
+                        u'requester': u'user1',
+                        u'role': u'authors'},
+                       {u'assignmentDate': formatted_created,
+                        u'hasAccepted': True,
+                        u'requester': u'user1',
+                        u'role': u'copyright_holders'},
+                       {u'assignmentDate': formatted_created,
+                        u'hasAccepted': True,
+                        u'requester': u'user1',
+                        u'role': u'publishers'}],
             })
 
         # add user2 to authors and editors
@@ -3448,18 +3463,14 @@ class PublicationTests(BaseFunctionalTestCase):
             u'id': page['id'],
             u'title': u'My Page',
             u'user': u'user2',
-            u'roles': [{
-                u'role': u'authors',
-                u'assignmentDate': formatted_now,
-                u'requester': u'user1',
-                u'hasAccepted': None,
-                },
-                {
-                u'role': u'editors',
-                u'assignmentDate': formatted_now,
-                u'requester': u'user1',
-                u'hasAccepted': None,
-                }],
+            u'roles': [{u'role': u'authors',
+                        u'assignmentDate': formatted_now,
+                        u'requester': u'user1',
+                        u'hasAccepted': None},
+                       {u'role': u'editors',
+                        u'assignmentDate': formatted_now,
+                        u'requester': u'user1',
+                        u'hasAccepted': None}],
             })
 
         # user2 accepts the roles
@@ -3472,7 +3483,7 @@ class PublicationTests(BaseFunctionalTestCase):
             '/contents/{}@draft/acceptance'.format(page['id']),
             post_data, status=200)
 
-        # checks the acceptance info again (no roles to accept)
+        # checks the acceptance info again (all roles accepted)
         response = self.testapp.get(
             '/contents/{}@draft/acceptance'.format(page['id']))
         acceptance = json.loads(response.body.decode('utf-8'))
@@ -3488,5 +3499,12 @@ class PublicationTests(BaseFunctionalTestCase):
             u'id': page['id'],
             u'title': u'My Page',
             u'user': u'user2',
-            u'roles': [],
+            u'roles': [{u'role': u'authors',
+                        u'assignmentDate': formatted_now,
+                        u'requester': u'user1',
+                        u'hasAccepted': True},
+                       {u'role': u'editors',
+                        u'assignmentDate': formatted_now,
+                        u'requester': u'user1',
+                        u'hasAccepted': True}],
             })
