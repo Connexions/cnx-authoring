@@ -20,7 +20,7 @@ UPDATE document
             publication = %(publication)s, cnx_archive_uri = %(cnx-archive-uri)s,
             publishers = %(publishers)s,
             contained_in = %(contained_in)s,
-            licensors = %(licensors)s,
+            copyright_holders = %(copyright_holders)s,
             editors = %(editors)s, translators = %(translators)s,
             illustrators = %(illustrators)s
 WHERE id  = %(id)s

@@ -245,7 +245,8 @@ def build_metadata(
         license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None,
         derived_from_uri=None, derived_from_title=None,
         submitter=None, state=None, publication=None, cnx_archive_uri=None,
-        authors=None, publishers=None, contained_in=None, licensors=None,
+        authors=None, publishers=None, contained_in=None,
+        licensors=None, copyright_holders=None,
         editors=None, translators=None, illustrators=None):
     metadata = {}
     metadata['title'] = title
@@ -281,7 +282,14 @@ def build_metadata(
         metadata['cnx-archive-uri'] = cnx_archive_uri
     metadata['authors'] = authors or []
     metadata['publishers'] = publishers or []
-    metadata['licensors'] = licensors or []
+    # BBB 18-Nov-2014 deprecated property 'licensors' needs changed
+    #     in webview and archive before removing here.
+    if licensors is not None:
+        copyright_holders = licensors or []
+    else:
+        copyright_holders = copyright_holders or []
+    metadata['licensors'] = metadata['copyright_holders'] = copyright_holders
+    # /BBB
     metadata['editors'] = editors or []
     metadata['translators'] = translators or []
     metadata['illustrators'] = illustrators or []

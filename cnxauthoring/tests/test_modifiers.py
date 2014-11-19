@@ -50,6 +50,7 @@ class ModelJSONRendering(unittest.TestCase):
             'submitter': None,
             'authors': [],
             'publishers': [],
+            'copyrightHolders': [],
             'licensors': [],
             'editors': [],
             'translators': [],

@@ -347,6 +347,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'state': u'Draft',
             u'publication': None,
             u'licensors': [submitter_w_assign_date],
+            u'copyrightHolders': [submitter_w_assign_date],
             u'translators': [],
             u'editors': [],
             u'illustrators': [],
@@ -577,6 +578,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [submitter_w_assign_date],
+            u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -616,6 +618,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [submitter_w_assign_date],
+            u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -675,6 +678,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [submitter_w_assign_date],
+            u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -714,6 +718,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [submitter_w_assign_date],
+            u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -773,6 +778,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [submitter_w_assign_date],
+            u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -812,6 +818,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [submitter_w_assign_date],
+            u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -881,6 +888,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [submitter_w_assign_date],
+            u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -936,6 +944,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [submitter_w_assign_date],
+            u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -1071,6 +1080,21 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'assignmentDate': formatted_now,
                 u'hasAccepted': True,
                 }],
+            u'copyrightHolders': [{
+                u'website': u'',
+                u'surname': u'Ruby',
+                u'suffix': u'',
+                u'firstname': u'Rasmus',
+                u'title': u'',
+                u'othername': u'',
+                u'email': u'rasmus@example.com',
+                u'fullname': u'Rasmus Ruby',
+                u'id': u'Rasmus1975',
+                u'type': u'cnx-id',
+                u'requester': u'Rasmus1975',
+                u'assignmentDate': formatted_now,
+                u'hasAccepted': True,
+                }],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -1158,6 +1182,21 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'assignmentDate': formatted_now,
                 u'hasAccepted': True,
                 }],
+            u'copyrightHolders': [{
+                u'website': u'',
+                u'surname': u'Ruby',
+                u'suffix': u'',
+                u'firstname': u'Rasmus',
+                u'title': u'',
+                u'othername': u'',
+                u'email': u'rasmus@example.com',
+                u'fullname': u'Rasmus Ruby',
+                u'id': u'Rasmus1975',
+                u'type': u'cnx-id',
+                u'requester': u'Rasmus1975',
+                u'assignmentDate': formatted_now,
+                u'hasAccepted': True,
+                }],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -1221,6 +1260,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [submitter_w_assign_date],
             u'translators': [],
             u'licensors': [submitter_w_assign_date],
+            u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -1328,6 +1368,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [submitter_w_assign_date],
+            u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -1522,6 +1563,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [submitter_w_assign_date],
+            u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -1567,6 +1609,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [submitter_w_assign_date],
+            u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)

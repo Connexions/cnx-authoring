@@ -22,7 +22,8 @@ from .database import SQL
 psycopg2.extras.register_uuid()
 psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
 
-JSON_FIELDS = ['authors', 'publishers', 'licensors', 'editors', 'translators']
+JSON_FIELDS = ('authors', 'publishers', 'copyright_holders', 'editors',
+               'translators', 'illustrators',)
 
 
 # cribbed from http://stackoverflow.com/questions/19048017/python-extract-substitution-vars-from-format-string
@@ -134,6 +135,7 @@ class PostgresqlStorage(BaseStorage):
                             rd.pop(field)
                     if rd['media_type'] == MEDIATYPES['binder']:
                         rd['tree'] = json.loads(rd.pop('content'))
+                    rd['licensors'] = rd['copyright_holders']
                     document = create_content(**rd)
                     checked_execute(cursor, SQL['get'].format(
                         tablename='document_acl',
@@ -185,6 +187,11 @@ class PostgresqlStorage(BaseStorage):
                 args['content'] = json.dumps(args.pop('tree'))
             if 'cnx-archive-uri' not in args:
                 args['cnx-archive-uri'] = None
+            # BBB 18-Nov-2014 licensors - deprecated property 'licensors'
+            #     needs changed in webview and archive before removing here.
+            if 'licensors' in args:
+                args['copyright_holders'] = args.pop('licensors')
+            # /BBB
 
             for field in JSON_FIELDS:
                 args[field] = psycopg2.extras.Json(args[field])
@@ -260,6 +267,12 @@ class PostgresqlStorage(BaseStorage):
                 args['cnx-archive-uri'] = None
             if 'tree' in args:
                 args['content'] = json.dumps(args.pop('tree'))
+            # BBB 18-Nov-2014 licensors - deprecated property 'licensors'
+            #     needs changed in webview and archive before removing here.
+            if 'licensors' in args:
+                args['copyright_holders'] = args.pop('licensors')
+            # /BBB
+
             for field in JSON_FIELDS:
                 args[field] = psycopg2.extras.Json(args[field])
             checked_execute(cursor, SQL['update-document'], args)
