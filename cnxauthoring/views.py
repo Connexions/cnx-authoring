@@ -627,7 +627,7 @@ def get_acceptance_info(request):
             continue
         for role in roles:
             has_accepted = role.get('has_accepted', None)
-            if role['id'] == user_id and has_accepted in (None, False,):
+            if role['id'] == user_id:
                 role_info = {
                     'role': role_key,
                     'has_accepted': has_accepted,
@@ -638,7 +638,7 @@ def get_acceptance_info(request):
 
     info = {
         'license': content.metadata['license'],
-        'user': None,
+        'user': user_id,
         'roles': tobe_accepted_roles,
         'title': content.metadata['title'],
         'id': content.id,
