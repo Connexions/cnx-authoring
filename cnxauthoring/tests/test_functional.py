@@ -3382,3 +3382,111 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(publish['state'], 'Done/Success')
         self.assertEqual(list(publish['mapping'].values()),
                          ['{}@1'.format(page['id'])])
+
+    def test_acceptance(self):
+        if self.USE_MOCK_PUBLISHING_SERVICE:
+            raise unittest.SkipTest('Requires a running publishing instance')
+
+        # create a new page
+        post_data = {
+            'title': 'My Page',
+            }
+        response = self.testapp.post_json('/users/contents', post_data,
+                                          status=201)
+        page = json.loads(response.body.decode('utf-8'))
+
+        # there should be no roles to accept for user1
+        response = self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']))
+        acceptance = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(acceptance, {
+            u'license': {
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'name': u'Attribution',
+                u'abbr': u'by',
+                u'version': u'4.0',
+                },
+            u'url': u'http://localhost/contents/{}%40draft.json'.format(
+                page['id']),
+            u'id': page['id'],
+            u'title': u'My Page',
+            u'user': u'user1',
+            u'roles': [],
+            })
+
+        # add user2 to authors and editors
+        post_data = {
+            'authors': page['authors'] + [{'id': 'user2'}],
+            'editors': page['editors'] + [{'id': 'user2'}],
+            }
+        now = datetime.datetime.now(TZINFO)
+        formatted_now = now.astimezone(TZINFO).isoformat()
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.put_json(
+                '/contents/{}@draft.json'.format(page['id']), post_data,
+                status=200)
+        page = json.loads(response.body.decode('utf-8'))
+
+        # log in as user2
+        self.logout()
+        self.login('user2')
+
+        # user2 should have authors and editors in acceptance info
+        response = self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']))
+        acceptance = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(acceptance, {
+            u'license': {
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'name': u'Attribution',
+                u'abbr': u'by',
+                u'version': u'4.0',
+                },
+            u'url': u'http://localhost/contents/{}%40draft.json'.format(
+                page['id']),
+            u'id': page['id'],
+            u'title': u'My Page',
+            u'user': u'user2',
+            u'roles': [{
+                u'role': u'authors',
+                u'assignmentDate': formatted_now,
+                u'requester': u'user1',
+                u'hasAccepted': None,
+                },
+                {
+                u'role': u'editors',
+                u'assignmentDate': formatted_now,
+                u'requester': u'user1',
+                u'hasAccepted': None,
+                }],
+            })
+
+        # user2 accepts the roles
+        post_data = {
+            'license': True,
+            'roles': [{'role': 'editors', 'hasAccepted': True},
+                      {'role': 'authors', 'hasAccepted': True}],
+            }
+        self.testapp.post_json(
+            '/contents/{}@draft/acceptance'.format(page['id']),
+            post_data, status=200)
+
+        # checks the acceptance info again (no roles to accept)
+        response = self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']))
+        acceptance = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(acceptance, {
+            u'license': {
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'name': u'Attribution',
+                u'abbr': u'by',
+                u'version': u'4.0',
+                },
+            u'url': u'http://localhost/contents/{}%40draft.json'.format(
+                page['id']),
+            u'id': page['id'],
+            u'title': u'My Page',
+            u'user': u'user2',
+            u'roles': [],
+            })

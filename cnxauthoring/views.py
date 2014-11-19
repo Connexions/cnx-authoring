@@ -638,7 +638,7 @@ def get_acceptance_info(request):
 
     info = {
         'license': content.metadata['license'],
-        'user': None,
+        'user': user_id,
         'roles': tobe_accepted_roles,
         'title': content.metadata['title'],
         'id': content.id,
