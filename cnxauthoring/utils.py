@@ -308,8 +308,8 @@ def notify_role_for_acceptance(user_id, requester, model):
     """
     accounts = get_current_registry().getUtility(IOpenstaxAccounts)
     settings = get_current_registry().settings
-    base_url = settings['openstax_accounts.application_url']
-    link = urlparse.urljoin(base_url, '/contents/{}@draft/users/acceptance'
+    base_url = settings['webview.url']
+    link = urlparse.urljoin(base_url, '/contents/{}/role-acceptance'
                             .format(model.id))
 
     subject = 'Requesting action on OpenStax CNX content'

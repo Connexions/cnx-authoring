@@ -216,6 +216,30 @@ class UtilsTests(unittest.TestCase):
             self.assertEqual(document.acls,
                              [('me', 'view', 'edit', 'publish')])
 
+    @mock.patch('cnxauthoring.utils.get_current_registry')
+    def test_notify_role_for_acceptance(self, mock_registry):
+        from ..models import create_content
+
+        document = create_content(title='My Document')
+        mock_accounts = mock.Mock()
+        mock_registry().getUtility.return_value = mock_accounts
+        mock_registry().settings = {'webview.url': 'http://cnx.org/'}
+
+        utils.notify_role_for_acceptance('user2', 'user1', document)
+        self.assertEqual(mock_accounts.send_message.call_count, 1)
+        (user_id, subject, body), _ = mock_accounts.send_message.call_args
+        self.assertEqual(user_id, 'user2')
+        self.assertEqual(subject, 'Requesting action on OpenStax CNX content')
+        self.assertEqual(body, '''\
+Hello user2,
+
+user1 added you to content titled My Document.
+Please go to the following link to accept your roles and license:
+http://cnx.org/contents/{}/role-acceptance
+
+Thank you from your friends at OpenStax CNX
+'''.format(document.id))
+
     @mock.patch('cnxauthoring.utils.get_current_request')
     def test_accept_roles(self, mock_request):
         cstruct = {
