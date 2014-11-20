@@ -235,7 +235,7 @@ Hello user2,
 
 user1 added you to content titled My Document.
 Please go to the following link to accept your roles and license:
-http://cnx.org/contents/{}/role-acceptance
+http://cnx.org/users/role-acceptance/{}
 
 Thank you from your friends at OpenStax CNX
 '''.format(document.id))
