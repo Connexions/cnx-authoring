@@ -699,6 +699,13 @@ def post_acceptance_info(request):
     tobe_accepted_roles = set([])
     for role_acceptance in appstruct['roles']:
         role_type = role_acceptance['role']
+        # BBB 18-Nov-2014 licensors - deprecated property 'licensors'
+        #     needs changed in webview and archive before removing here.
+        if role_type == 'copyright_holders':
+            # This is necessary for storage.update to work correctly,
+            #   see also the BBB in that method.
+            role_type = 'licensors'
+        # /BBB
         has_accepted = role_acceptance['has_accepted']
         for i, role in enumerate(content.metadata.get(role_type, [])):
             if role['id'] == user_id:
