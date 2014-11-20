@@ -116,16 +116,18 @@ def update_content_state(request, content):
             content.metadata['publication']):
         publishing_url = request.registry.settings['publishing.url']
         response = requests.get(urlparse.urljoin(
-            publishing_url, 'publications', content.metadata['publication']))
+            publishing_url,
+            '/publications/{}'.format(content.metadata['publication'])))
         if response.status_code == 200:
             try:
                 result = json.loads(response.content.decode('utf-8'))
-                content.update(state=result['state'])
-                try:
-                    storage.update(content)
-                    storage.persist()
-                except storage.Error:
-                    storage.abort()
+                if content.metadata['state'] != result['state']:
+                    content.update(state=result['state'])
+                    try:
+                        storage.update(content)
+                        storage.persist()
+                    except storage.Error:
+                        storage.abort()
             except (TypeError, ValueError):
                 # Not critical if there's a json problem here - perhaps log this
                 pass

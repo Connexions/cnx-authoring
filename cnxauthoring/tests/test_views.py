@@ -70,6 +70,60 @@ class ViewsTests(unittest.TestCase):
         from ..storage.main import BaseStorage
         return BaseStorage
 
+    def test_update_content_state(self):
+        from ..models import create_content
+        from ..utils import TZINFO
+
+        # Create some new content
+        created = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = created
+            document = create_content(title='My Document')
+        self.assertEqual(document.metadata['created'], created)
+        self.assertEqual(document.metadata['revised'], created)
+
+        # Update some fields, set state to Failed/Error
+        revised = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = revised
+            document.update(abstract='Abstract of My Document',
+                            state='Failed/Error',
+                            publication=100)
+        self.assertEqual(document.metadata['created'], created)
+        self.assertEqual(document.metadata['revised'], revised)
+
+        # Call update_content_state
+        from ..views import update_content_state
+        request = testing.DummyRequest()
+        request.registry.settings['publishing.url'] = 'http://cnx-publishing/'
+        mock_response = mock.Mock(status_code=200)
+        mock_response.content = b'{"state": "Failed/Error"}'
+        with mock.patch('requests.get') as mock_get:
+            mock_get.return_value = mock_response
+            update_content_state(request, document)
+            args, kwargs = mock_get.call_args
+            self.assertEqual(args, ('http://cnx-publishing/publications/100',))
+        self.assertEqual(document.metadata['created'], created)
+        # since the state didn't change, revised should not be updated
+        self.assertEqual(document.metadata['revised'], revised)
+
+        # Call update_content_state again with a change in status
+        mock_response = mock.Mock(status_code=200)
+        mock_response.content = b'{"state": "Done/Success"}'
+        state_updated = datetime.datetime.now(TZINFO)
+        with mock.patch('requests.get') as mock_get:
+            mock_get.return_value = mock_response
+            with mock.patch('datetime.datetime') as mock_datetime:
+                mock_datetime.now.return_value = state_updated
+                with mock.patch.object(self.storage_cls, 'update'):
+                    update_content_state(request, document)
+
+            args, kwargs = mock_get.call_args
+            self.assertEqual(args, ('http://cnx-publishing/publications/100',))
+        self.assertEqual(document.metadata['created'], created)
+        # since the state changed, revised should be updated
+        self.assertEqual(document.metadata['revised'], state_updated)
+
     def test_get_content_for_document(self):
         # Set up a piece of content.
         id = uuid.uuid4(),
