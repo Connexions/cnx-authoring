@@ -36,6 +36,7 @@ openstax_accounts.application_url = http://localhost:8080/
 openstax_accounts.login_path = /login
 openstax_accounts.callback_path = /callback
 openstax_accounts.logout_path = /logout
+openstax_accounts.user_search.per_page = 100
 
 ###
 # wsgi server configuration

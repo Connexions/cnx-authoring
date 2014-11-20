@@ -2184,7 +2184,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, {
             u'num_matching_users': 0,
-            u'per_page': 20,
+            u'per_page': 10,
             u'users': [],
             u'order_by': u'username ASC',
             u'page': 0,
@@ -2196,7 +2196,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, {
             u'num_matching_users': 0,
-            u'per_page': 20,
+            u'per_page': 10,
             u'users': [],
             u'order_by': u'username ASC',
             u'page': 0,
@@ -2248,12 +2248,16 @@ class FunctionalTests(BaseFunctionalTestCase):
                     {u'username': u'user_30187', u'id': 9}
                     ],
                 u'num_matching_users': 5,
-                u'per_page': 20,
+                u'per_page': 10,
                 u'page': 0}
         with mock.patch('openstax_accounts.stub.OpenstaxAccounts.search'
-                       ) as accounts_search:
+                        ) as accounts_search:
             accounts_search.return_value = mock_accounts_search_results
             response = self.testapp.get('/users/search?q=admin')
+            args, kwargs = accounts_search.call_args
+            self.assertEqual(args, ('admin',))
+            self.assertEqual(kwargs, {
+                'per_page': 10, 'order_by': 'last_name,first_name'})
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result, {
             u'users': [
@@ -2295,7 +2299,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 ],
             u'order_by': u'username ASC',
             u'num_matching_users': 5,
-            u'per_page': 20,
+            u'per_page': 10,
             u'page': 0,
             })
         self.assert_cors_headers(response)

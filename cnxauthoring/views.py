@@ -87,16 +87,22 @@ def options(request):
 def user_search(request):
     """Search for openstax accounts users"""
     q = request.GET.get('q', '')
+    try:
+        per_page = int(request.registry.settings.get(
+            'openstax_accounts.user_search.per_page', 100))
+    except TypeError:
+        per_page = 100
     if not q:
         return {
-                'per_page': 20,
+                'per_page': per_page,
                 'users': [],
                 'order_by': 'username ASC',
                 'num_matching_users': 0,
                 'page': 0,
                 }
     accounts = request.registry.getUtility(IOpenstaxAccounts)
-    result = accounts.search(q, order_by='last_name,first_name')
+    result = accounts.search(
+        q, per_page=per_page, order_by='last_name,first_name')
     result.pop('application_users')
     result['users'] = [utils.profile_to_user_dict(profile)
             for profile in result['users']]
