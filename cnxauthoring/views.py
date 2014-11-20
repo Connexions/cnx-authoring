@@ -689,8 +689,6 @@ def post_acceptance_info(request):
 
     # Mark the license acceptance.
     has_accepted_license = appstruct.get('license', False)
-    if not has_accepted_license:
-        raise httpexceptions.HTTPBadRequest('Must accept the license')
     for licensor in content.licensor_acceptance:
         if licensor['id'] == user_id:
             licensor['has_accepted'] = has_accepted_license
