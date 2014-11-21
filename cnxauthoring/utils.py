@@ -246,7 +246,7 @@ def update_containment(binder, deletion = False):
                 doc.metadata['contained_in'].remove(b_id)
                 storage.update(doc)
 
-def create_acl_for(request, document, uids):
+def create_acl_for(request, document):
     """Submit content identifiers to publishing and allow users to
     publish
     """
@@ -259,12 +259,15 @@ def create_acl_for(request, document, uids):
             'x-api-key': api_key,
             'content-type': 'application/json',
             }
-    payload = [{'uid': uid, 'permission': 'publish'} for uid in uids]
+
+    payload = []
+    for user in document.metadata['publishers']:
+        payload.append({'uid': user['id'], 'permission': 'publish'})
 
     acl_url = urlparse.urljoin(
-            publishing_url, '/contents/{}/permissions'.format(document.id))
+        publishing_url, '/contents/{}/permissions'.format(document.id))
     response = requests.post(
-            acl_url, data=json.dumps(payload), headers=headers)
+        acl_url, data=json.dumps(payload), headers=headers)
     if response.status_code != 202:
         raise PublishingError(response)
 
@@ -272,6 +275,26 @@ def get_acl_for(request, document):
     """Get document ACL from publishing"""
     from .models import PublishingError
 
+    # Set the acl using roles
+    roles_acl = {}
+    for role_type_attr_name in cnxepub.ATTRIBUTED_ROLE_KEYS:
+        for role in document.metadata.get(role_type_attr_name, []):
+            permissions = ['view']
+            if role_type_attr_name == 'publishers' \
+               and role.get('has_accepted'):
+                permissions.append('publish')
+            if role.get('has_accepted'):
+                permissions.append('edit')
+            roles_acl.setdefault(role['id'], set([]))
+            roles_acl[role['id']].update(permissions)
+
+    for uid, permissions in roles_acl.items():
+        # Don't re-add the view permission if it has been removed
+        if uid in document.acls and 'view' not in document.acls[uid]:
+            permissions.remove('view')
+        document.acls[uid] = tuple(permissions)
+
+    # Get additional acl from publishing
     settings = request.registry.settings
     publishing_url = settings['publishing.url']
     api_key = settings['publishing.api_key']
@@ -287,7 +310,13 @@ def get_acl_for(request, document):
         raise PublishingError(response)
     acl = response.json()
     for user_permission in acl:
-        document.acls[user_permission['uid']] = ('view', 'edit', 'publish',)
+        uid = user_permission['uid']
+        permissions = ['view', 'edit', 'publish']
+        # Don't re-add the view permission if it has been removed
+        if uid in document.acls and 'view' not in document.acls[uid]:
+            permissions.remove('view')
+        document.acls[uid] = tuple(permissions)
+
 
 def get_roles(document, uid):
     field_to_roles = (

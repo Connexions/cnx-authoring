@@ -104,17 +104,24 @@ class BaseFunctionalTestCase(unittest.TestCase):
 
         self.mock_acl_storage = {}
 
-        def create_acl(request, document, uids):
+        def create_acl(request, document):
+            uids = [i['id'] for i in document.metadata['publishers']]
             self.mock_acl_storage[document.id] = uids
         self.mock_create_acl = mock.Mock(side_effect=create_acl)
         self.acl_patch = mock.patch('cnxauthoring.utils.create_acl_for',
                                     self.mock_create_acl)
         self.acl_patch.start()
 
+        import cnxauthoring.utils
+        utils_get_acl_for = cnxauthoring.utils.get_acl_for
         def get_acl(request, document):
-            document.acls = {}
-            for uid in self.mock_acl_storage.get(document.id, []):
-                document.acls[uid] = ('view', 'edit', 'publish')
+            with mock.patch('requests.get') as mock_get:
+                response = mock_get()
+                response.status_code = 200
+                response.json.return_value = [
+                    {'uid': uid}
+                    for uid in self.mock_acl_storage.get(document.id, [])]
+                utils_get_acl_for(request, document)
         self.mock_get_acl = mock.Mock(side_effect=get_acl)
         self.get_acl_patch = mock.patch('cnxauthoring.utils.get_acl_for',
                                         self.mock_get_acl)
@@ -949,6 +956,8 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_post_content_revision_403(self):
         self.mock_archive()
+        self.logout()
+        self.login('user2')
         post_data = {
             'id': '91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             'title': u"Turning DNA through resonance",
@@ -1454,7 +1463,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(page['id']),
                 post_data, status=200)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
+        self.assertEqual(self.mock_create_acl.call_count, 2)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['content'], post_data['content'])
         self.assertEqual(result['revised'], now.astimezone(TZINFO).isoformat())
@@ -1518,7 +1527,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(result['id']),
                 update_data, status=200)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
+        self.assertEqual(self.mock_create_acl.call_count, 2)
         result = json.loads(response.body.decode('utf-8'))
         submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
         submitter_w_assign_date['assignmentDate'] = created.astimezone(
@@ -1675,7 +1684,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'publishers': [SUBMITTER_WITH_ACCEPTANCE],
                     'error': False,
                     }, status=200)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
+        self.assertEqual(self.mock_create_acl.call_count, 3)
 
         response = self.testapp.get(
             '/contents/{}@draft.json'.format(binder['id']), status=200)
@@ -1728,7 +1737,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(document['id']),
                 update_data, status=200)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
+        self.assertEqual(self.mock_create_acl.call_count, 2)
         result = json.loads(response.body.decode('utf-8'))
         self.assertEqual(result['id'], document['id'])
         self.assertEqual(result['title'], update_data['title'])
@@ -1878,11 +1887,16 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.testapp.get(
             '/contents/{}@draft.json'.format(page['id']), status=200)
 
-        # make sure the editor can also edit the content
+        # make sure the editor can also edit the content after accepting their
+        # role
+        self.testapp.post_json(
+            '/contents/{}@draft/acceptance'.format(page['id']),
+            {'license': True,
+             'roles': [{'role': 'editors', 'hasAccepted': True}]},
+            status=200)
         response = self.testapp.put_json(
-            '/contents/{}@draft.json'.format(page['id']), {
-                'title': 'Multiple users test edited by you',
-                }, status=200)
+            '/contents/{}@draft.json'.format(page['id']),
+            {'title': 'Multiple users test edited by you'}, status=200)
 
         self.logout()
         self.login('user2')
@@ -1918,9 +1932,6 @@ class FunctionalTests(BaseFunctionalTestCase):
         workspace = json.loads(response.body.decode('utf-8'))
         items = [i['id'] for i in workspace['results']['items']]
         self.assertNotIn('{}@draft'.format(page['id']), items)
-        # but content should still be accessible by user1
-        self.testapp.get(
-            '/contents/{}@draft.json'.format(page['id']), status=200)
         self.logout()
 
         # content should still be accessible by "you"
@@ -1931,6 +1942,28 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertIn('{}@draft'.format(page['id']), items)
         self.testapp.get(
             '/contents/{}@draft.json'.format(page['id']), status=200)
+        response = self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']),
+            {'title': 'Multiple users test edited again by you'}, status=200)
+        self.logout()
+
+        # content should not appear in user1's workspace
+        self.login('user1')
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = json.loads(response.body.decode('utf-8'))
+        items = [i['id'] for i in workspace['results']['items']]
+        self.assertNotIn('{}@draft'.format(page['id']), items)
+
+        # re-add user1 to the document
+        post_data = {
+            'id': '{}@draft'.format(page['id']),
+            }
+        response = self.testapp.post_json(
+            '/users/contents', post_data, status=201)
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = json.loads(response.body.decode('utf-8'))
+        items = [i['id'] for i in workspace['results']['items']]
+        self.assertIn('{}@draft'.format(page['id']), items)
 
     def test_search_content_401(self):
         self.logout()
@@ -2315,31 +2348,79 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
     def test_user_contents(self):
-        response = self.testapp.post_json('/users/contents',
-                {'title': 'document by default user'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
+        # user1 adds a document
+        response = self.testapp.post_json(
+            '/users/contents',
+            {'title': 'document by default user',
+             'editors': [{"id": "user2"}],
+             }, status=201)
+        page = json.loads(response.body.decode('utf-8'))
 
-        # a user should not get any contents that doesn't belong to themselves
+        # user1 adds user3 as an author
+        self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']),
+            {'authors': page['authors'] + [{"id": "user3"}]}, status=200)
+
+        # the document should show up in user1's workspace
+        response = self.testapp.get('/users/contents', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        content_ids = [i['id'] for i in result['results']['items']]
+        self.assertIn('{}@draft'.format(page['id']), content_ids)
+
+        # user2 should be able to see the document user1 added
+        self.logout()
+        self.login('user2')
+        response = self.testapp.get('/users/contents', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        content_ids = [i['id'] for i in result['results']['items']]
+        self.assertIn('{}@draft'.format(page['id']), content_ids)
+        self.assert_cors_headers(response)
+
+        self.testapp.get(
+            '/contents/{}@draft.json'.format(page['id']), status=200)
+
+        # user3 should be able to see the document user1 added
+        self.logout()
+        self.login('user3')
+        response = self.testapp.get('/users/contents', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        content_ids = [i['id'] for i in result['results']['items']]
+        self.assertIn('{}@draft'.format(page['id']), content_ids)
+        self.assert_cors_headers(response)
+
+        self.testapp.get(
+            '/contents/{}@draft.json'.format(page['id']), status=200)
+
+        # user3 should not be able to edit the document before accepting their
+        # role
+        self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']), {}, status=403)
+
+        # user3 accepts their role
+        self.testapp.post_json(
+            '/contents/{}@draft/acceptance'.format(page['id']),
+            {'license': True,
+             'roles': [{'role': 'authors', 'hasAccepted': True}]},
+            status=200)
+
+        # user3 should be able to edit the document after accepting their
+        # role
+        self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']), {}, status=200)
+
+        # user4 should not be able to see the document user1 added
         self.logout()
         self.login('user4')
         response = self.testapp.get('/users/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(result, {
-            u'query': {
-                u'limits': [],
-                },
-            u'results': {
-                u'items': [],
-                u'total': 0,
-                u'limits': [],
-                },
-            })
+        content_ids = [i['id'] for i in result['results']['items']]
+        self.assertNotIn('{}@draft'.format(page['id']), content_ids)
         self.assert_cors_headers(response)
 
-        def mock_get_acl(request, document):
-            document.acls = {'user4': ('edit',)}
-        self.mock_get_acl.side_effect = mock_get_acl
-
+    def test_user_contents_ordering(self):
+        # user4 adds a document
+        self.logout()
+        self.login('user4')
         date = datetime.datetime(2014, 3, 13, 15, 21, 15, 677617)
         date = pytz.timezone(os.environ['TZ']).localize(date)
         posting_tzinfo = pytz.timezone('America/Whitehorse')
@@ -2350,10 +2431,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             'created': utf8(posting_date.isoformat()),
             'revised': utf8(posting_date.isoformat()),
             }, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
+        self.assertEqual(self.mock_create_acl.call_count, 1)
         page = json.loads(response.body.decode('utf-8'))
 
-        # user should get back the contents just posted - full content test
+        # user4 should get back the contents just posted - full content test
         response = self.testapp.get('/users/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
         from ..models import TZINFO
@@ -2388,22 +2469,24 @@ class FunctionalTests(BaseFunctionalTestCase):
         mock_datetime = mock.Mock()
         mock_datetime.now = mock.Mock(return_value=one_week_ago)
         with mock.patch('datetime.datetime', mock_datetime):
-            response = self.testapp.post_json('/users/contents',
-                    {'derivedFrom': '91cb5f28-2b8a-4324-9373-dac1d617bc24@1'},
-                    status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 3)
+            response = self.testapp.post_json(
+                '/users/contents',
+                {'derivedFrom': '91cb5f28-2b8a-4324-9373-dac1d617bc24@1'},
+                status=201)
+        self.assertEqual(self.mock_create_acl.call_count, 2)
         self.assert_cors_headers(response)
 
         mock_datetime.now = mock.Mock(return_value=two_weeks_ago)
         with mock.patch('datetime.datetime', mock_datetime):
-            response = self.testapp.post_json('/users/contents',
-                    {'title': 'oldest document by user4'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 4)
+            response = self.testapp.post_json(
+                '/users/contents',
+                {'title': 'oldest document by user4'}, status=201)
+        self.assertEqual(self.mock_create_acl.call_count, 3)
         self.assert_cors_headers(response)
 
-        response = self.testapp.post_json('/users/contents',
-                {'title': 'new document by user4'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 5)
+        response = self.testapp.post_json(
+            '/users/contents', {'title': 'new document by user4'}, status=201)
+        self.assertEqual(self.mock_create_acl.call_count, 4)
         self.assert_cors_headers(response)
 
         response = self.testapp.get('/users/contents', status=200)
@@ -2422,13 +2505,13 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'document by user4'])
 
         derived_from = [i['derivedFrom'] for i in result['results']['items']]
-        self.assertEqual(derived_from, [None,
-            '91cb5f28-2b8a-4324-9373-dac1d617bc24@1', None, None])
+        self.assertEqual(derived_from, [
+            None, '91cb5f28-2b8a-4324-9373-dac1d617bc24@1', None, None])
 
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
+                         'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+                         'http://localhost:8000')
         self.assert_cors_headers(response)
 
     def test_user_contents_hide_documents_inside_binders(self):
@@ -2441,7 +2524,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         mock_datetime.now = mock.Mock(return_value=one_day_ago)
 
         def mock_get_acl(request, document):
-            document.acls = {'user5': ('edit',)}
+            document.acls = {'user5': ('view', 'edit',)}
         self.mock_get_acl.side_effect = mock_get_acl
         with mock.patch('datetime.datetime', mock_datetime):
             response = self.testapp.post_json('/users/contents',
@@ -2518,14 +2601,14 @@ class FunctionalTests(BaseFunctionalTestCase):
                     },
                 }, status=200)
         book = json.loads(response.body.decode('utf-8'))
-        self.assertEqual(self.mock_create_acl.call_count, 3)
+        self.assertEqual(self.mock_create_acl.call_count, 4)
 
         # add page_in_book to a book by someone else
         self.logout()
         self.login('user6')
 
         def mock_get_acl(request, document):
-            document.acls = {'user6': ('edit',)}
+            document.acls = {'user6': ('view', 'edit',)}
         self.mock_get_acl.side_effect = mock_get_acl
         response = self.testapp.post_json('/users/contents', {
             'mediaType': 'application/vnd.org.cnx.collection',
@@ -2538,7 +2621,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     ],
                 },
             }, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 4)
+        self.assertEqual(self.mock_create_acl.call_count, 5)
         other_book = json.loads(response.body.decode('utf-8'))
         self.logout()
         self.login('user5')

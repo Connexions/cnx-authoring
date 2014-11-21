@@ -144,7 +144,7 @@ def user_contents(request):
     if kwargs:
         utils.change_dict_keys(kwargs, utils.camelcase_to_underscore)
     contents = storage.get_all(user_id=request.unauthenticated_userid,
-                               permissions=('edit', 'view',), **kwargs)
+                               permissions=('view',), **kwargs)
     for content in contents:
         update_content_state(request, content)
         if isinstance(content,Binder):
@@ -211,6 +211,7 @@ def get_resource(request):
 
 
 def post_content_single(request, cstruct):
+    current_uid = request.unauthenticated_userid
     utils.change_dict_keys(cstruct, utils.camelcase_to_underscore)
     derived_from = cstruct.get('derived_from')
     archive_id = cstruct.get('id')
@@ -223,6 +224,31 @@ def post_content_single(request, cstruct):
                     'Derive failed: {}'.format(derived_from))
 
     if archive_id:
+        # check whether authoring already has a draft that the user can edit
+        content = storage.get(id=archive_id.split('@')[0],
+                              permissions=('edit',), user_id=current_uid)
+        if content:
+            if content.metadata['state'] == 'Done/Success':
+                # remove the content in the database if it's already
+                # published successfully
+                try:
+                    storage.remove(content)
+                    storage.persist()
+                except storage.Error:
+                    storage.abort()
+
+            # add view permission for the user
+            else:
+                if 'view' not in content.acls[current_uid]:
+                    content.acls[current_uid] += ('view',)
+                    try:
+                        storage.update(content)
+                        storage.persist()
+                    except storage.Error:
+                        storage.abort()
+                return content
+
+        # get content from archive
         try:
             cstruct = revise_content(request, **cstruct)
         except DocumentNotFoundError:
@@ -233,22 +259,6 @@ def post_content_single(request, cstruct):
             raise httpexceptions.HTTPForbidden(
                     'You do not have permission to edit {}'.format(archive_id))
 
-        content = storage.get(id=cstruct['id'].split('@')[0])
-        if content:
-            if content.metadata['state'] == 'Done/Success':
-                # remove the content in the database if it's already
-                # published successfully
-                try:
-                    storage.remove(content)
-                    storage.persist()
-                except storage.Error:
-                    storage.abort()
-            else:
-                # content in database is not yet published, return content
-                return content
-
-    current_uid = request.unauthenticated_userid
-    uids = set([current_uid])
     cstruct['submitter'] = utils.profile_to_user_dict(request.user)
 
     # Add the logged in user to list of authors, licensors and publishers if
@@ -262,7 +272,6 @@ def post_content_single(request, cstruct):
 
     cstruct.setdefault('authors', [])
     author_ids = [i['id'] for i in cstruct['authors']]
-    uids.update(author_ids)
     if not author_ids:
         cstruct['authors'] = [user]
 
@@ -273,18 +282,14 @@ def post_content_single(request, cstruct):
 
     cstruct.setdefault('publishers', [])
     publisher_ids = [i['id'] for i in cstruct['publishers']]
-    uids.update(publisher_ids)
     # publishers is known as maintainers in legacy
     for maintainer in cstruct.get('maintainers', []):
         if maintainer['id'] not in publisher_ids:
             cstruct['publishers'] += [maintainer]
             publisher_ids.append(maintainer['id'])
-            uids.add(maintainer['id'])
     if not publisher_ids:
         cstruct['publishers'] = [user]
 
-    uids.update([i['id'] for i in cstruct.get('editors', [])
-                                + cstruct.get('translators', [])])
     utils.accept_roles(cstruct, user)
 
     if cstruct.get('media_type') == BINDER_MEDIATYPE:
@@ -304,7 +309,7 @@ def post_content_single(request, cstruct):
 
     if not archive_id:
         # new content, need to create acl entry in publishing
-        utils.create_acl_for(request, content, uids)
+        utils.create_acl_for(request, content)
     utils.accept_license(content, user)
     utils.declare_roles(content)
     utils.declare_licensors(content)
@@ -428,10 +433,12 @@ def delete_content(request):
 
     try:
         if user_id and len(content.acls.keys()) > 1:
-            # just remove the user from this document
-            content.acls = {uid: permissions
-                            for uid, permissions in content.acls.items()
-                            if uid != user_id}
+            # remove "view" permission
+            for uid, permissions in content.acls.items():
+                if uid == user_id and 'view' in permissions:
+                    permissions = list(permissions)
+                    permissions.remove('view')
+                    content.acls[uid] = permissions
             storage.update(content)
         else:
             resource = storage.remove(content)
@@ -479,6 +486,8 @@ def put_content(request):
         raise httpexceptions.HTTPBadRequest(e.message)
     utils.declare_roles(content)
     utils.declare_licensors(content)
+    utils.create_acl_for(request, content)
+    utils.get_acl_for(request, content)
     try:
         storage.update(content)
         if content.mediatype == BINDER_MEDIATYPE:
@@ -720,15 +729,16 @@ def post_acceptance_info(request):
             if role['id'] == user_id:
                 tobe_updated_roles.add((role_type, has_accepted, i,))
 
-
     for role_type, has_accepted, index in tobe_updated_roles:
         content.metadata[role_type][index]['has_accepted'] = has_accepted
-    if tobe_updated_roles:
-        storage.update(content)
-        storage.persist()
 
     utils.declare_roles(content)
     utils.declare_licensors(content)
+    utils.get_acl_for(request, content)
+
+    if tobe_updated_roles:
+        storage.update(content)
+        storage.persist()
 
     resp = request.response
     resp.status = 200
