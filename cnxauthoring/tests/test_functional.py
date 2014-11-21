@@ -113,9 +113,9 @@ class BaseFunctionalTestCase(unittest.TestCase):
         self.addCleanup(self.acl_patch.stop)
 
         def get_acl(request, document):
-            document.acls = []
+            document.acls = {}
             for uid in self.mock_acl_storage.get(document.id, []):
-                document.acls.append((uid, 'view', 'edit', 'publish'))
+                document.acls[uid] = ('view', 'edit', 'publish')
         self.mock_get_acl = mock.Mock(side_effect=get_acl)
         self.get_acl_patch = mock.patch('cnxauthoring.utils.get_acl_for',
                                         self.mock_get_acl)
@@ -2339,7 +2339,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
         def mock_get_acl(request, document):
-            document.acls = [('user4', 'edit')]
+            document.acls = {'user4': ('edit',)}
         self.mock_get_acl.side_effect = mock_get_acl
 
         date = datetime.datetime(2014, 3, 13, 15, 21, 15, 677617)
@@ -2443,7 +2443,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         mock_datetime.now = mock.Mock(return_value=one_day_ago)
 
         def mock_get_acl(request, document):
-            document.acls = [('user5', 'edit')]
+            document.acls = {'user5': ('edit',)}
         self.mock_get_acl.side_effect = mock_get_acl
         with mock.patch('datetime.datetime', mock_datetime):
             response = self.testapp.post_json('/users/contents',
@@ -2527,7 +2527,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.login('user6')
 
         def mock_get_acl(request, document):
-            document.acls = [('user6', 'edit')]
+            document.acls = {'user6': ('edit',)}
         self.mock_get_acl.side_effect = mock_get_acl
         response = self.testapp.post_json('/users/contents', {
             'mediaType': 'application/vnd.org.cnx.collection',

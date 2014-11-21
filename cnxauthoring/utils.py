@@ -286,8 +286,8 @@ def get_acl_for(request, document):
     if response.status_code != 200:
         raise PublishingError(response)
     acl = response.json()
-    document.acls = [(user_permission['uid'], 'view', 'edit', 'publish')
-                     for user_permission in acl]
+    for user_permission in acl:
+        document.acls[user_permission['uid']] = ('view', 'edit', 'publish',)
 
 def get_roles(document, uid):
     field_to_roles = (

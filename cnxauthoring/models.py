@@ -130,9 +130,7 @@ class BaseContent:
                     permissions.append('edit')
                 roles_acl[role['id']] = set(permissions)
         # Amend the acl from the model's local ACL record.
-        for user_permissions in self.acls:
-            user_id = user_permissions[0]
-            permissions = set(user_permissions[1:])
+        for user_id, permissions in self.acls.items():
             roles_acl.setdefault(user_id, set([]))
             roles_acl[user_id].update(permissions)
         acls.extend([(Allow, user_id, tuple(permissions),)
@@ -162,7 +160,7 @@ class Document(cnxepub.Document, BaseContent):
         id = str(metadata['id'])
         content = metadata['content']
         cnxepub.Document.__init__(self, id, content, metadata)
-        self.acls = acls and acls or []
+        self.acls = acls and acls or {}
         la = licensor_acceptance
         self.licensor_acceptance = la and la or []
 
@@ -320,7 +318,7 @@ class Binder(cnxepub.Binder, BaseContent):
         nodes, title_overrides = build_tree(tree)
         cnxepub.Binder.__init__(self, id, nodes=nodes,
                 metadata=metadata, title_overrides=title_overrides)
-        self.acls = acls and acls or []
+        self.acls = acls and acls or {}
         la = licensor_acceptance
         self.licensor_acceptance = la and la or []
 

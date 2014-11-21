@@ -214,7 +214,7 @@ class UtilsTests(unittest.TestCase):
                              'http://publishing/contents/{}/permissions'
                              .format(document.id))
             self.assertEqual(document.acls,
-                             [('me', 'view', 'edit', 'publish')])
+                             {'me': ('view', 'edit', 'publish')})
 
     @mock.patch('cnxauthoring.utils.get_current_registry')
     def test_notify_role_for_acceptance(self, mock_registry):

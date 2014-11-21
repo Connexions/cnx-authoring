@@ -417,7 +417,7 @@ def delete_content(request):
     if not request.has_permission('edit', content):
         raise httpexceptions.HTTPForbidden(
                 'You do not have permission to delete {}'.format(id))
-    if not user_id and len(content.acls) > 1:
+    if not user_id and len(content.acls.keys()) > 1:
         # there are other users who have permission to this document
         raise httpexceptions.HTTPForbidden(
                 'There are other users on this document {}'.format(id))
@@ -427,9 +427,11 @@ def delete_content(request):
                      content.metadata['contained_in']))
 
     try:
-        if user_id and len(content.acls) > 1:
+        if user_id and len(content.acls.keys()) > 1:
             # just remove the user from this document
-            content.acls = [acl for acl in content.acls if acl[0] != user_id]
+            content.acls = {uid: permissions
+                            for uid, permissions in content.acls.items()
+                            if uid != user_id}
             storage.update(content)
         else:
             resource = storage.remove(content)

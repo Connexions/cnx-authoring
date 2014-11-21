@@ -146,7 +146,7 @@ class PostgresqlStorage(BaseStorage):
                         permissions_by_users[acl['user_id']].append(
                                 acl['permission'])
                     for user_id, permissions in permissions_by_users.items():
-                        document.acls.append((user_id,) + tuple(permissions))
+                        document.acls[user_id] = tuple(set(permissions))
                     checked_execute(cursor, SQL['get'].format(
                         tablename='document_licensor_acceptance',
                         where_clause='uuid = %(uuid)s'), {'uuid': rd['id']})
@@ -197,10 +197,8 @@ class PostgresqlStorage(BaseStorage):
                 args[field] = psycopg2.extras.Json(args[field])
             checked_execute(cursor, SQL['add-document'], args)
 
-            for acl in item.acls:
-                user_id = acl[0]
-                permissions = acl[1:]
-                for permission in permissions:
+            for user_id, permissions in item.acls.items():
+                for permission in set(permissions):
                     checked_execute(cursor, SQL['add-document-acl'], {
                         'uuid': item.id,
                         'user_id': user_id,
@@ -278,10 +276,8 @@ class PostgresqlStorage(BaseStorage):
             checked_execute(cursor, SQL['update-document'], args)
             checked_execute(cursor, SQL['delete-document-acl'],
                             {'uuid': args['id']})
-            for acl in item.acls:
-                user_id = acl[0]
-                permissions = acl[1:]
-                for permission in permissions:
+            for user_id, permissions in item.acls.items():
+                for permission in set(permissions):
                     checked_execute(cursor, SQL['add-document-acl'], {
                         'uuid': item.id,
                         'user_id': user_id,
