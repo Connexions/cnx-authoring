@@ -110,7 +110,6 @@ class BaseFunctionalTestCase(unittest.TestCase):
         self.acl_patch = mock.patch('cnxauthoring.utils.create_acl_for',
                                     self.mock_create_acl)
         self.acl_patch.start()
-        self.addCleanup(self.acl_patch.stop)
 
         def get_acl(request, document):
             document.acls = {}
@@ -120,20 +119,19 @@ class BaseFunctionalTestCase(unittest.TestCase):
         self.get_acl_patch = mock.patch('cnxauthoring.utils.get_acl_for',
                                         self.mock_get_acl)
         self.get_acl_patch.start()
-        self.addCleanup(self.get_acl_patch.stop)
 
         self.mock_declare_roles = mock.Mock()
         self.declare_roles_patch = mock.patch(
             'cnxauthoring.utils.declare_roles', self.mock_declare_roles)
         self.declare_roles_patch.start()
-        self.addCleanup(self.declare_roles_patch.stop)
 
         self.mock_declare_licensors = mock.Mock()
         self.declare_licensors_patch = mock.patch(
             'cnxauthoring.utils.declare_licensors',
             self.mock_declare_licensors)
         self.declare_licensors_patch.start()
-        self.addCleanup(self.declare_licensors_patch.stop)
+
+        self.addCleanup(mock._patch_stopall)
 
     def login(self, username='user1', password='password', login_url='/login',
               headers=None):
@@ -2648,20 +2646,7 @@ class PublicationTests(BaseFunctionalTestCase):
         super(PublicationTests, self).setUp()
         if not self.USE_MOCK_PUBLISHING_SERVICE:
             # unmock communications with publishing
-            self.acl_patch.stop()
-            self.get_acl_patch.stop()
-            self.declare_roles_patch.stop()
-            self.declare_licensors_patch.stop()
-
-    def tearDown(self):
-        super(PublicationTests, self).tearDown()
-        if not self.USE_MOCK_PUBLISHING_SERVICE:
-            # restart the patches so the clean up step to stop the patches
-            # won't fail
-            self.acl_patch.start()
-            self.get_acl_patch.start()
-            self.declare_roles_patch.start()
-            self.declare_licensors_patch.start()
+            mock._patch_stopall()
 
     def test_publish_401(self):
         self.logout()
