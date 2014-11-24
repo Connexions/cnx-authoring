@@ -22,5 +22,5 @@ UPDATE document
             contained_in = %(contained_in)s,
             copyright_holders = %(copyright_holders)s,
             editors = %(editors)s, translators = %(translators)s,
-            illustrators = %(illustrators)s
+            illustrators = %(illustrators)s, version = %(version)s
 WHERE id  = %(id)s
