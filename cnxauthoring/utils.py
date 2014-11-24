@@ -20,6 +20,7 @@ except ImportError:
     import urllib.parse as urlparse # renamed in python3
 
 import cnxepub
+from cnxepub.models import Document, DocumentPointer, TranslucentBinder
 import requests
 import tzlocal
 from openstax_accounts.interfaces import IOpenstaxAccounts
@@ -100,16 +101,16 @@ def filter_binder_documents(binder, documents):
         not in the list of documents into documentpointers."""
     docids = [d.id for d in documents]
     for i, model in enumerate(binder):
-        if isinstance(model, cnxepub.models.TranslucentBinder): # section/subcollection
+        if isinstance(model, TranslucentBinder): # section/subcollection
             filter_binder_documents(model, documents)
 
-        elif isinstance(model,cnxepub.models.Document):
+        elif isinstance(model,Document):
             if model.id not in docids:
                 binder.pop(i) # remove it
                 # Is it new?
                 if model.get_uri('cnx-archive'):
                     #convert to documentpointer
-                    dp = epub.models.DocumentPointer(model.get_uri('cnx-archive'))
+                    dp = DocumentPointer(model.get_uri('cnx-archive'))
                     binder.insert(i,dp)
 
 def build_epub(contents, submitter, submitlog):
@@ -126,7 +127,7 @@ def build_epub(contents, submitter, submitlog):
                 binders.append(content[0])
             else:  # belt and suspenders - seems to be an extra level of lists - filter out docs
                 for doc in content:
-                    if isinstance(doc,cnxepub.models.Document):
+                    if isinstance(doc,Document):
                         doc.publish_prep()
                         documents.append(doc)
         elif isinstance(content, Binder): # Special case: toplevel is book + pages
@@ -134,7 +135,7 @@ def build_epub(contents, submitter, submitlog):
             filter_binder_documents(content, contents[i:])
             binders.append(content)
             break # eat the whole list
-        elif isinstance(content,cnxepub.models.Document):
+        elif isinstance(content,Document):
             content.publish_prep()
             documents.append(content)
         
@@ -142,7 +143,7 @@ def build_epub(contents, submitter, submitlog):
     if documents:
         license_text = ' '.join([DEFAULT_LICENSE.name, DEFAULT_LICENSE.abbr,
             DEFAULT_LICENSE.version])
-        binders.append(cnxepub.models.TranslucentBinder(
+        binders.append(TranslucentBinder(
                 metadata={
                     'title': 'Publications binder',
                     'created': datetime.datetime.now(),
