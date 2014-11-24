@@ -3317,6 +3317,48 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(list(publish['mapping'].values()),
                          ['{}@2'.format(page_one['id'])])
 
+    def test_delete_after_publish(self):
+        if self.USE_MOCK_PUBLISHING_SERVICE:
+            raise unittest.SkipTest('Requires a running publishing instance')
+
+        # create a new page
+        post_data = {
+            'title': 'Page one',
+            'content': '<html><body><p>Contents of Page one</p></body></html>',
+            'abstract': 'Learn how to etc etc',
+            }
+        response = self.testapp.post_json(
+            '/users/contents', post_data, status=201)
+        page_one = json.loads(response.body.decode('utf-8'))
+
+        post_data = {
+            'submitlog': u'Nueva versión!',
+            'items': [
+                page_one['id'],
+                ],
+            }
+
+        response = self.testapp.post_json(
+            '/publish', post_data, expect_errors=True)
+
+        publish = json.loads(response.body.decode('utf-8'))
+        print('publishing message: {}'.format(publish))
+        self.assertEqual(publish['state'], 'Done/Success')
+        self.assertEqual(list(publish['mapping'].values()),
+                         ['{}@1'.format(page_one['id'])])
+
+        # authoring should have the document in the db with status
+        # "Done/Success"
+        response = self.testapp.get('/contents/{}@draft.json'.format(
+            page_one['id']), status=200)
+        body = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(body['state'], 'Done/Success')
+
+        # delete the content from authoring
+        response = self.testapp.delete(
+            '/contents/{}@1'.format(page_one['id']), post_data, status=200)
+        self.testapp.get('/contents/{}@1'.format(page_one['id']), status=404)
+
     def test_publish_after_error(self):
         if self.USE_MOCK_PUBLISHING_SERVICE:
             raise unittest.SkipTest('Requires a running publishing instance')

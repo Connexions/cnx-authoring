@@ -412,7 +412,8 @@ def post_resource(request):
 @authenticated_only
 def delete_content(request):
     """delete a stored document"""
-    id = request.matchdict['id']
+    ident_hash = request.matchdict['ident_hash']
+    id = ident_hash.split('@')[0]
     user_id = None
     if request.matchdict.get('user'):
         user_id = request.authenticated_userid
