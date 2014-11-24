@@ -167,7 +167,16 @@ class UtilsTests(unittest.TestCase):
     def test_create_acl_for(self):
         from ..models import create_content
 
-        document = create_content(title='My Document')
+        document = create_content(
+            title='My Document',
+            submitter={'id': 'submitter'},
+            authors=[{'id': 'author'}, {'id': 'me'}],
+            editors=[{'id': 'editor'}],
+            translators=[{'id': 'translator'}, {'id': 'you'}],
+            publishers=[{'id': 'me'}, {'id': 'you'}],
+            licensors=[{'id': 'licensor'}],
+            illustrators=[{'id': 'illustrator'}],
+            )
         request = mock.Mock()
         request.registry.settings = {
             'publishing.url': 'http://publishing/',
@@ -176,7 +185,7 @@ class UtilsTests(unittest.TestCase):
 
         with mock.patch('requests.post') as post:
             post.return_value.status_code = 202
-            utils.create_acl_for(request, document, ('me', 'you',))
+            utils.create_acl_for(request, document)
             self.assertEqual(post.call_count, 1)
             (url,), kwargs = post.call_args
             self.assertEqual(url,
@@ -214,7 +223,7 @@ class UtilsTests(unittest.TestCase):
                              'http://publishing/contents/{}/permissions'
                              .format(document.id))
             self.assertEqual(document.acls,
-                             [('me', 'view', 'edit', 'publish')])
+                             {'me': ('view', 'edit', 'publish')})
 
     @mock.patch('cnxauthoring.utils.get_current_registry')
     def test_notify_role_for_acceptance(self, mock_registry):

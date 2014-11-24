@@ -43,8 +43,8 @@ class MemoryStorageTests(unittest.TestCase):
                      language='en')
 
         d.licensor_acceptance = [{'id': 'user1', 'has_accepted': True}]
-        d.acls = [('user1', 'view', 'edit', 'publish'),
-                  ('user2', 'view')]
+        d.acls = {'user1': ('view', 'edit', 'publish'),
+                  'user2': ('view',)}
 
         self.storage.add(d)
         self.storage.persist()
@@ -53,9 +53,9 @@ class MemoryStorageTests(unittest.TestCase):
         self.assertEqual(result.to_dict(), d.to_dict())
         self.assertEqual(result.licensor_acceptance,
                          [{'id': 'user1', 'has_accepted': True}])
-        self.assertEqual(sorted(result.acls),
-                         [('user1', 'view', 'edit', 'publish'),
-                          ('user2', 'view')])
+        self.assertEqual({k: tuple(sorted(v)) for k, v in result.acls.items()},
+                         {'user1': ('edit', 'publish', 'view'),
+                          'user2': ('view',)})
 
         d2_id = uuid.uuid4()
         d2 = Document('Document Two', id=d2_id,
