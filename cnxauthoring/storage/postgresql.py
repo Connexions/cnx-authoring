@@ -179,8 +179,6 @@ class PostgresqlStorage(BaseStorage):
             args = item.to_dict()
             args['license'] = repr(args['license'])
             args['media_type'] = MEDIATYPES[type_name]
-            if 'version' in args:
-                args.pop('version')
             if 'summary' in args:
                 args.pop('summary')
             if 'tree' in args:
@@ -257,8 +255,6 @@ class PostgresqlStorage(BaseStorage):
                 args.pop('license_text')
             if 'media_type' in args:
                 args.pop('media_type')
-            if 'version' in args:
-                 args.pop('version')
             if 'summary' in args:
                  args.pop('summary')
             if 'cnx-archive-uri' not in args:

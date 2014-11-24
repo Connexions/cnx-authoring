@@ -228,7 +228,7 @@ def build_tree(tree):
 
 def build_metadata(
         title, id=None, content=None, abstract=None, created=None,
-        revised=None, subjects=None, keywords=None,
+        revised=None, version=None, subjects=None, keywords=None,
         license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None,
         derived_from_uri=None, derived_from_title=None,
         submitter=None, state=None, publication=None, cnx_archive_uri=None,
@@ -237,7 +237,7 @@ def build_metadata(
         editors=None, translators=None, illustrators=None):
     metadata = {}
     metadata['title'] = title
-    metadata['version'] = 'draft'
+    metadata['version'] = version is None and 'draft' or version
     metadata['id'] = id or uuid.uuid4()
     metadata['content'] = content and content or ''
     metadata['abstract'] = abstract and abstract or ''

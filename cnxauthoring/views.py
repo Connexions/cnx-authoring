@@ -613,7 +613,8 @@ def publish(request):
         result = json.loads(response.content.decode('utf-8'))
         for content in contents:
             content.update(state=result['state'],
-                    publication=str(result['publication']))
+                    publication=str(result['publication']),
+                    version=result['mapping'][content.id].split('@')[1])
             storage.update(content)
             storage.persist()
         return result
