@@ -2368,16 +2368,19 @@ class FunctionalTests(BaseFunctionalTestCase):
         # the document should show up in user1's workspace
         response = self.testapp.get('/users/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
-        content_ids = [i['id'] for i in result['results']['items']]
-        self.assertIn('{}@draft'.format(page['id']), content_ids)
+        content_ids = [(i['id'], i['rolesToAccept'])
+            for i in result['results']['items']]
+        self.assertIn(('{}@draft'.format(page['id']), []), content_ids)
 
         # user2 should be able to see the document user1 added
         self.logout()
         self.login('user2')
         response = self.testapp.get('/users/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
-        content_ids = [i['id'] for i in result['results']['items']]
-        self.assertIn('{}@draft'.format(page['id']), content_ids)
+        content_ids = [(i['id'], i['rolesToAccept'])
+            for i in result['results']['items']]
+        self.assertIn(('{}@draft'.format(page['id']), ['editors']),
+                      content_ids)
         self.assert_cors_headers(response)
 
         self.testapp.get(
@@ -2388,8 +2391,10 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.login('user3')
         response = self.testapp.get('/users/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
-        content_ids = [i['id'] for i in result['results']['items']]
-        self.assertIn('{}@draft'.format(page['id']), content_ids)
+        content_ids = [(i['id'], i['rolesToAccept'])
+            for i in result['results']['items']]
+        self.assertIn(('{}@draft'.format(page['id']), ['authors']),
+                      content_ids)
         self.assert_cors_headers(response)
 
         self.testapp.get(
@@ -2458,6 +2463,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                  u'state': u'Draft',
                  u'title': u'document by user4',
                  u'version': u'draft',
+                 u'rolesToAccept': [],
                  }],
                 u'limits': [],
                 u'total': 1}
@@ -2576,6 +2582,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                         u'version': u'draft',
                         u'revised': book['revised'],
                         u'mediaType': u'application/vnd.org.cnx.collection',
+                        u'rolesToAccept': [],
                         },
                     {
                         u'containedIn': [],
@@ -2586,6 +2593,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                         u'version': u'draft',
                         u'revised': single_page['revised'],
                         u'mediaType': u'application/vnd.org.cnx.module',
+                        u'rolesToAccept': [],
                         },
                     ],
                 u'total': 2,
@@ -2648,6 +2656,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                         u'version': u'draft',
                         u'revised': book['revised'],
                         u'mediaType': u'application/vnd.org.cnx.collection',
+                        u'rolesToAccept': [],
                         },
                     {
                         u'containedIn': [other_book['id']],
@@ -2658,6 +2667,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                         u'version': u'draft',
                         u'revised': page_in_book['revised'],
                         u'mediaType': u'application/vnd.org.cnx.module',
+                        u'rolesToAccept': [],
                         },
                     ],
                 u'total': 2,
@@ -2685,6 +2695,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                         u'version': u'draft',
                         u'revised': single_page['revised'],
                         u'mediaType': u'application/vnd.org.cnx.module',
+                        u'rolesToAccept': [],
                         },
                     {
                         u'containedIn': [other_book['id']],
@@ -2695,6 +2706,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                         u'version': u'draft',
                         u'revised': page_in_book['revised'],
                         u'mediaType': u'application/vnd.org.cnx.module',
+                        u'rolesToAccept': [],
                         },
                     ],
                 u'total': 2,

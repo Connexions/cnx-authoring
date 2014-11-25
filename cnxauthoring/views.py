@@ -149,7 +149,8 @@ def user_contents(request):
     kwargs = {k:v for k,v in request.GET.items() if k in ['mediaType','state','containedIn']}
     if kwargs:
         utils.change_dict_keys(kwargs, utils.camelcase_to_underscore)
-    contents = storage.get_all(user_id=request.unauthenticated_userid,
+    user_id = request.unauthenticated_userid
+    contents = storage.get_all(user_id=user_id,
                                permissions=('view',), **kwargs)
     for content in contents:
         update_content_state(request, content)
@@ -160,9 +161,17 @@ def user_contents(request):
         document = {k: item[k] for k in ['mediaType', 'title', 'id', 'version',
                                          'revised', 'derivedFrom', 'state', 'containedIn']}
 
-        # Don't add version to published items, so they are link to archive instead of authoring (no @draft)
+        # Don't add version to published items, so they are link to archive
+        # instead of authoring (no @draft)
         if document['state'] != 'Done/Success':
             document['id'] = '@'.join([document['id'], document['version']])
+
+        # check if there are roles to accept
+        document['rolesToAccept'] = []
+        for role_key in ATTRIBUTED_ROLE_KEYS:
+            for role in item.get(role_key, []):
+                if role['id'] == user_id and role.get('hasAccepted') is None:
+                    document['rolesToAccept'].append(role_key)
 
         items.append(document)
 
