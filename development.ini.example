@@ -38,6 +38,8 @@ openstax_accounts.callback_path = /callback
 openstax_accounts.logout_path = /logout
 openstax_accounts.user_search.per_page = 100
 
+pyramid.includes = pyramid_translogger
+
 ###
 # wsgi server configuration
 ###
