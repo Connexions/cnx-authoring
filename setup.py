@@ -8,6 +8,7 @@ install_requires = (
         'openstax-accounts>=0.12.0',
         'PasteDeploy',
         'pyramid',
+        'pyramid_translogger',
         'psycopg2>=2.5',
         'requests',
         'pytz',
