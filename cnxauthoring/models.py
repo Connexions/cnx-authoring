@@ -132,6 +132,8 @@ class BaseContent:
     def __json__(self, request=None):
         result = self.to_dict()
         utils.change_dict_keys(result, utils.underscore_to_camelcase)
+        if request and hasattr(self,'acls'):
+           result['permissions'] = sorted(self.acls[request.unauthenticated_userid])
         return result
 
 

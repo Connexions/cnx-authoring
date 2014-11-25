@@ -130,6 +130,7 @@ class ViewsTests(unittest.TestCase):
         document_title = "The Floating Dust"
         from ..models import Document
         expected = Document(document_title, id=id)
+        expected.acls = {'userid': ('edit','view','publish')}
 
         # Test the view
         request = testing.DummyRequest()
@@ -181,6 +182,7 @@ class ViewsTests(unittest.TestCase):
         self.addCleanup(delattr, self, 'document')
         def mocked_add(item):
             self.document = item
+            self.document.acls = {'userid': ('edit','publish','view')}
             self.document.id = uuid.uuid4()
             return self.document
         # Given the minimal amount of information, create a document.
@@ -214,6 +216,7 @@ class ViewsTests(unittest.TestCase):
         self.addCleanup(delattr, self, 'document')
         def mocked_add(item):
             self.document = item
+            self.document.acls = {'username': ('edit','publish','view')}
             self.document.id = uuid.uuid4()
             return self.document
         self.storage_cls.add = mock.Mock(side_effect=mocked_add)

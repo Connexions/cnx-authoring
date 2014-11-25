@@ -203,6 +203,7 @@ def get_content(request):
         raise httpexceptions.HTTPForbidden(
                 'You do not have permission to view {}'.format(id))
     update_content_state(request, content)
+    content.metadata['permissions'] = sorted(content.acls[request.unauthenticated_userid])
     return content
 
 
@@ -384,6 +385,7 @@ def post_content(request):
         resp.headers.add(
             'Location',
             request.route_url('get-content-json', id=content.id))
+        content.metadata['permissions'] = sorted(content.acls[request.unauthenticated_userid])
         return content
     return contents
 
@@ -520,6 +522,7 @@ def put_content(request):
     resp.headers.add(
             'Location',
             request.route_url('get-content-json', id=content.id))
+    content.metadata['permissions'] = sorted(content.acls[request.unauthenticated_userid])
     return content
 
 
