@@ -355,7 +355,12 @@ Thank you from your friends at OpenStax CNX
            requester=requester,
            title=model.metadata['title'],
            link=link)
-    accounts.send_message(user_id, subject, body)
+    try:
+        accounts.send_message(user_id, subject, body)
+    except urllib2.HTTPError:
+        # Can't send messages via accounts for some reason - should be async!
+        logger.warning("Failed sending notification message to {}".format(user_id))
+        pass
 
 
 def accept_roles(cstruct, user):
