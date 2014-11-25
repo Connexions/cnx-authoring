@@ -369,8 +369,9 @@ def accept_roles(cstruct, user):
             for role in value:
                 if role.get('id') == user['id']:
                     role['has_accepted'] = True
-                    role['requester'] = authenticated_userid
-                    role['assignment_date'] = now
+                    if not role.get('requester'):
+                        role['requester'] = authenticated_userid
+                        role['assignment_date'] = now
             cstruct[field] = value
 
 

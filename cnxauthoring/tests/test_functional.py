@@ -3543,10 +3543,10 @@ class PublicationTests(BaseFunctionalTestCase):
                         u'role': u'publishers'}],
             })
 
-        # add user2 to authors and editors
+        # add user2 to authors and editors and add user1 to editors
         post_data = {
             'authors': page['authors'] + [{'id': 'user2'}],
-            'editors': page['editors'] + [{'id': 'user2'}],
+            'editors': page['editors'] + [{'id': 'user1'}, {'id': 'user2'}],
             }
         now = datetime.datetime.now(TZINFO)
         formatted_now = now.astimezone(TZINFO).isoformat()
@@ -3556,6 +3556,40 @@ class PublicationTests(BaseFunctionalTestCase):
                 '/contents/{}@draft.json'.format(page['id']), post_data,
                 status=200)
         page = json.loads(response.body.decode('utf-8'))
+
+        # user1 should accept the editor role automatically
+        response = self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']))
+        acceptance = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(acceptance, {
+            u'license': {
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'name': u'Attribution',
+                u'abbr': u'by',
+                u'version': u'4.0',
+                },
+            u'url': u'http://localhost/contents/{}%40draft.json'.format(
+                page['id']),
+            u'id': page['id'],
+            u'title': u'My Page',
+            u'user': u'user1',
+            u'roles': [{u'assignmentDate': formatted_created,
+                        u'hasAccepted': True,
+                        u'requester': u'user1',
+                        u'role': u'authors'},
+                       {u'assignmentDate': formatted_created,
+                        u'hasAccepted': True,
+                        u'requester': u'user1',
+                        u'role': u'copyright_holders'},
+                       {u'assignmentDate': formatted_now,
+                        u'hasAccepted': True,
+                        u'requester': u'user1',
+                        u'role': u'editors'},
+                       {u'assignmentDate': formatted_created,
+                        u'hasAccepted': True,
+                        u'requester': u'user1',
+                        u'role': u'publishers'}],
+            })
 
         # log in as user2
         self.logout()

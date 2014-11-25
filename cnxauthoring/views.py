@@ -472,10 +472,12 @@ def put_content(request):
     except (TypeError, ValueError):
         raise httpexceptions.HTTPBadRequest('Invalid JSON')
 
+    user = utils.profile_to_user_dict(request.user)
     utils.change_dict_keys(cstruct, utils.camelcase_to_underscore)
-    cstruct['submitter'] = utils.profile_to_user_dict(request.user)
+    cstruct['submitter'] = user
     for key, value in utils.utf8(content.to_dict()).items():
         cstruct.setdefault(key, value)
+    utils.accept_roles(cstruct, user)
 
     if cstruct.get('media_type') == BINDER_MEDIATYPE:
         schema = BinderSchema()
@@ -491,6 +493,7 @@ def put_content(request):
         content.update(**appstruct)
     except DocumentNotFoundError as e:
         raise httpexceptions.HTTPBadRequest(e.message)
+    utils.accept_license(content, user)
     utils.declare_roles(content)
     utils.declare_licensors(content)
     utils.create_acl_for(request, content)
