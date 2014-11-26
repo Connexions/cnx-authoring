@@ -280,31 +280,30 @@ def get_acl_for(request, document):
     roles_acl = {}
     for role_type_attr_name in cnxepub.ATTRIBUTED_ROLE_KEYS:
         for role in document.metadata.get(role_type_attr_name, []):
-            permissions = ['view']
+            permissions = []
             if role_type_attr_name == 'publishers' \
                and role.get('has_accepted'):
                 permissions.append('publish')
             if role.get('has_accepted'):
                 permissions.append('edit')
+                permissions.append('view')
+            if role.get('has_accepted') is None:
+                permissions.append('view')
             roles_acl.setdefault(role['id'], set([]))
             roles_acl[role['id']].update(permissions)
 
     for uid, permissions in roles_acl.items():
         # Don't re-add the view permission if it has been removed
         if uid in document.acls and 'view' not in document.acls[uid]:
-            permissions.remove('view')
+            if 'view' in permissions:
+                permissions.remove('view')
         document.acls[uid] = tuple(permissions)
 
     # Get additional acl from publishing
     settings = request.registry.settings
     publishing_url = settings['publishing.url']
-    api_key = settings['publishing.api_key']
-    headers = {
-            'x-api-key': api_key,
-            'content-type': 'application/json',
-            }
     acl_url = urlparse.urljoin(
-            publishing_url, '/contents/{}/permissions'.format(document.id))
+        publishing_url, '/contents/{}/permissions'.format(document.id))
 
     response = requests.get(acl_url)
     if response.status_code != 200:

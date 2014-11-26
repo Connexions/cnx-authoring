@@ -2415,6 +2415,20 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.testapp.get(
             '/contents/{}@draft.json'.format(page['id']), status=200)
 
+        # user2 rejects the role request
+        self.testapp.post_json(
+            '/contents/{}@draft/acceptance'.format(page['id']),
+            {'license': True,
+             'roles': [{'role': 'editors', 'hasAccepted': False}]},
+            status=200)
+
+        # user2 should no longer see the document on their workspace
+        response = self.testapp.get('/users/contents', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        content_ids = [i['id'] for i in result['results']['items']]
+        self.assertNotIn('{}@draft'.format(page['id']), content_ids)
+        self.assert_cors_headers(response)
+
         # user3 should be able to see the document user1 added
         self.logout()
         self.login('user3')
