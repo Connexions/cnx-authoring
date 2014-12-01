@@ -2406,10 +2406,11 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.login('user2')
         response = self.testapp.get('/users/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
-        content_ids = [(i['id'], i['rolesToAccept'])
-            for i in result['results']['items']]
-        self.assertIn(('{}@draft'.format(page['id']), ['editors']),
-                      content_ids)
+        content_ids = [(i['id'], i['rolesToAccept'], i['state'])
+                       for i in result['results']['items']]
+        self.assertIn(
+            ('{}@draft'.format(page['id']), ['editors'], 'Awaiting acceptance'
+             ), content_ids)
         self.assert_cors_headers(response)
 
         self.testapp.get(
