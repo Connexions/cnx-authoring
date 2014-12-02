@@ -172,6 +172,8 @@ def user_contents(request):
             for role in item.get(role_key, []):
                 if role['id'] == user_id and role.get('hasAccepted') is None:
                     document['rolesToAccept'].append(role_key)
+        if document['rolesToAccept']:
+            document['state'] = 'Awaiting acceptance'
 
         items.append(document)
 
