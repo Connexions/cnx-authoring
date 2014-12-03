@@ -426,30 +426,30 @@ def post_resource(request):
     return location
 
 
-@view_config(route_name='delete-user-content', request_method='DELETE', renderer='json')
-@view_config(route_name='delete-content', request_method='DELETE', renderer='json')
-@authenticated_only
-def delete_content(request):
-    """delete a stored document"""
-    ident_hash = request.matchdict['ident_hash']
-    id = ident_hash.split('@')[0]
-    user_id = None
-    if request.matchdict.get('user'):
-        user_id = request.authenticated_userid
+def delete_content_single(request, id, user_id=None, raise_error=True):
     content = storage.get(id=id)
     if content is None:
-        raise httpexceptions.HTTPNotFound()
+        if raise_error:
+            raise httpexceptions.HTTPNotFound()
+        return False
     if not request.has_permission('edit', content):
-        raise httpexceptions.HTTPForbidden(
+        if raise_error:
+            raise httpexceptions.HTTPForbidden(
                 'You do not have permission to delete {}'.format(id))
+        return False
     if not user_id and len(content.acls.keys()) > 1:
         # there are other users who have permission to this document
-        raise httpexceptions.HTTPForbidden(
+        if raise_error:
+            raise httpexceptions.HTTPForbidden(
                 'There are other users on this document {}'.format(id))
-    if content.metadata['media_type'] == DOCUMENT_MEDIATYPE and content.metadata['contained_in']:
-        raise httpexceptions.HTTPForbidden(
-                'Content {} is contained in {} and cannot be deleted'.format(id,
-                     content.metadata['contained_in']))
+        return False
+    if (content.metadata['media_type'] == DOCUMENT_MEDIATYPE and
+            content.metadata['contained_in']):
+        if raise_error:
+            raise httpexceptions.HTTPForbidden(
+                'Content {} is contained in {} and cannot be deleted'.format(
+                    id, content.metadata['contained_in']))
+        return False
 
     try:
         if user_id and len(content.acls.keys()) > 1:
@@ -463,10 +463,43 @@ def delete_content(request):
         else:
             resource = storage.remove(content)
             if content.metadata['media_type'] == BINDER_MEDIATYPE:
-                utils.update_containment(content, deletion = True)
+                utils.update_containment(content, deletion=True)
         storage.persist()
+        return True
     except storage.Error:
         storage.abort()
+
+
+@view_config(route_name='delete-user-content', request_method='DELETE',
+             renderer='json')
+@view_config(route_name='delete-content', request_method='DELETE',
+             renderer='json')
+@view_config(route_name='delete-content-multiple', request_method='PUT',
+             renderer='json')
+@authenticated_only
+def delete_content(request):
+    """delete a stored document"""
+    if not request.matchdict.get('ident_hash'):
+        # delete multiple content
+        user_id = request.authenticated_userid
+        deleted_ids = []
+        try:
+            cstruct = request.json_body
+        except (TypeError, ValueError):
+            raise httpexceptions.HTTPBadRequest('Invalid JSON')
+        for ident_hash in cstruct:
+            id = ident_hash.split('@')[0]
+            succeeded = delete_content_single(
+                request, id, user_id=user_id, raise_error=False)
+            if succeeded:
+                deleted_ids.append(id)
+        return deleted_ids
+    ident_hash = request.matchdict['ident_hash']
+    id = ident_hash.split('@')[0]
+    user_id = None
+    if request.matchdict.get('user'):
+        user_id = request.authenticated_userid
+    delete_content_single(request, id, user_id=user_id)
 
 @view_config(route_name='put-content', request_method='PUT', renderer='json')
 @authenticated_only
