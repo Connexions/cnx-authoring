@@ -1834,6 +1834,69 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.get(
             '/contents/{}@draft.json'.format(page['id']), status=404)
 
+    def test_delete_content_multiple(self):
+        # create two pages
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'Page one',
+            'editors': [{'id': 'user2'}]}, status=201)
+        page_one = json.loads(response.body.decode('utf-8'))
+
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'Page two'}, status=201)
+        page_two = json.loads(response.body.decode('utf-8'))
+
+        # create a book, put the two pages inside the book, plus
+        # one page from archive
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'My book',
+            'mediaType': 'application/vnd.org.cnx.collection',
+            'tree': {
+                'contents': [
+                    {'id': '{}@draft'.format(page_one['id']),
+                     'title': 'Page one'},
+                    {'id': '{}@draft'.format(page_two['id']),
+                     'title': 'Page two'},
+                    {'id': '91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
+                     'title': 'Page three'}],
+                },
+            }, status=201)
+        book = json.loads(response.body.decode('utf-8'))
+
+        # login as user2
+        self.logout()
+        self.login('user2')
+
+        # create another book, put only page one in it
+        response = self.testapp.post_json('/users/contents', {
+            'title': "User2's book",
+            'mediaType': 'application/vnd.org.cnx.collection',
+            'tree': {
+                'contents': [
+                    {'id': '{}@draft'.format(page_one['id']),
+                     'title': 'Page one'}],
+                },
+            }, status=201)
+
+        # log back in as user1
+        self.logout()
+        self.login('user1')
+
+        # delete the book and all the pages inside it
+        response = self.testapp.put_json('/contents/delete', [
+            book['id'], page_one['id'], page_two['id'],
+            '91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
+            ], status=200)
+        # only the book and page_two should be deleted
+        deleted = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(deleted, [book['id'], page_two['id']])
+
+        self.testapp.get('/contents/{}@draft.json'.format(book['id']),
+                         status=404)
+        self.testapp.get('/contents/{}@draft.json'.format(page_one['id']),
+                         status=200)
+        self.testapp.get('/contents/{}@draft.json'.format(page_two['id']),
+                         status=404)
+
     def test_delete_content_binder(self):
         # Create a page first
         response = self.testapp.post_json('/users/contents', {
