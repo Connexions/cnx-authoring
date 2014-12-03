@@ -732,15 +732,6 @@ def post_acceptance_info(request):
     # Find and mark the roles as accepted.
     tobe_updated_roles = set([])
     for role_acceptance in appstruct['roles']:
-        if not has_accepted_license:
-            # If they haven't accepted the license, it won't matter what
-            #   role they accept.
-            # Return their role acceptances to an unknown state (aka None).
-            for role_type in ATTRIBUTED_ROLE_KEYS:
-                for i, role in enumerate(content.metadata.get(role_type, [])):
-                    if role['id'] == user_id:
-                        tobe_updated_roles.add((role_type, None, i,))
-            break
         role_type = role_acceptance['role']
         # BBB 18-Nov-2014 licensors - deprecated property 'licensors'
         #     needs changed in webview and archive before removing here.
@@ -752,7 +743,16 @@ def post_acceptance_info(request):
         has_accepted = role_acceptance['has_accepted']
         for i, role in enumerate(content.metadata.get(role_type, [])):
             if role['id'] == user_id:
-                tobe_updated_roles.add((role_type, has_accepted, i,))
+                # If they haven't accepted the license, it won't matter what
+                #   role they accept.
+                # Return their role acceptances to an unknown state (aka None).
+                if not has_accepted_license:
+                    if has_accepted is not False:
+                        tobe_updated_roles.add((role_type, None, i,))
+                    else:
+                        tobe_updated_roles.add((role_type, False, i,))
+                else:
+                    tobe_updated_roles.add((role_type, has_accepted, i,))
 
     for role_type, has_accepted, index in tobe_updated_roles:
         content.metadata[role_type][index]['has_accepted'] = has_accepted

@@ -3599,10 +3599,13 @@ class PublicationTests(BaseFunctionalTestCase):
                         u'role': u'publishers'}],
             })
 
-        # add user2 to authors and editors and add user1 to editors
+        # add user2 to authors and editors, add user1 to editors, add user3 and
+        # user4 to translators
         post_data = {
             'authors': page['authors'] + [{'id': 'user2'}],
             'editors': page['editors'] + [{'id': 'user1'}, {'id': 'user2'}],
+            'translators': page['translators'] +
+                           [{'id': 'user3'}, {'id': 'user4'}],
             }
         now = datetime.datetime.now(TZINFO)
         formatted_now = now.astimezone(TZINFO).isoformat()
@@ -3711,4 +3714,110 @@ class PublicationTests(BaseFunctionalTestCase):
                         u'assignmentDate': formatted_now,
                         u'requester': u'user1',
                         u'hasAccepted': True}],
+            })
+
+        # login as user3
+        self.logout()
+        self.login('user3')
+
+        # user3 should have translators in the acceptance info
+        response = self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']))
+        acceptance = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(acceptance, {
+            u'license': {
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'name': u'Attribution',
+                u'abbr': u'by',
+                u'version': u'4.0',
+                },
+            u'url': u'http://localhost/contents/{}%40draft.json'.format(
+                page['id']),
+            u'id': page['id'],
+            u'title': u'My Page',
+            u'user': u'user3',
+            u'roles': [{u'role': u'translators',
+                        u'assignmentDate': formatted_now,
+                        u'requester': u'user1',
+                        u'hasAccepted': None}],
+            })
+
+        # user3 rejects their roles
+        post_data = {
+            'license': False,
+            'roles': [{'role': 'translators', 'hasAccepted': False}],
+            }
+        response = self.testapp.post_json(
+            '/contents/{}@draft/acceptance'.format(page['id']),
+            post_data, status=200)
+
+        # should not be able to view or edit the content anymore
+        self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']), status=403)
+        self.testapp.get(
+            '/contents/{}@draft.json'.format(page['id']), status=403)
+        self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']), {}, status=403)
+
+        # content should not be in the workspace
+        response = self.testapp.get('/users/contents')
+        workspace = json.loads(response.body.decode('utf-8'))
+        content_ids = [i['id'] for i in workspace['results']['items']]
+        self.assertNotIn(page['id'], content_ids)
+
+        # login as user4
+        self.logout()
+        self.login('user4')
+
+        # user4 should have translators in the acceptance info
+        response = self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']))
+        acceptance = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(acceptance, {
+            u'license': {
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'name': u'Attribution',
+                u'abbr': u'by',
+                u'version': u'4.0',
+                },
+            u'url': u'http://localhost/contents/{}%40draft.json'.format(
+                page['id']),
+            u'id': page['id'],
+            u'title': u'My Page',
+            u'user': u'user4',
+            u'roles': [{u'role': u'translators',
+                        u'assignmentDate': formatted_now,
+                        u'requester': u'user1',
+                        u'hasAccepted': None}],
+            })
+
+        # user4 accepts their roles without accepting the license
+        post_data = {
+            'license': False,
+            'roles': [{'role': 'translators', 'hasAccepted': True}],
+            }
+        response = self.testapp.post_json(
+            '/contents/{}@draft/acceptance'.format(page['id']),
+            post_data, status=200)
+
+        # acceptance info is reset
+        response = self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']))
+        acceptance = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(acceptance, {
+            u'license': {
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'name': u'Attribution',
+                u'abbr': u'by',
+                u'version': u'4.0',
+                },
+            u'url': u'http://localhost/contents/{}%40draft.json'.format(
+                page['id']),
+            u'id': page['id'],
+            u'title': u'My Page',
+            u'user': u'user4',
+            u'roles': [{u'role': u'translators',
+                        u'assignmentDate': formatted_now,
+                        u'requester': u'user1',
+                        u'hasAccepted': None}],
             })
