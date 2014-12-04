@@ -443,26 +443,9 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
     def test_post_content_derived_from_not_found(self):
-        post_data = {
-                'derivedFrom': u'notfound@1',
-            }
-        self.mock_archive()
-
+        post_data = {'derivedFrom': u'notfound@1'}
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=400)
-        self.assertEqual(self.mock_create_acl.call_count, 0)
-        self.assertTrue(b'Derive failed' in response.body)
-        self.assert_cors_headers(response)
-
-    def test_post_content_derived_from_not_json(self):
-        self.mock_archive(return_value=b'invalid json')
-        post_data = {
-                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
-            }
-
-        response = self.testapp.post_json('/users/contents',
-                post_data, status=400)
-        self.assertEqual(self.mock_create_acl.call_count, 0)
         self.assertTrue(b'Derive failed' in response.body)
         self.assert_cors_headers(response)
 
