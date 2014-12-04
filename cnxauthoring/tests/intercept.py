@@ -20,6 +20,12 @@ from wsgi_intercept import (
     add_wsgi_intercept, remove_wsgi_intercept,
     )
 
+from cnxarchive import config
+from cnxarchive.database import initdb as archive_initdb
+from cnxarchive import main as archive_main
+from cnxpublishing.db import initdb as publishing_initdb
+from cnxpublishing.main import main as publishing_main
+
 from .testing import integration_test_settings
 
 
@@ -66,7 +72,6 @@ def install_intercept():
     Therefore, it is a good idea to only initialize the applications
     during testcase class setup (i.e. setUpClass).
     """
-    from cnxarchive import config
     settings = publishing_settings()
     authoring_settings = integration_test_settings()
 
@@ -77,11 +82,9 @@ def install_intercept():
             cursor.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public")
         
     # Initialize the archive database.
-    from cnxarchive.database import initdb
-    initdb(settings)
+    archive_initdb(settings)
     # Initialize the publishing database.
-    from cnxpublishing.db import initdb
-    initdb(connection_string)
+    publishing_initdb(connection_string)
     with psycopg2.connect(connection_string) as db_connection:
         with db_connection.cursor() as cursor:
             filepath = config.TEST_DATA_SQL_FILE
@@ -102,10 +105,9 @@ def install_intercept():
                     cursor.execute(fb.read())
 
     # Set up the intercept for archive
-    from cnxarchive import main
     global _archive_app
     if not _archive_app:
-        _archive_app = main({}, **publishing_settings())
+        _archive_app = archive_main({}, **publishing_settings())
     make_app = lambda : _archive_app
     # Grab the configured archive url from the authoring config.
     host, port = _parse_url_from_settings(authoring_settings,
@@ -113,10 +115,9 @@ def install_intercept():
     add_wsgi_intercept(host, port, make_app)
 
     # Set up the intercept for publishing
-    from cnxpublishing.main import main
     global _publishing_app
     if not _publishing_app:
-        _publishing_app = main({}, **publishing_settings())
+        _publishing_app = publishing_main({}, **publishing_settings())
     make_app = lambda : _publishing_app
     # Grab the configured publishing url from the authoring config.
     host, port = _parse_url_from_settings(authoring_settings,
