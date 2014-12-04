@@ -126,6 +126,23 @@ class BaseContent:
                      for user_id, permissions in roles_acl.items()])
         return acls
 
+    def update(self, **kwargs):
+        if 'license' in kwargs:
+            del kwargs['license']
+        if 'created' in kwargs:
+            del kwargs['created']
+        for key, value in kwargs.items():
+            if key in self.metadata:
+                self.metadata[key] = value
+                # BBB 18-Nov-2014 licensors - deprecated property 'licensors'
+                #     needs changed in webview and archive before removing here.
+                if key == 'licensors':
+                    self.metadata['copyright_holders'] = value
+                elif key == 'copyright_holders':
+                    self.metadata['licensors'] = value
+                # /BBB
+        self.metadata['revised'] = datetime.datetime.now(TZINFO)
+
     def to_dict(self):
         return to_dict(self.metadata)
 
@@ -156,14 +173,7 @@ class Document(cnxepub.Document, BaseContent):
         self.licensor_acceptance = la and la or []
 
     def update(self, **kwargs):
-        if 'license' in kwargs:
-            del kwargs['license']
-        if 'created' in kwargs:
-            del kwargs['created']
-        for key, value in kwargs.items():
-            if key in self.metadata:
-                self.metadata[key] = value
-        self.metadata['revised'] = datetime.datetime.now(TZINFO)
+        super(Document, self).update(**kwargs)
         self.content = self.metadata['content']
 
     def publish_prep(self):
@@ -314,18 +324,11 @@ class Binder(cnxepub.Binder, BaseContent):
         self.licensor_acceptance = la and la or []
 
     def update(self, **kwargs):
-        if 'license' in kwargs:
-            del kwargs['license']
-        if 'created' in kwargs:
-            del kwargs['created']
         if 'tree' in kwargs:
             nodes, title_overrides = build_tree(kwargs.pop('tree'))
             self._nodes = nodes
             self._title_overrides = title_overrides
-        for key, value in kwargs.items():
-            if key in self.metadata:
-                self.metadata[key] = value
-        self.metadata['revised'] = datetime.datetime.now(TZINFO)
+        super(Binder, self).update(**kwargs)
 
     def publish_prep(self):
         license = self.metadata['license']
