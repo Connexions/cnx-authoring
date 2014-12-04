@@ -169,7 +169,7 @@ def user_contents(request):
         # check if there are roles to accept
         document['rolesToAccept'] = []
         for role_key in ATTRIBUTED_ROLE_KEYS:
-            for role in item.get(role_key, []):
+            for role in content.metadata.get(role_key, []):
                 if role['id'] == user_id and role.get('hasAccepted') is None:
                     document['rolesToAccept'].append(role_key)
         if document['rolesToAccept']:
@@ -557,7 +557,8 @@ def put_content(request):
     resp.headers.add(
             'Location',
             request.route_url('get-content-json', id=content.id))
-    content.metadata['permissions'] = sorted(content.acls[request.unauthenticated_userid])
+    content.metadata['permissions'] = sorted(content.acls.get(
+        request.unauthenticated_userid, []))
     return content
 
 
