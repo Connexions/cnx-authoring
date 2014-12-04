@@ -17,9 +17,12 @@ install_requires = (
         )
 
 tests_require = (
+        'cnx-archive',
+        'cnx-publishing',
         'HTTPretty',
         'mock',   # only required for python2
         'WebTest',
+        'wsgi_intercept',
         )
 
 setup(
@@ -35,6 +38,7 @@ setup(
         tests_require=tests_require,
         package_data={
             'cnxauthoring.storage': ['sql/*.sql', 'sql/*/*.sql'],
+            'cnxauthoring.tests': ['*.ini'],
             },
         entry_points={
             'paste.app_factory': [
