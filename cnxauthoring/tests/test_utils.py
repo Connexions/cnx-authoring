@@ -173,7 +173,8 @@ class UtilsTests(unittest.TestCase):
             authors=[{'id': 'author'}, {'id': 'me'}],
             editors=[{'id': 'editor'}],
             translators=[{'id': 'translator'}, {'id': 'you'}],
-            publishers=[{'id': 'me'}, {'id': 'you'}],
+            publishers=[{'id': 'me', 'has_accepted': True},
+                        {'id': 'you', 'has_accepted': True}],
             licensors=[{'id': 'licensor'}],
             illustrators=[{'id': 'illustrator'}],
             )

@@ -105,7 +105,8 @@ class BaseFunctionalTestCase(unittest.TestCase):
         self.mock_acl_storage = {}
 
         def create_acl(request, document):
-            uids = [i['id'] for i in document.metadata['publishers']]
+            uids = [i['id'] for i in document.metadata['publishers']
+                    if i.get('has_accepted')]
             self.mock_acl_storage[document.id] = uids
         self.mock_create_acl = mock.Mock(side_effect=create_acl)
         self.acl_patch = mock.patch('cnxauthoring.utils.create_acl_for',
@@ -2452,10 +2453,15 @@ class FunctionalTests(BaseFunctionalTestCase):
              }, status=201)
         page = json.loads(response.body.decode('utf-8'))
 
-        # user1 adds user3 as an author
-        self.testapp.put_json(
+        # user1 adds user3 as an author, editor, licensor and publisher
+        response = self.testapp.put_json(
             '/contents/{}@draft.json'.format(page['id']),
-            {'authors': page['authors'] + [{"id": "user3"}]}, status=200)
+            {'authors': page['authors'] + [{'id': 'user3'}],
+             'editors': page['editors'] + [{'id': 'user3'}],
+             'licensors': page['licensors'] + [{'id': 'user3'}],
+             'publishers': page['publishers'] + [{'id': 'user3'}]},
+            status=200)
+        page = json.loads(response.body.decode('utf-8'))
 
         # the document should show up in user1's workspace
         response = self.testapp.get('/users/contents', status=200)
@@ -2500,8 +2506,9 @@ class FunctionalTests(BaseFunctionalTestCase):
         result = json.loads(response.body.decode('utf-8'))
         content_ids = [(i['id'], i['rolesToAccept'])
             for i in result['results']['items']]
-        self.assertIn(('{}@draft'.format(page['id']), ['authors']),
-                      content_ids)
+        self.assertIn(('{}@draft'.format(page['id']),
+                       ['authors', 'copyright_holders', 'editors',
+                        'publishers']), content_ids)
         self.assert_cors_headers(response)
 
         self.testapp.get(
@@ -2512,11 +2519,33 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.testapp.put_json(
             '/contents/{}@draft.json'.format(page['id']), {}, status=403)
 
-        # user3 accepts their role
+        # user3 rejects the editor role
         self.testapp.post_json(
             '/contents/{}@draft/acceptance'.format(page['id']),
             {'license': True,
-             'roles': [{'role': 'authors', 'hasAccepted': True}]},
+             'roles': [{'role': 'editors', 'hasAccepted': False}]},
+            status=200)
+
+        # user3 should still be able to view the content
+        response = self.testapp.get('/users/contents', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        content_ids = [(i['id'], i['rolesToAccept'])
+            for i in result['results']['items']]
+        self.assertIn(('{}@draft'.format(page['id']),
+                       ['authors', 'copyright_holders', 'publishers']),
+                      content_ids)
+        self.assert_cors_headers(response)
+
+        self.testapp.get(
+            '/contents/{}@draft.json'.format(page['id']), status=200)
+
+        # user3 accepts their other roles
+        self.testapp.post_json(
+            '/contents/{}@draft/acceptance'.format(page['id']),
+            {'license': True,
+             'roles': [{'role': 'authors', 'hasAccepted': True},
+                       {'role': 'publishers', 'hasAccepted': True},
+                       {'role': 'licensors', 'hasAccepted': True}]},
             status=200)
 
         # user3 should be able to edit the document after accepting their
@@ -2532,6 +2561,43 @@ class FunctionalTests(BaseFunctionalTestCase):
         content_ids = [i['id'] for i in result['results']['items']]
         self.assertNotIn('{}@draft'.format(page['id']), content_ids)
         self.assert_cors_headers(response)
+
+        # user1 adds user2 as an illustrator
+        self.logout()
+        self.login('user1')
+        response = self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']),
+            {'illustrators': [{'id': 'user2'}]}, status=200)
+        page = json.loads(response.body.decode('utf-8'))
+
+        # user2 should see the document in their workspace again
+        self.logout()
+        self.login('user2')
+        response = self.testapp.get('/users/contents', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        content_ids = [(i['id'], i['rolesToAccept'], i['state'])
+                       for i in result['results']['items']]
+        self.assertIn(
+            ('{}@draft'.format(page['id']), ['illustrators'],
+                'Awaiting acceptance'), content_ids)
+
+        # user1 removes self from all roles
+        self.logout()
+        self.login('user1')
+        self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']),
+            {'authors': [i for i in page['authors'] if i['id'] != 'user1'],
+             'publishers': [i for i in page['publishers']
+                            if i['id'] != 'user1'],
+             'licensors': [i for i in page['licensors']
+                           if i['id'] != 'user1']},
+            status=200)
+
+        # user1 should not see the document in their workspace
+        response = self.testapp.get('/users/contents')
+        result = json.loads(response.body.decode('utf-8'))
+        content_ids = [i['id'] for i in result['results']['items']]
+        self.assertNotIn('{}@draft'.format(page['id']), content_ids)
 
     def test_user_contents_ordering(self):
         # user4 adds a document

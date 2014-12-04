@@ -263,7 +263,8 @@ def create_acl_for(request, document):
 
     payload = []
     for user in document.metadata['publishers']:
-        payload.append({'uid': user['id'], 'permission': 'publish'})
+        if user.get('has_accepted'):
+            payload.append({'uid': user['id'], 'permission': 'publish'})
 
     acl_url = urlparse.urljoin(
         publishing_url, '/contents/{}/permissions'.format(document.id))
@@ -272,12 +273,16 @@ def create_acl_for(request, document):
     if response.status_code != 202:
         raise PublishingError(response)
 
+
 def get_acl_for(request, document):
     """Get document ACL from publishing"""
     from .models import PublishingError
 
     # Set the acl using roles
+    old_permissions = document.acls
+    document.acls = {}
     roles_acl = {}
+    users_pending_acceptance = []
     for role_type_attr_name in cnxepub.ATTRIBUTED_ROLE_KEYS:
         for role in document.metadata.get(role_type_attr_name, []):
             permissions = []
@@ -289,12 +294,15 @@ def get_acl_for(request, document):
                 permissions.append('view')
             if role.get('has_accepted') is None:
                 permissions.append('view')
+                users_pending_acceptance.append(role['id'])
             roles_acl.setdefault(role['id'], set([]))
             roles_acl[role['id']].update(permissions)
 
     for uid, permissions in roles_acl.items():
         # Don't re-add the view permission if it has been removed
-        if uid in document.acls and 'view' not in document.acls[uid]:
+        if (uid in old_permissions and
+                'view' not in old_permissions[uid] and
+                uid not in users_pending_acceptance):
             if 'view' in permissions:
                 permissions.remove('view')
         document.acls[uid] = tuple(permissions)
