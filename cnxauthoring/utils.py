@@ -159,7 +159,7 @@ def build_epub(contents, submitter, submitlog):
 
 
 def fetch_archive_content(request, archive_id, extras=False):
-    from .models import DocumentNotFoundError
+    from .models import ArchiveConnectionError, DocumentNotFoundError
 
     settings = request.registry.settings
     archive_url = settings['archive.url']
@@ -170,11 +170,13 @@ def fetch_archive_content(request, archive_id, extras=False):
         content_url = urlparse.urljoin(archive_url,
                 '/contents/{}.json'.format(archive_id))
     try:
-        response = urllib2.urlopen(content_url).read()
-    except urllib2.HTTPError:
+        response = requests.get(content_url)
+    except requests.exceptions.ConnectionError as exc:
+        raise ArchiveConnectionError(exc.message)
+    if response.status_code >= 400:
         raise DocumentNotFoundError(archive_id)
     try:
-        document = json.loads(response.decode('utf-8'))
+        document = response.json()
     except (TypeError, ValueError):
         raise DocumentNotFoundError(archive_id)
     change_dict_keys(document, camelcase_to_underscore)
@@ -182,7 +184,7 @@ def fetch_archive_content(request, archive_id, extras=False):
 
 
 def derive_resources(request, document):
-    from .models import Resource
+    from .models import ArchiveConnectionError, Resource
 
     settings = request.registry.settings
     archive_url = settings['archive.url']
@@ -191,13 +193,16 @@ def derive_resources(request, document):
     for r in document.references:
         if r.uri.startswith('/resources'):
             if not resources.get(r.uri):
+                url = urlparse.urljoin(archive_url, r.uri)
                 try:
-                    response = urllib2.urlopen(urlparse.urljoin(archive_url, r.uri))
-                except urllib2.HTTPError:
+                    response = requests.get(url)
+                except requests.exceptions.ConnectionError as exc:
+                    raise ArchiveConnectionError(exc.message)
+                if response.status_code >= 400:
                     continue
-                content_type = response.info().getheader('Content-Type')
+                content_type = response.headers['content-type']
                 resources[r.uri] = Resource(content_type,
-                        io.BytesIO(response.read()))
+                                            io.BytesIO(response.content))
                 yield resources[r.uri]
             r.bind(resources[r.uri], path)
     document.metadata['content'] = document.html
