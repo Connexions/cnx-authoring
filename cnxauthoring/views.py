@@ -169,12 +169,18 @@ def user_contents(request):
 
         # check if there are roles to accept
         document['rolesToAccept'] = []
+        rejected_roles = False
         for role_key in ATTRIBUTED_ROLE_KEYS:
             for role in content.metadata.get(role_key, []):
-                if role['id'] == user_id and role.get('hasAccepted') is None:
-                    document['rolesToAccept'].append(role_key)
+                if role['id'] == user_id:
+                    if role.get('hasAccepted') is None:
+                        document['rolesToAccept'].append(role_key)
+                    elif role.get('hasAccepted') is False:
+                        rejected_roles = True
         if document['rolesToAccept']:
             document['state'] = 'Awaiting acceptance'
+        elif rejected_roles:
+            document['state'] = 'Rejected roles'
 
         items.append(document)
 
@@ -433,7 +439,8 @@ def delete_content_single(request, id, user_id=None, raise_error=True):
         if raise_error:
             raise httpexceptions.HTTPNotFound()
         return False
-    if not request.has_permission('edit', content):
+    if (user_id is None and not request.has_permission('edit', content)
+            or not request.has_permission('view', content)):
         if raise_error:
             raise httpexceptions.HTTPForbidden(
                 'You do not have permission to delete {}'.format(id))

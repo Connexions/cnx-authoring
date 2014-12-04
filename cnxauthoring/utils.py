@@ -291,10 +291,9 @@ def get_acl_for(request, document):
                 permissions.append('publish')
             if role.get('has_accepted'):
                 permissions.append('edit')
-                permissions.append('view')
             if role.get('has_accepted') is None:
-                permissions.append('view')
                 users_pending_acceptance.append(role['id'])
+            permissions.append('view')
             roles_acl.setdefault(role['id'], set([]))
             roles_acl[role['id']].update(permissions)
 

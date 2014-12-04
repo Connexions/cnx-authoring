@@ -2451,13 +2451,21 @@ class FunctionalTests(BaseFunctionalTestCase):
         page = json.loads(response.body.decode('utf-8'))
 
         # user1 adds user3 as an author, editor, licensor and publisher
+        # and adds user4 as a translator
         response = self.testapp.put_json(
             '/contents/{}@draft.json'.format(page['id']),
             {'authors': page['authors'] + [{'id': 'user3'}],
              'editors': page['editors'] + [{'id': 'user3'}],
+             'translators': [{'id': 'user4'}],
              'licensors': page['licensors'] + [{'id': 'user3'}],
              'publishers': page['publishers'] + [{'id': 'user3'}]},
             status=200)
+        page = json.loads(response.body.decode('utf-8'))
+
+        # user1 removes user4 as a translator
+        response = self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']),
+            {'translators': []}, status=200)
         page = json.loads(response.body.decode('utf-8'))
 
         # the document should show up in user1's workspace
@@ -2489,7 +2497,19 @@ class FunctionalTests(BaseFunctionalTestCase):
              'roles': [{'role': 'editors', 'hasAccepted': False}]},
             status=200)
 
-        # user2 should no longer see the document on their workspace
+        # user2 should see the document with state "Rejecting roles" on their
+        # workspace
+        response = self.testapp.get('/users/contents', status=200)
+        result = json.loads(response.body.decode('utf-8'))
+        content_ids = [(i['id'], i['rolesToAccept'], i['state'])
+                       for i in result['results']['items']]
+        self.assertIn(
+            ('{}@draft'.format(page['id']), [], 'Rejected roles'), content_ids)
+        self.assert_cors_headers(response)
+
+        # after user2 deletes the document from the workspace, they won't see
+        # it anymore
+        self.testapp.delete('/contents/{}@draft/users/me'.format(page['id']))
         response = self.testapp.get('/users/contents', status=200)
         result = json.loads(response.body.decode('utf-8'))
         content_ids = [i['id'] for i in result['results']['items']]
