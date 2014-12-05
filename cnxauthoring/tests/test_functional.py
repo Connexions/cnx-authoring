@@ -213,7 +213,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json('/users/contents',
                 {'title': 'My New Document'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        content = json.loads(response.body.decode('utf-8'))
+        content = response.json
         with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
             acl.return_value = ()
             response = self.testapp.get('/contents/{}@draft.json'
@@ -229,7 +229,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                         },
                     }, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 2)
-        content = json.loads(response.body.decode('utf-8'))
+        content = response.json
         with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
             acl.return_value = ()
             response = self.testapp.get('/contents/{}@draft.json'
@@ -248,10 +248,10 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'revised': u'2014-03-13T15:21:15-05:00',
                     }, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        put_result = json.loads(response.body.decode('utf-8'))
+        put_result = response.json
         response = self.testapp.get('/contents/{}@draft.json'.format(
             put_result['id']), status=200)
-        get_result = json.loads(response.body.decode('utf-8'))
+        get_result = response.json
         submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
         submitter_w_assign_date['assignmentDate'] = now.astimezone(
             TZINFO).isoformat()
@@ -327,7 +327,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
                 '/users/contents', {}, status=400)
         self.assertEqual(self.mock_create_acl.call_count, 0)
-        self.assertEqual(json.loads(response.body.decode('utf-8')), {
+        self.assertEqual(response.json, {
             u'title': u'Required',
             })
         self.assert_cors_headers(response)
@@ -337,7 +337,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'mediaType': 'application/vnd.org.cnx.collection',
                     }, status=400)
         self.assertEqual(self.mock_create_acl.call_count, 0)
-        self.assertEqual(json.loads(response.body.decode('utf-8')), {
+        self.assertEqual(response.json, {
             u'title': u'Required',
             u'tree': u'Required',
             })
@@ -348,7 +348,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'mediaType': 'unknown-media-type',
                     }, status=400)
         self.assertEqual(self.mock_create_acl.call_count, 0)
-        self.assertEqual(json.loads(response.body.decode('utf-8')), {
+        self.assertEqual(response.json, {
             u'media_type': u'"unknown-media-type" is not one of '
                            u'application/vnd.org.cnx.module, '
                            u'application/vnd.org.cnx.collection',
@@ -360,7 +360,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json('/users/contents',
                 {'title': u'My document タイトル'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['title'], u'My document タイトル')
         self.assertEqual(result['language'], u'en')
         self.assert_cors_headers(response)
@@ -378,7 +378,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                         },
                     }, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['title'], u'My book タイトル')
         self.assertEqual(result['language'], u'en')
         self.assertEqual(result['tree'], {
@@ -391,7 +391,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(result['id']), status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['title'], u'My book タイトル')
         self.assertEqual(result['language'], u'en')
         self.assertEqual(result['tree'], {
@@ -429,7 +429,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 2)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0]['title'], u'My document タイトル 1')
         self.assertEqual(result[1]['title'], u'My document タイトル 2')
@@ -562,7 +562,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.maxDiff = None
         content = result.pop('content')
         self.assertTrue(content.startswith('<html'))
@@ -608,7 +608,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         response = self.testapp.get('/contents/{}@draft.json'.format(
             result['id']), status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         content = result.pop('content')
         self.assertTrue(u'Lav en madplan for den kommende uge' in content)
         self.assertTrue(content.startswith('<html'))
@@ -666,7 +666,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.post_json('/users/contents',
                     post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.maxDiff = None
         content = result.pop('content')
         self.assertTrue(u'Ingredienser (4 personer):' in content)
@@ -712,7 +712,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         response = self.testapp.get('/contents/{}@draft.json'.format(
             result['id']), status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         content = result.pop('content')
         self.assertTrue(u'Ingredienser (4 personer):' in content)
         self.assertTrue(content.startswith('<html'))
@@ -764,7 +764,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.maxDiff = None
         self.assertFalse('2011-10-12' in result.pop('created'))
         self.assertTrue(result.pop('revised') is not None)
@@ -826,7 +826,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(result['id']), status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
@@ -936,7 +936,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 0)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         license = result.pop('license')
         self.assertEqual(license['url'], DEFAULT_LICENSE.url)
         created = result.pop('created')
@@ -1038,7 +1038,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         response = self.testapp.get(
             '/contents/{}@draft.json'.format(result['id']), status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         content = result.pop('content')
         self.assertTrue(u'Lav en madplan for den kommende uge' in content)
         self.assertTrue(content.startswith('<html'))
@@ -1166,7 +1166,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.maxDiff = None
         license = result.pop('license')
         self.assertEqual(license['url'], post_data['license']['url'])
@@ -1213,7 +1213,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.post_json('/users/contents',
                 {'title': 'Page one'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        page1 = json.loads(response.body.decode('utf-8'))
+        page1 = response.json
         self.assert_cors_headers(response)
 
         with mock.patch('datetime.datetime') as mock_datetime:
@@ -1221,7 +1221,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.post_json('/users/contents',
                 {'title': 'Page two'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 2)
-        page2 = json.loads(response.body.decode('utf-8'))
+        page2 = response.json
         self.assert_cors_headers(response)
 
         with mock.patch('datetime.datetime') as mock_datetime:
@@ -1251,12 +1251,12 @@ class FunctionalTests(BaseFunctionalTestCase):
                         },
                     }, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 3)
-        book = json.loads(response.body.decode('utf-8'))
+        book = response.json
         self.assert_cors_headers(response)
 
         response = self.testapp.get(
                 '/contents/{}@draft.json'.format(book['id']), status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
         submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
@@ -1333,7 +1333,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'abstract': u'My document abstract',
                     'language': u'en'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        document = json.loads(response.body.decode('utf-8'))
+        document = response.json
 
         with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
             acl.return_value = ()
@@ -1352,7 +1352,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                         },
                     'language': u'en'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 2)
-        binder = json.loads(response.body.decode('utf-8'))
+        binder = response.json
 
         with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
             acl.return_value = ()
@@ -1369,7 +1369,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'abstract': u'My document abstract',
                     'language': u'en'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        document = json.loads(response.body.decode('utf-8'))
+        document = response.json
         self.assert_cors_headers(response)
 
         response = self.testapp.put(
@@ -1387,7 +1387,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
             '/users/contents', post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
         self.assert_cors_headers(response)
 
         post_data = {
@@ -1400,7 +1400,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 '/contents/{}@draft.json'.format(page['id']),
                 post_data, status=200)
         self.assertEqual(self.mock_create_acl.call_count, 2)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['content'], post_data['content'])
         self.assertEqual(result['revised'], now.astimezone(TZINFO).isoformat())
         self.assert_cors_headers(response)
@@ -1415,7 +1415,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     }, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
         self.assert_cors_headers(response)
-        binder = json.loads(response.body.decode('utf-8'))
+        binder = response.json
         update_data = {
                 'title': u'...',
                 'tree': {
@@ -1445,7 +1445,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assert_cors_headers(response)
 
         update_data = {
@@ -1464,7 +1464,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 '/contents/{}@draft.json'.format(result['id']),
                 update_data, status=200)
         self.assertEqual(self.mock_create_acl.call_count, 2)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
         submitter_w_assign_date['assignmentDate'] = created.astimezone(
             TZINFO).isoformat()
@@ -1515,7 +1515,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         response = self.testapp.get(
             '/contents/{}@draft.json'.format(result['id']), status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result, {
             u'created': created.astimezone(TZINFO).isoformat(),
             u'revised': revised.astimezone(TZINFO).isoformat(),
@@ -1570,13 +1570,13 @@ class FunctionalTests(BaseFunctionalTestCase):
                 },
             }, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        binder = json.loads(response.body.decode('utf-8'))
+        binder = response.json
         created = binder['created']
 
         response = self.testapp.post_json(
             '/users/contents', {'title': 'Empty page'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 2)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
 
         revised = datetime.datetime.now(TZINFO)
         with mock.patch('datetime.datetime') as mock_datetime:
@@ -1628,7 +1628,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         response = self.testapp.get(
             '/contents/{}@draft.json'.format(binder['id']), status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['created'], created)
         self.assertEqual(
             result['revised'], revised.astimezone(TZINFO).isoformat())
@@ -1660,7 +1660,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 'abstract': u'My document abstract',
                 'language': u'en'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        document = json.loads(response.body.decode('utf-8'))
+        document = response.json
         self.assert_cors_headers(response)
 
         update_data = {
@@ -1678,7 +1678,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 '/contents/{}@draft.json'.format(document['id']),
                 update_data, status=200)
         self.assertEqual(self.mock_create_acl.call_count, 2)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['id'], document['id'])
         self.assertEqual(result['title'], update_data['title'])
         self.assertEqual(result['abstract'], update_data['abstract'])
@@ -1693,7 +1693,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         response = self.testapp.get(
             '/contents/{}@draft.json'.format(document['id']))
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['id'], document['id'])
         self.assertEqual(result['title'], update_data['title'])
         self.assertEqual(result['abstract'], update_data['abstract'])
@@ -1717,7 +1717,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
             '/users/contents', {'title': 'My page'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
         self.assert_cors_headers(response)
 
         self.logout()
@@ -1730,7 +1730,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
             '/users/contents', {'title': 'My page'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
         self.assert_cors_headers(response)
 
         # test that it's possible to get the content we just created
@@ -1750,11 +1750,11 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json('/users/contents', {
             'title': 'Page one',
             'editors': [{'id': 'user2'}]}, status=201)
-        page_one = json.loads(response.body.decode('utf-8'))
+        page_one = response.json
 
         response = self.testapp.post_json('/users/contents', {
             'title': 'Page two'}, status=201)
-        page_two = json.loads(response.body.decode('utf-8'))
+        page_two = response.json
 
         # create a book, put the two pages inside the book, plus
         # one page from archive
@@ -1771,7 +1771,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                      'title': 'Page three'}],
                 },
             }, status=201)
-        book = json.loads(response.body.decode('utf-8'))
+        book = response.json
 
         # login as user2
         self.logout()
@@ -1798,7 +1798,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             '91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             ], status=200)
         # only the book and page_two should be deleted
-        deleted = json.loads(response.body.decode('utf-8'))
+        deleted = response.json
         self.assertEqual(deleted, [book['id'], page_two['id']])
 
         self.testapp.get('/contents/{}@draft.json'.format(book['id']),
@@ -1813,7 +1813,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json('/users/contents', {
             'title': 'My page',
             }, status=201)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
         self.assert_cors_headers(response)
 
         # Create a book with the page inside
@@ -1829,7 +1829,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     ],
                 },
             }, status=201)
-        book_one = json.loads(response.body.decode('utf-8'))
+        book_one = response.json
         self.assert_cors_headers(response)
 
         # Create another book with the same page inside
@@ -1845,13 +1845,13 @@ class FunctionalTests(BaseFunctionalTestCase):
                     ],
                 },
             }, status=201)
-        book_two = json.loads(response.body.decode('utf-8'))
+        book_two = response.json
         self.assert_cors_headers(response)
 
         # Assert that the page is contained in two books
         response = self.testapp.get(
             '/contents/{}@draft.json'.format(page['id']))
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(sorted(result['containedIn']),
                          sorted([book_one['id'], book_two['id']]))
 
@@ -1864,7 +1864,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         # Assert that the page is now only contained in book two
         response = self.testapp.get(
             '/contents/{}@draft.json'.format(page['id']))
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['containedIn'], [book_two['id']])
 
     def test_delete_content_multiple_users(self):
@@ -1872,7 +1872,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             'title': 'Multiple users test',
             'editors': [{'id': 'you'}],
             }, status=201)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
         self.assert_cors_headers(response)
 
         self.testapp.get('/contents/{}@draft.json'.format(page['id']),
@@ -1883,7 +1883,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         # editor should get the content in their workspace
         response = self.testapp.get('/users/contents', status=200)
-        workspace = json.loads(response.body.decode('utf-8'))
+        workspace = response.json
         items = [i['id'] for i in workspace['results']['items']]
         self.assertIn('{}@draft'.format(page['id']), items)
         # make sure the editor can also view the content
@@ -1917,7 +1917,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(response.json['title'],
                          'Multiple users test edited by you')
         response = self.testapp.get('/users/contents', status=200)
-        workspace = json.loads(response.body.decode('utf-8'))
+        workspace = response.json
         items = [i['id'] for i in workspace['results']['items']]
         self.assertIn('{}@draft'.format(page['id']), items)
 
@@ -1932,7 +1932,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             '/contents/{}@draft/users/me'.format(page['id']), status=200)
         # content should not appear in user1's workspace
         response = self.testapp.get('/users/contents', status=200)
-        workspace = json.loads(response.body.decode('utf-8'))
+        workspace = response.json
         items = [i['id'] for i in workspace['results']['items']]
         self.assertNotIn('{}@draft'.format(page['id']), items)
         self.logout()
@@ -1940,7 +1940,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         # content should still be accessible by "you"
         self.login('you')
         response = self.testapp.get('/users/contents', status=200)
-        workspace = json.loads(response.body.decode('utf-8'))
+        workspace = response.json
         items = [i['id'] for i in workspace['results']['items']]
         self.assertIn('{}@draft'.format(page['id']), items)
         self.testapp.get(
@@ -1953,7 +1953,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         # content should not appear in user1's workspace
         self.login('user1')
         response = self.testapp.get('/users/contents', status=200)
-        workspace = json.loads(response.body.decode('utf-8'))
+        workspace = response.json
         items = [i['id'] for i in workspace['results']['items']]
         self.assertNotIn('{}@draft'.format(page['id']), items)
 
@@ -1964,7 +1964,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
             '/users/contents', post_data, status=201)
         response = self.testapp.get('/users/contents', status=200)
-        workspace = json.loads(response.body.decode('utf-8'))
+        workspace = response.json
         items = [i['id'] for i in workspace['results']['items']]
         self.assertIn('{}@draft'.format(page['id']), items)
 
@@ -1975,7 +1975,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_search_content_no_q(self):
         response = self.testapp.get('/search', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result, {
             'query': {'limits': []},
             'results': {
@@ -1988,7 +1988,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_search_content_q_empty(self):
         response = self.testapp.get('/search?q=', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result, {
             'query': {'limits': []},
             'results': {
@@ -2009,7 +2009,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
         response = self.testapp.get('/search?q="Document', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['query']['limits'],
                 [{'tag': 'text', 'value': 'Document'}])
         self.assertEqual(result['results']['total'], 1)
@@ -2035,7 +2035,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 2)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         doc_id = result['id']
         self.assert_cors_headers(response)
 
@@ -2043,13 +2043,13 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
             '/users/contents', post_data, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 3)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         new_doc_id = result['id']
         self.assert_cors_headers(response)
 
         # should not be able to get other user's documents
         response = self.testapp.get('/search?q=document', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertDictEqual(result, {
             'query': {
                 'limits': [{'tag': 'text', 'value': 'document'}]},
@@ -2061,7 +2061,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         # should be able to search user's own documents
         response = self.testapp.get('/search?q=DNA', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['results']['total'], 1)
         self.assertEqual(result['results']['items'][0]['id'],
                 '{}@draft'.format(doc_id))
@@ -2069,7 +2069,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         # should be able to search multiple terms
         response = self.testapp.get('/search?q=new+resonance', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['query']['limits'], [
             {'tag': 'text', 'value': 'new'},
             {'tag': 'text', 'value': 'resonance'}])
@@ -2082,7 +2082,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         # should be able to search with double quotes
         response = self.testapp.get('/search?q="through resonance"',
                 status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['query']['limits'], [
             {'tag': 'text', 'value': 'through resonance'}])
         self.assertEqual(result['results']['total'], 1)
@@ -2215,7 +2215,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_user_search_no_q(self):
         response = self.testapp.get('/users/search')
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result, {
             u'num_matching_users': 0,
             u'per_page': 10,
@@ -2227,7 +2227,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_user_search_q_empty(self):
         response = self.testapp.get('/users/search?q=')
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result, {
             u'num_matching_users': 0,
             u'per_page': 10,
@@ -2292,7 +2292,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             self.assertEqual(args, ('admin',))
             self.assertEqual(kwargs, {
                 'per_page': 10, 'order_by': 'last_name,first_name'})
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result, {
             u'users': [
                 {
@@ -2345,7 +2345,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_profile(self):
         response = self.testapp.get('/users/profile', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result, SUBMITTER)
         self.assert_cors_headers(response)
 
@@ -2361,7 +2361,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             {'title': 'document by default user',
              'editors': [{"id": "user2"}],
              }, status=201)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
 
         # user1 adds user3 as an author, editor, licensor and publisher
         # and adds user4 as a translator
@@ -2373,7 +2373,7 @@ class FunctionalTests(BaseFunctionalTestCase):
              'licensors': page['licensors'] + [{'id': 'user3'}],
              'publishers': page['publishers'] + [{'id': 'user3'}]},
             status=200)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
 
         # user1 removes user4 as a translator
         response = self.testapp.put_json(
@@ -2383,7 +2383,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         # the document should show up in user1's workspace
         response = self.testapp.get('/users/contents', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         content_ids = [(i['id'], i['rolesToAccept'])
             for i in result['results']['items']]
         self.assertIn(('{}@draft'.format(page['id']), []), content_ids)
@@ -2392,7 +2392,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.logout()
         self.login('user2')
         response = self.testapp.get('/users/contents', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         content_ids = [(i['id'], i['rolesToAccept'], i['state'])
                        for i in result['results']['items']]
         self.assertIn(
@@ -2424,7 +2424,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         # it anymore
         self.testapp.delete('/contents/{}@draft/users/me'.format(page['id']))
         response = self.testapp.get('/users/contents', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         content_ids = [i['id'] for i in result['results']['items']]
         self.assertNotIn('{}@draft'.format(page['id']), content_ids)
         self.assert_cors_headers(response)
@@ -2433,7 +2433,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.logout()
         self.login('user3')
         response = self.testapp.get('/users/contents', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         content_ids = [(i['id'], i['rolesToAccept'])
             for i in result['results']['items']]
         self.assertIn(('{}@draft'.format(page['id']),
@@ -2458,7 +2458,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         # user3 should still be able to view the content
         response = self.testapp.get('/users/contents', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         content_ids = [(i['id'], i['rolesToAccept'])
             for i in result['results']['items']]
         self.assertIn(('{}@draft'.format(page['id']),
@@ -2487,7 +2487,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.logout()
         self.login('user4')
         response = self.testapp.get('/users/contents', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         content_ids = [i['id'] for i in result['results']['items']]
         self.assertNotIn('{}@draft'.format(page['id']), content_ids)
         self.assert_cors_headers(response)
@@ -2498,13 +2498,13 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.put_json(
             '/contents/{}@draft.json'.format(page['id']),
             {'illustrators': [{'id': 'user2'}]}, status=200)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
 
         # user2 should see the document in their workspace again
         self.logout()
         self.login('user2')
         response = self.testapp.get('/users/contents', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         content_ids = [(i['id'], i['rolesToAccept'], i['state'])
                        for i in result['results']['items']]
         self.assertIn(
@@ -2525,7 +2525,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         # user1 should not see the document in their workspace
         response = self.testapp.get('/users/contents')
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         content_ids = [i['id'] for i in result['results']['items']]
         self.assertNotIn('{}@draft'.format(page['id']), content_ids)
 
@@ -2544,11 +2544,11 @@ class FunctionalTests(BaseFunctionalTestCase):
             'revised': utf8(posting_date.isoformat()),
             }, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
 
         # user4 should get back the contents just posted - full content test
         response = self.testapp.get('/users/contents', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         from ..models import TZINFO
         # Localize the resulting datetime info.
         from ..utils import utf8
@@ -2603,7 +2603,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
         response = self.testapp.get('/users/contents', status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['results']['total'], 4)
         self.assertTrue(result['results']['items'][0]['id'].endswith('@draft'))
         self.assertTrue(result['results']['items'][1]['id'].endswith('@draft'))
@@ -2644,14 +2644,14 @@ class FunctionalTests(BaseFunctionalTestCase):
                 {'title': 'single page document'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 1)
 
-        single_page = json.loads(response.body.decode('utf-8'))
+        single_page = response.json
 
         mock_datetime.now = mock.Mock(return_value=one_week_ago)
         with mock.patch('datetime.datetime', mock_datetime):
             response = self.testapp.post_json('/users/contents',
                 {'title': 'page in a book'}, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 2)
-        page_in_book = json.loads(response.body.decode('utf-8'))
+        page_in_book = response.json
 
         response = self.testapp.post_json('/users/contents', {
             'mediaType': 'application/vnd.org.cnx.collection',
@@ -2665,11 +2665,11 @@ class FunctionalTests(BaseFunctionalTestCase):
                 },
             }, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 3)
-        book = json.loads(response.body.decode('utf-8'))
+        book = response.json
 
         # since page_in_book is in book, it should not show in the workspace
         response = self.testapp.get('/users/contents', status=200)
-        workspace = json.loads(response.body.decode('utf-8'))
+        workspace = response.json
         self.assertEqual(workspace, {
             u'query': {
                 u'limits': [],
@@ -2715,7 +2715,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                         ],
                     },
                 }, status=200)
-        book = json.loads(response.body.decode('utf-8'))
+        book = response.json
         self.assertEqual(self.mock_create_acl.call_count, 4)
 
         # add page_in_book to a book by someone else
@@ -2737,13 +2737,13 @@ class FunctionalTests(BaseFunctionalTestCase):
                 },
             }, status=201)
         self.assertEqual(self.mock_create_acl.call_count, 5)
-        other_book = json.loads(response.body.decode('utf-8'))
+        other_book = response.json
         self.logout()
         self.login('user5')
 
         # workspace should now show page_in_book and book
         response = self.testapp.get('/users/contents', status=200)
-        workspace = json.loads(response.body.decode('utf-8'))
+        workspace = response.json
         self.assertEqual(workspace, {
             u'query': {
                 u'limits': [],
@@ -2782,7 +2782,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.get(
             '/users/contents?mediaType=application/vnd.org.cnx.module',
             status=200)
-        workspace = json.loads(response.body.decode('utf-8'))
+        workspace = response.json
         self.assertEqual(workspace, {
             u'query': {
                 u'limits': [],
@@ -2820,7 +2820,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         # Now filter for not:Draft - should supress all
         response = self.testapp.get('/users/contents?state=not:Draft',
                                     status=200)
-        workspace = json.loads(response.body.decode('utf-8'))
+        workspace = response.json
         self.assertEqual(workspace, {
             u'query': {
                 u'limits': [],
@@ -2848,7 +2848,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
 
         post_data = {
                 'submitlog': u'Nueva versión!',
@@ -2872,7 +2872,7 @@ class PublicationTests(BaseFunctionalTestCase):
                 }
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        book = json.loads(response.body.decode('utf-8'))
+        book = response.json
 
         post_data = {
                 'submitlog': u'Nueva versión!',
@@ -2894,7 +2894,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
             '/users/contents', post_data, status=201)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
 
         post_data = {
                 'submitlog': 'Publishing is working!',
@@ -2918,7 +2918,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
 
         post_data = {
                 'submitlog': 'Publishing is working!',
@@ -2944,7 +2944,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        page_one = json.loads(response.body.decode('utf-8'))
+        page_one = response.json
         post_data = {
             'title': u'Página dos',
             'content': (u'<html><body><p>Contents of Página dos</p></body>'
@@ -2953,7 +2953,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        page_two = json.loads(response.body.decode('utf-8'))
+        page_two = response.json
 
         # User makes a publication of the two pages...
         post_data = {
@@ -2987,7 +2987,7 @@ class PublicationTests(BaseFunctionalTestCase):
         self.mock_archive()
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
 
         post_data = {
                 'submitlog': 'Publishing is working!',
@@ -3040,7 +3040,7 @@ class PublicationTests(BaseFunctionalTestCase):
             documents[0].references[2].uri,
             '../resources/0405557b301a1b689df0f02566bec761d7783232')
 
-        self.assertEqual(json.loads(response.body.decode('utf-8')),
+        self.assertEqual(response.json,
                 json.loads(mock_output.decode('utf-8')))
 
         self.assert_cors_headers(response)
@@ -3050,7 +3050,7 @@ class PublicationTests(BaseFunctionalTestCase):
                     content=mock_output.replace(b'Processing', b'Publishing'))
             response = self.testapp.get('/contents/{}@draft.json'
                     .format(page['id']))
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         self.assertEqual(result['state'], 'Publishing')
         self.assertEqual(result['publication'], '144')
 
@@ -3060,14 +3060,14 @@ class PublicationTests(BaseFunctionalTestCase):
             'content': '<html><body><p>Content of page one</p></body></html>',
             'abstract': 'Learn how to etc etc',
             }, status=201)
-        page1 = json.loads(response.body.decode('utf-8'))
+        page1 = response.json
         self.assert_cors_headers(response)
 
         response = self.testapp.post_json('/users/contents', {
             'title': 'Page two',
             'content': '<html><body><p>Content of page two</p></body></html>'
             }, status=201)
-        page2 = json.loads(response.body.decode('utf-8'))
+        page2 = response.json
         self.assert_cors_headers(response)
 
         response = self.testapp.post_json('/users/contents', {
@@ -3095,7 +3095,7 @@ class PublicationTests(BaseFunctionalTestCase):
                         },
                     }, status=201)
         self.assert_cors_headers(response)
-        binder = json.loads(response.body.decode('utf-8'))
+        binder = response.json
 
         post_data = {
             'submitlog': 'Publishing a book is working?',
@@ -3131,7 +3131,7 @@ class PublicationTests(BaseFunctionalTestCase):
 
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        binder = json.loads(response.body.decode('utf-8'))
+        binder = response.json
         self.assert_cors_headers(response)
 
         post_data = {
@@ -3216,7 +3216,7 @@ class PublicationTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
         self.assert_cors_headers(response)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
 
         post_data = {
                 'submitlog': 'Publishing a revision',
@@ -3274,7 +3274,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
             '/users/contents', post_data, status=201)
-        page_one = json.loads(response.body.decode('utf-8'))
+        page_one = response.json
 
         post_data = {
             'submitlog': u'Nueva versión!',
@@ -3286,7 +3286,7 @@ class PublicationTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
             '/publish', post_data, expect_errors=True)
 
-        publish = json.loads(response.body.decode('utf-8'))
+        publish = response.json
         print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Done/Success')
         self.assertEqual(list(publish['mapping'].values()),
@@ -3296,7 +3296,7 @@ class PublicationTests(BaseFunctionalTestCase):
         # "Done/Success"
         response = self.testapp.get('/contents/{}@draft.json'.format(
             page_one['id']), status=200)
-        body = json.loads(response.body.decode('utf-8'))
+        body = response.json
         self.assertEqual(body['state'], 'Done/Success')
 
         # editing the content again
@@ -3308,7 +3308,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
             '/users/contents', post_data, status=201)
-        page_one = json.loads(response.body.decode('utf-8'))
+        page_one = response.json
         self.assertEqual(page_one['state'], 'Draft')
 
         # post with the same id should return the same draft
@@ -3317,7 +3317,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
             '/users/contents', post_data, status=201)
-        page_one = json.loads(response.body.decode('utf-8'))
+        page_one = response.json
         self.assertEqual(page_one['state'], 'Draft')
         self.assertEqual(page_one['title'], 'Page one v2')
 
@@ -3330,7 +3330,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
             '/publish', post_data, expect_errors=True)
-        publish = json.loads(response.body.decode('utf-8'))
+        publish = response.json
         print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Done/Success')
         self.assertEqual(list(publish['mapping'].values()),
@@ -3348,7 +3348,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
             '/users/contents', post_data, status=201)
-        page_one = json.loads(response.body.decode('utf-8'))
+        page_one = response.json
 
         post_data = {
             'submitlog': u'Nueva versión!',
@@ -3360,7 +3360,7 @@ class PublicationTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
             '/publish', post_data, expect_errors=True)
 
-        publish = json.loads(response.body.decode('utf-8'))
+        publish = response.json
         print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Done/Success')
         self.assertEqual(list(publish['mapping'].values()),
@@ -3370,7 +3370,7 @@ class PublicationTests(BaseFunctionalTestCase):
         # "Done/Success"
         response = self.testapp.get('/contents/{}@draft.json'.format(
             page_one['id']), status=200)
-        body = json.loads(response.body.decode('utf-8'))
+        body = response.json
         self.assertEqual(body['state'], 'Done/Success')
 
         # delete the content from authoring
@@ -3390,7 +3390,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
             '/users/contents', post_data, status=201)
-        page_one = json.loads(response.body.decode('utf-8'))
+        page_one = response.json
 
         post_data = {
             'submitlog': u'Nueva versión!',
@@ -3402,7 +3402,7 @@ class PublicationTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
             '/publish', post_data, expect_errors=True)
 
-        publish = json.loads(response.body.decode('utf-8'))
+        publish = response.json
         print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Failed/Error')
         self.assertEqual(publish['messages'][0]['type'], 'InvalidReference')
@@ -3411,7 +3411,7 @@ class PublicationTests(BaseFunctionalTestCase):
         # "Failed/Error"
         response = self.testapp.get('/contents/{}@draft.json'.format(
             page_one['id']), status=200)
-        body = json.loads(response.body.decode('utf-8'))
+        body = response.json
         self.assertEqual(body['state'], 'Failed/Error')
 
         # fix up the invalid reference
@@ -3423,7 +3423,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.put_json(
             '/contents/{}@draft.json'.format(page_one['id']), post_data)
-        page_one = json.loads(response.body.decode('utf-8'))
+        page_one = response.json
         self.assertEqual(page_one['state'], 'Draft')
 
         # publish again
@@ -3435,7 +3435,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
             '/publish', post_data, expect_errors=True)
-        publish = json.loads(response.body.decode('utf-8'))
+        publish = response.json
         print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Done/Success')
         self.assertEqual(list(publish['mapping'].values()),
@@ -3453,7 +3453,7 @@ class PublicationTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
             '/users/contents', post_data, status=201)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
 
         # add an editor
         post_data = {
@@ -3478,7 +3478,7 @@ class PublicationTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
             '/publish', post_data, status=200)
         # publication should be waiting for acceptance
-        publish = json.loads(response.body.decode('utf-8'))
+        publish = response.json
         print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Waiting for acceptance')
         self.assertEqual(list(publish['mapping'].values()),
@@ -3506,7 +3506,7 @@ class PublicationTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
             '/publish', post_data, status=200)
         # publication should be waiting for acceptance
-        publish = json.loads(response.body.decode('utf-8'))
+        publish = response.json
         print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Done/Success')
         self.assertEqual(list(publish['mapping'].values()),
@@ -3526,12 +3526,12 @@ class PublicationTests(BaseFunctionalTestCase):
             mock_datetime.now.return_value = created
             response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
 
         # user1 has accepted all their roles
         response = self.testapp.get(
             '/contents/{}@draft/acceptance'.format(page['id']))
-        acceptance = json.loads(response.body.decode('utf-8'))
+        acceptance = response.json
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
@@ -3573,12 +3573,12 @@ class PublicationTests(BaseFunctionalTestCase):
             response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(page['id']), post_data,
                 status=200)
-        page = json.loads(response.body.decode('utf-8'))
+        page = response.json
 
         # user1 should accept the editor role automatically
         response = self.testapp.get(
             '/contents/{}@draft/acceptance'.format(page['id']))
-        acceptance = json.loads(response.body.decode('utf-8'))
+        acceptance = response.json
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
@@ -3616,7 +3616,7 @@ class PublicationTests(BaseFunctionalTestCase):
         # user2 should have authors and editors in acceptance info
         response = self.testapp.get(
             '/contents/{}@draft/acceptance'.format(page['id']))
-        acceptance = json.loads(response.body.decode('utf-8'))
+        acceptance = response.json
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
@@ -3652,7 +3652,7 @@ class PublicationTests(BaseFunctionalTestCase):
         # checks the acceptance info again (all roles accepted)
         response = self.testapp.get(
             '/contents/{}@draft/acceptance'.format(page['id']))
-        acceptance = json.loads(response.body.decode('utf-8'))
+        acceptance = response.json
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
@@ -3682,7 +3682,7 @@ class PublicationTests(BaseFunctionalTestCase):
         # user3 should have translators in the acceptance info
         response = self.testapp.get(
             '/contents/{}@draft/acceptance'.format(page['id']))
-        acceptance = json.loads(response.body.decode('utf-8'))
+        acceptance = response.json
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
@@ -3720,7 +3720,7 @@ class PublicationTests(BaseFunctionalTestCase):
 
         # content should not be in the workspace
         response = self.testapp.get('/users/contents')
-        workspace = json.loads(response.body.decode('utf-8'))
+        workspace = response.json
         content_ids = [i['id'] for i in workspace['results']['items']]
         self.assertNotIn(page['id'], content_ids)
 
@@ -3731,7 +3731,7 @@ class PublicationTests(BaseFunctionalTestCase):
         # user4 should have translators in the acceptance info
         response = self.testapp.get(
             '/contents/{}@draft/acceptance'.format(page['id']))
-        acceptance = json.loads(response.body.decode('utf-8'))
+        acceptance = response.json
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
@@ -3762,7 +3762,7 @@ class PublicationTests(BaseFunctionalTestCase):
         # acceptance info is reset
         response = self.testapp.get(
             '/contents/{}@draft/acceptance'.format(page['id']))
-        acceptance = json.loads(response.body.decode('utf-8'))
+        acceptance = response.json
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
