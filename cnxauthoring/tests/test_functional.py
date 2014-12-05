@@ -212,7 +212,6 @@ class FunctionalTests(BaseFunctionalTestCase):
     def test_get_content_403(self):
         response = self.testapp.post_json('/users/contents',
                 {'title': 'My New Document'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         content = response.json
         with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
             acl.return_value = ()
@@ -228,7 +227,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                         'contents': [],
                         },
                     }, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
         content = response.json
         with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
             acl.return_value = ()
@@ -247,7 +245,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'created': u'2014-03-13T15:21:15-05:00',
                     'revised': u'2014-03-13T15:21:15-05:00',
                     }, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         put_result = response.json
         response = self.testapp.get('/contents/{}@draft.json'.format(
             put_result['id']), status=200)
@@ -302,7 +299,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             acl.return_value = ()
             response = self.testapp.post_json('/users/contents',
                 {'title': u'My document タイトル'}, status=403)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         self.assert_cors_headers(response)
 
         with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
@@ -314,7 +310,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                         'contents': [],
                         },
                     }, status=403)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
         self.assert_cors_headers(response)
 
     def test_post_content_invalid_json(self):
@@ -326,7 +321,6 @@ class FunctionalTests(BaseFunctionalTestCase):
     def test_post_content_empty(self):
         response = self.testapp.post_json(
                 '/users/contents', {}, status=400)
-        self.assertEqual(self.mock_create_acl.call_count, 0)
         self.assertEqual(response.json, {
             u'title': u'Required',
             })
@@ -336,7 +330,6 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json('/users/contents', {
                     'mediaType': 'application/vnd.org.cnx.collection',
                     }, status=400)
-        self.assertEqual(self.mock_create_acl.call_count, 0)
         self.assertEqual(response.json, {
             u'title': u'Required',
             u'tree': u'Required',
@@ -347,7 +340,6 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.post_json('/users/contents', {
                     'mediaType': 'unknown-media-type',
                     }, status=400)
-        self.assertEqual(self.mock_create_acl.call_count, 0)
         self.assertEqual(response.json, {
             u'media_type': u'"unknown-media-type" is not one of '
                            u'application/vnd.org.cnx.module, '
@@ -359,7 +351,6 @@ class FunctionalTests(BaseFunctionalTestCase):
     def test_post_content_minimal(self):
         response = self.testapp.post_json('/users/contents',
                 {'title': u'My document タイトル'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         result = response.json
         self.assertEqual(result['title'], u'My document タイトル')
         self.assertEqual(result['language'], u'en')
@@ -377,7 +368,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                         'contents': [],
                         },
                     }, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         result = response.json
         self.assertEqual(result['title'], u'My book タイトル')
         self.assertEqual(result['language'], u'en')
@@ -416,7 +406,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                             ],
                         },
                     }, status=400)
-        self.assertEqual(self.mock_create_acl.call_count, 0)
         self.assert_cors_headers(response)
         self.assertTrue('Document Not Found: page@draft' in
                 response.body.decode('utf-8'))
@@ -428,7 +417,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                 ]
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
         result = response.json
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0]['title'], u'My document タイトル 1')
@@ -561,7 +549,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             mock_datetime.now.return_value = now
             response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         result = response.json
         self.maxDiff = None
         content = result.pop('content')
@@ -665,7 +652,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             mock_datetime.now.return_value = now
             response = self.testapp.post_json('/users/contents',
                     post_data, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         result = response.json
         self.maxDiff = None
         content = result.pop('content')
@@ -763,7 +749,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             mock_datetime.now.return_value = now
             response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         result = response.json
         self.maxDiff = None
         self.assertFalse('2011-10-12' in result.pop('created'))
@@ -898,7 +883,6 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         response = self.testapp.post_json('/users/contents',
                 post_data, status=403)
-        self.assertEqual(self.mock_create_acl.call_count, 0)
 
     def test_post_content_revision_404(self):
         self.mock_archive()
@@ -914,7 +898,6 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         response = self.testapp.post_json('/users/contents',
                 post_data, status=404)
-        self.assertEqual(self.mock_create_acl.call_count, 0)
 
     def test_post_content_revision(self):
         self.mock_archive()
@@ -935,7 +918,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             mock_datetime.now.return_value = now
             response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 0)
         result = response.json
         license = result.pop('license')
         self.assertEqual(license['url'], DEFAULT_LICENSE.url)
@@ -1165,9 +1147,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             mock_datetime.now.return_value = now
             response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         result = response.json
-        self.maxDiff = None
         license = result.pop('license')
         self.assertEqual(license['url'], post_data['license']['url'])
         created = result.pop('created')
@@ -1212,7 +1192,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             mock_datetime.now.return_value = now
             response = self.testapp.post_json('/users/contents',
                 {'title': 'Page one'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         page1 = response.json
         self.assert_cors_headers(response)
 
@@ -1220,7 +1199,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             mock_datetime.now.return_value = now
             response = self.testapp.post_json('/users/contents',
                 {'title': 'Page two'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
         page2 = response.json
         self.assert_cors_headers(response)
 
@@ -1250,7 +1228,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                             ],
                         },
                     }, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 3)
         book = response.json
         self.assert_cors_headers(response)
 
@@ -1332,7 +1309,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'title': u'My document タイトル',
                     'abstract': u'My document abstract',
                     'language': u'en'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         document = response.json
 
         with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
@@ -1340,7 +1316,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(document['id']),
                 {'title': 'new title'}, status=403)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         self.assertTrue('You do not have permission to edit'
                 in response.body.decode('utf-8'))
 
@@ -1351,7 +1326,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                         'contents': [],
                         },
                     'language': u'en'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
         binder = response.json
 
         with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
@@ -1359,7 +1333,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(binder['id']),
                 {'title': 'new title'}, status=403)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
         self.assertTrue('You do not have permission to edit'
                 in response.body.decode('utf-8'))
 
@@ -1368,7 +1341,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'title': u'My document タイトル',
                     'abstract': u'My document abstract',
                     'language': u'en'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         document = response.json
         self.assert_cors_headers(response)
 
@@ -1386,7 +1358,6 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         response = self.testapp.post_json(
             '/users/contents', post_data, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         page = response.json
         self.assert_cors_headers(response)
 
@@ -1399,7 +1370,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(page['id']),
                 post_data, status=200)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
         result = response.json
         self.assertEqual(result['content'], post_data['content'])
         self.assertEqual(result['revised'], now.astimezone(TZINFO).isoformat())
@@ -1413,7 +1383,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                         'contents': [],
                         },
                     }, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         self.assert_cors_headers(response)
         binder = response.json
         update_data = {
@@ -1428,7 +1397,6 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(binder['id']),
                 update_data, status=400)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         self.assertTrue(
             'Document Not Found: 7d089006-5a95-4e24-8e04-8168b5c41aa3@draft'
             in response.body.decode('utf-8'))
@@ -1444,7 +1412,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             mock_datetime.now.return_value = created
             response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         result = response.json
         self.assert_cors_headers(response)
 
@@ -1463,7 +1430,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(result['id']),
                 update_data, status=200)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
         result = response.json
         submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
         submitter_w_assign_date['assignmentDate'] = created.astimezone(
@@ -1569,13 +1535,11 @@ class FunctionalTests(BaseFunctionalTestCase):
                 'contents': [],
                 },
             }, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         binder = response.json
         created = binder['created']
 
         response = self.testapp.post_json(
             '/users/contents', {'title': 'Empty page'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
         page = response.json
 
         revised = datetime.datetime.now(TZINFO)
@@ -1624,7 +1588,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'publishers': [SUBMITTER_WITH_ACCEPTANCE],
                     'error': False,
                     }, status=200)
-        self.assertEqual(self.mock_create_acl.call_count, 3)
 
         response = self.testapp.get(
             '/contents/{}@draft.json'.format(binder['id']), status=200)
@@ -1659,7 +1622,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                 'title': u'My document タイトル',
                 'abstract': u'My document abstract',
                 'language': u'en'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         document = response.json
         self.assert_cors_headers(response)
 
@@ -1677,7 +1639,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.put_json(
                 '/contents/{}@draft.json'.format(document['id']),
                 update_data, status=200)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
         result = response.json
         self.assertEqual(result['id'], document['id'])
         self.assertEqual(result['title'], update_data['title'])
@@ -1716,7 +1677,6 @@ class FunctionalTests(BaseFunctionalTestCase):
     def test_delete_content_403(self):
         response = self.testapp.post_json(
             '/users/contents', {'title': 'My page'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         page = response.json
         self.assert_cors_headers(response)
 
@@ -1729,7 +1689,6 @@ class FunctionalTests(BaseFunctionalTestCase):
     def test_delete_content(self):
         response = self.testapp.post_json(
             '/users/contents', {'title': 'My page'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         page = response.json
         self.assert_cors_headers(response)
 
@@ -2005,7 +1964,6 @@ class FunctionalTests(BaseFunctionalTestCase):
         post_data = {'title': u'Document'}
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         self.assert_cors_headers(response)
 
         response = self.testapp.get('/search?q="Document', status=200)
@@ -2019,7 +1977,6 @@ class FunctionalTests(BaseFunctionalTestCase):
         post_data = {'title': u"Document"}
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
 
         self.logout()
         self.login('user2')
@@ -2034,7 +1991,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             }
         response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
         result = response.json
         doc_id = result['id']
         self.assert_cors_headers(response)
@@ -2042,7 +1998,6 @@ class FunctionalTests(BaseFunctionalTestCase):
         post_data = {'title': u'New stuff'}
         response = self.testapp.post_json(
             '/users/contents', post_data, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 3)
         result = response.json
         new_doc_id = result['id']
         self.assert_cors_headers(response)
@@ -2543,7 +2498,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             'created': utf8(posting_date.isoformat()),
             'revised': utf8(posting_date.isoformat()),
             }, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
         page = response.json
 
         # user4 should get back the contents just posted - full content test
@@ -2586,7 +2540,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                 '/users/contents',
                 {'derivedFrom': '91cb5f28-2b8a-4324-9373-dac1d617bc24@1'},
                 status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
         self.assert_cors_headers(response)
 
         mock_datetime.now = mock.Mock(return_value=two_weeks_ago)
@@ -2594,12 +2547,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.post_json(
                 '/users/contents',
                 {'title': 'oldest document by user4'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 3)
         self.assert_cors_headers(response)
 
         response = self.testapp.post_json(
             '/users/contents', {'title': 'new document by user4'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 4)
         self.assert_cors_headers(response)
 
         response = self.testapp.get('/users/contents', status=200)
@@ -2636,21 +2587,15 @@ class FunctionalTests(BaseFunctionalTestCase):
         mock_datetime = mock.Mock()
         mock_datetime.now = mock.Mock(return_value=one_day_ago)
 
-        def mock_get_acl(request, document):
-            document.acls = {'user5': ('view', 'edit',)}
-        self.mock_get_acl.side_effect = mock_get_acl
         with mock.patch('datetime.datetime', mock_datetime):
             response = self.testapp.post_json('/users/contents',
                 {'title': 'single page document'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
-
         single_page = response.json
 
         mock_datetime.now = mock.Mock(return_value=one_week_ago)
         with mock.patch('datetime.datetime', mock_datetime):
             response = self.testapp.post_json('/users/contents',
                 {'title': 'page in a book'}, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 2)
         page_in_book = response.json
 
         response = self.testapp.post_json('/users/contents', {
@@ -2664,7 +2609,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                     ],
                 },
             }, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 3)
         book = response.json
 
         # since page_in_book is in book, it should not show in the workspace
@@ -2716,15 +2660,11 @@ class FunctionalTests(BaseFunctionalTestCase):
                     },
                 }, status=200)
         book = response.json
-        self.assertEqual(self.mock_create_acl.call_count, 4)
 
         # add page_in_book to a book by someone else
         self.logout()
         self.login('user6')
 
-        def mock_get_acl(request, document):
-            document.acls = {'user6': ('view', 'edit',)}
-        self.mock_get_acl.side_effect = mock_get_acl
         response = self.testapp.post_json('/users/contents', {
             'mediaType': 'application/vnd.org.cnx.collection',
             'title': 'some other book',
@@ -2736,7 +2676,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                     ],
                 },
             }, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 5)
         other_book = response.json
         self.logout()
         self.login('user5')
