@@ -3202,9 +3202,6 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(documents[0].get_uri('cnx-archive'), page['id'])
 
     def test_edit_after_publish(self):
-        if self.USE_MOCK_PUBLISHING_SERVICE:
-            raise unittest.SkipTest('Requires a running publishing instance')
-
         # create a new page
         post_data = {
             'title': 'Page one',
@@ -3226,7 +3223,6 @@ class PublicationTests(BaseFunctionalTestCase):
             '/publish', post_data, expect_errors=True)
 
         publish = response.json
-        print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Done/Success')
         self.assertEqual(list(publish['mapping'].values()),
                          ['{}@1'.format(page_one['id'])])
@@ -3270,15 +3266,11 @@ class PublicationTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
             '/publish', post_data, expect_errors=True)
         publish = response.json
-        print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Done/Success')
         self.assertEqual(list(publish['mapping'].values()),
                          ['{}@2'.format(page_one['id'])])
 
     def test_delete_after_publish(self):
-        if self.USE_MOCK_PUBLISHING_SERVICE:
-            raise unittest.SkipTest('Requires a running publishing instance')
-
         # create a new page
         post_data = {
             'title': 'Page one',
@@ -3300,7 +3292,6 @@ class PublicationTests(BaseFunctionalTestCase):
             '/publish', post_data, expect_errors=True)
 
         publish = response.json
-        print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Done/Success')
         self.assertEqual(list(publish['mapping'].values()),
                          ['{}@1'.format(page_one['id'])])
@@ -3318,9 +3309,6 @@ class PublicationTests(BaseFunctionalTestCase):
         self.testapp.get('/contents/{}@1'.format(page_one['id']), status=404)
 
     def test_publish_after_error(self):
-        if self.USE_MOCK_PUBLISHING_SERVICE:
-            raise unittest.SkipTest('Requires a running publishing instance')
-
         # create a new page
         post_data = {
             'title': 'Page one',
@@ -3342,7 +3330,6 @@ class PublicationTests(BaseFunctionalTestCase):
             '/publish', post_data, expect_errors=True)
 
         publish = response.json
-        print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Failed/Error')
         self.assertEqual(publish['messages'][0]['type'], 'InvalidReference')
 
@@ -3375,15 +3362,11 @@ class PublicationTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
             '/publish', post_data, expect_errors=True)
         publish = response.json
-        print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Done/Success')
         self.assertEqual(list(publish['mapping'].values()),
                          ['{}@1'.format(page_one['id'])])
 
     def test_publish_w_multiple_users(self):
-        if self.USE_MOCK_PUBLISHING_SERVICE:
-            raise unittest.SkipTest('Requires a running publishing instance')
-
         # create a new page
         post_data = {
             'title': 'Page one',
@@ -3418,7 +3401,6 @@ class PublicationTests(BaseFunctionalTestCase):
             '/publish', post_data, status=200)
         # publication should be waiting for acceptance
         publish = response.json
-        print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Waiting for acceptance')
         self.assertEqual(list(publish['mapping'].values()),
                          ['{}@1'.format(page['id'])])
@@ -3446,15 +3428,11 @@ class PublicationTests(BaseFunctionalTestCase):
             '/publish', post_data, status=200)
         # publication should be waiting for acceptance
         publish = response.json
-        print('publishing message: {}'.format(publish))
         self.assertEqual(publish['state'], 'Done/Success')
         self.assertEqual(list(publish['mapping'].values()),
                          ['{}@1'.format(page['id'])])
 
     def test_acceptance(self):
-        if self.USE_MOCK_PUBLISHING_SERVICE:
-            raise unittest.SkipTest('Requires a running publishing instance')
-
         # create a new page
         post_data = {
             'title': 'My Page',
