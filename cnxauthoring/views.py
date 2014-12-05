@@ -327,7 +327,9 @@ def post_content_single(request, cstruct):
     try:
         appstruct = schema.bind().deserialize(cstruct)
     except Exception as e:
-        raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
+        raise httpexceptions.HTTPBadRequest(
+            body=json.dumps(e.asdict()),
+            headers=[('Content-type', 'application/json',)])
     appstruct['derived_from'] = derived_from
     if archive_id:
         appstruct['id'] = archive_id.split('@')[0]
