@@ -451,18 +451,15 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_post_content_derived_from_no_version(self):
         post_data = {
-                'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24',
+            'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24',
             }
-        self.mock_archive()
 
         now = datetime.datetime.now(TZINFO)
         with mock.patch('datetime.datetime') as mock_datetime:
             mock_datetime.now.return_value = now
             response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
-        self.assertEqual(self.mock_create_acl.call_count, 1)
-        result = json.loads(response.body.decode('utf-8'))
-        self.maxDiff = None
+        result = response.json
         content = result.pop('content')
         self.assertTrue(content.startswith('<html'))
         self.assertTrue(u'Lav en madplan for den kommende uge' in content)
@@ -507,7 +504,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         response = self.testapp.get('/contents/{}@draft.json'.format(
             result['id']), status=200)
-        result = json.loads(response.body.decode('utf-8'))
+        result = response.json
         content = result.pop('content')
         self.assertTrue(u'Lav en madplan for den kommende uge' in content)
         self.assertTrue(content.startswith('<html'))
