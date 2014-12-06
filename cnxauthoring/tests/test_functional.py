@@ -643,9 +643,8 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_post_content_derived_from_w_missing_resource(self):
         post_data = {
-                'derivedFrom': u'b0db72d9-fac3-4b43-9926-7e6e801663fb@1',
+            'derivedFrom': u'a3f7c934-2a89-4baf-a9a9-a89d957586d2@1',
             }
-        self.mock_archive()
 
         now = datetime.datetime.now(TZINFO)
         with mock.patch('datetime.datetime') as mock_datetime:
@@ -653,9 +652,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.post_json('/users/contents',
                     post_data, status=201)
         result = response.json
-        self.maxDiff = None
         content = result.pop('content')
-        self.assertTrue(u'Ingredienser (4 personer):' in content)
+        self.assertTrue(u'missing resource' in content)
         self.assertTrue(content.startswith('<html'))
         self.assertFalse('2011-10-12' in result.pop('created'))
         self.assertTrue(result.pop('revised') is not None)
@@ -669,12 +667,12 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
-            u'derivedFromTitle': u'Tilberedning',
+            u'derivedFromTitle': u'missing resource',
             u'derivedFromUri': u'http://cnx.org/contents/{}'.format(
                 post_data['derivedFrom']),
-            u'title': u'Copy of Tilberedning',
+            u'title': u'Copy of missing resource',
             u'abstract': u'',
-            u'language': u'da',
+            u'language': u'en',
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
             u'license': {
@@ -682,7 +680,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Attribution',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
-            u'subjects': [u'Arts'],
+            u'subjects': [],
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -700,7 +698,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             result['id']), status=200)
         result = response.json
         content = result.pop('content')
-        self.assertTrue(u'Ingredienser (4 personer):' in content)
+        self.assertTrue(u'missing resource' in content)
         self.assertTrue(content.startswith('<html'))
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
@@ -711,12 +709,12 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
-            u'derivedFromTitle': u'Tilberedning',
+            u'derivedFromTitle': u'missing resource',
             u'derivedFromUri': u'http://cnx.org/contents/{}'.format(
                 post_data['derivedFrom']),
-            u'title': u'Copy of Tilberedning',
+            u'title': u'Copy of missing resource',
             u'abstract': u'',
-            u'language': u'da',
+            u'language': u'en',
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
             u'license': {
@@ -724,7 +722,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Attribution',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
-            u'subjects': [u'Arts'],
+            u'subjects': [],
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],

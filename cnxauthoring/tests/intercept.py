@@ -63,6 +63,51 @@ def _parse_url_from_settings(settings, url_key):
     return host, port
 
 
+def _amend_archive_data():
+    """This contains data modifications to archive that are specific to
+    the authoring tests.
+    """
+    # **Only add to this function if you really really must.**
+    # The idea is to utilize as much of the archive data as possible.
+    # We do this because that data has been tested and adding things here
+    # may unintentionally insert an assumption about the data in archive.
+
+    conn_str = publishing_settings()[config.CONNECTION_STRING]
+
+    with psycopg2.connect(conn_str) as db_connection:
+        with db_connection.cursor() as cursor:
+            cursor.execute("""\
+INSERT INTO document_controls (uuid, licenseid) VALUES
+  ('a3f7c934-2a89-4baf-a9a9-a89d957586d2', 11);
+INSERT INTO abstracts (abstractid, abstract, html) VALUES
+  (9000, '', '');
+INSERT INTO modules
+  (module_ident, portal_type, uuid,
+   name, abstractid, licenseid, doctype, stateid,
+   submitter, submitlog,
+   authors)
+  VALUES
+  (9000, 'Module', 'a3f7c934-2a89-4baf-a9a9-a89d957586d2',
+   'missing resource', 9000, 11, '', null,
+   'cnxcap', 'tests derive-from with missing resource',
+   '{cnxcap}');
+INSERT INTO files
+  (fileid, file)
+  VALUES
+  (9000, '<html xmlns="http://www.w3.org/1999/xhtml"><head></head><body><p>module with a missing resource</p><img src="/resources/aca93d69479e75244b01272902968d8349a548f4/python"/></body></html>');
+INSERT INTO module_files
+  (module_ident, fileid, filename, mimetype)
+  VALUES
+  (9000, 9000, 'index.cnxml.html', 'text/html');""")
+
+
+def _amend_publishing_data():
+    """This contains data modifications of the publishing/archive data
+    that are specific to the authoring tests.
+    """
+    # NOOP
+
+
 def install_intercept():
     """Initializes both the archive and publishing applications.
     Then this will register intercepts for both applications using
@@ -103,6 +148,10 @@ def install_intercept():
             for filepath in filepaths:
                 with open(filepath, 'r') as fb:
                     cursor.execute(fb.read())
+
+    # Make amendments to the data that are specific to the authoring tests.
+    _amend_archive_data()
+    _amend_publishing_data()
 
     # Set up the intercept for archive
     global _archive_app
