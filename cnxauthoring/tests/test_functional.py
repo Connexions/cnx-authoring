@@ -542,15 +542,15 @@ class FunctionalTests(BaseFunctionalTestCase):
         post_data = {
                 'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             }
-        self.mock_archive()
 
+        # Create the derived content
         now = datetime.datetime.now(TZINFO)
         with mock.patch('datetime.datetime') as mock_datetime:
             mock_datetime.now.return_value = now
             response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
         result = response.json
-        self.maxDiff = None
+
         content = result.pop('content')
         self.assertTrue(content.startswith('<html'))
         self.assertTrue(u'Lav en madplan for den kommende uge' in content)
@@ -739,9 +739,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
     def test_post_content_derived_from_binder(self):
-        self.mock_archive()
         post_data = {
-                'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+            'derivedFrom': u'a733d0d2-de9b-43f9-8aa9-f0895036899e@1.1',
             }
 
         now = datetime.datetime.now(TZINFO)
@@ -750,26 +749,25 @@ class FunctionalTests(BaseFunctionalTestCase):
             response = self.testapp.post_json('/users/contents',
                 post_data, status=201)
         result = response.json
-        self.maxDiff = None
-        self.assertFalse('2011-10-12' in result.pop('created'))
         self.assertTrue(result.pop('revised') is not None)
+        self.assertTrue(result.pop('created') is not None)
+        self.assertTrue(result.pop('abstract') is not None)
         submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
-        submitter_w_assign_date['assignmentDate'] = now.astimezone(
-            TZINFO).isoformat()
-        self.assertEqual(result, {
+        submitter_w_assign_date[u'assignmentDate'] = unicode(
+            now.astimezone(TZINFO).isoformat())
+        expected = {
             u'submitter': SUBMITTER,
             u'authors': [submitter_w_assign_date],
             u'permissions': [u'edit', u'publish', u'view'],
             u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
-            u'derivedFromTitle': u'Madlavning',
+            u'derivedFromTitle': u'Derived Copy of College Physics',
             u'derivedFromUri': u'http://cnx.org/contents/{}'.format(
                 post_data['derivedFrom']),
-            u'title': u'Copy of Madlavning',
-            u'abstract': u'',
+            u'title': u'Copy of Derived Copy of College Physics',
             u'content': u'',
-            u'language': u'da',
+            u'language': u'en',
             u'mediaType': u'application/vnd.org.cnx.collection',
             u'version': u'draft',
             u'license': {
@@ -777,26 +775,8 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Attribution',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
-            u'tree': {
-                u'id': u'{}@draft'.format(result['id']),
-                u'title': u'Copy of Madlavning',
-                u'contents': [
-                    {u'id': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
-                        u'title': u'Indkøb'},
-                    {u'id': u'subcol',
-                        u'contents': [
-                            {u'id': u'f6b979cb-8904-4265-bf2d-f059cc362217@1',
-                                u'title': u'Fødevarer'},
-                            {u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
-                                u'title': u'Hygiejne'},
-                            ],
-                        u'title': u'Fødevarer og Hygiejne'},
-                    {u'id': u'b0db72d9-fac3-4b43-9926-7e6e801663fb@1',
-                        u'title': u'Tilberedning'}
-                    ],
-                },
-            u'subjects': [u'Arts'],
-            u'keywords': [u'køkken', u'Madlavning'],
+            u'subjects': [],
+            u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
             u'publication': None,
@@ -806,7 +786,46 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [submitter_w_assign_date],
             u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
-            })
+            u'tree': {
+                u'id': u'{}@draft'.format(result['id']),
+                u'title': u'Copy of Derived Copy of College Physics',
+                u'contents': [
+                    {u'id': u'209deb1f-1a46-4369-9e0d-18674cf58a3e@7',
+                     u'title': u'Preface'},
+                    {u'id': u'subcol',
+                     u'title': u'Introduction: The Nature of Science and Physics',
+                     u'contents': [
+                         {u'id': u'f3c9ab70-a916-4d8c-9256-42953287b4e9@3',
+                          u'title': u'Introduction to Science and the Realm of Physics, Physical Quantities, and Units'},
+                         {u'id': u'd395b566-5fe3-4428-bcb2-19016e3aa3ce@4',
+                          u'title': u'Physics: An Introduction'},
+                         {u'id': u'c8bdbabc-62b1-4a5f-b291-982ab25756d7@6',
+                          u'title': u'Physical Quantities and Units'},
+                         {u'id': u'5152cea8-829a-4aaf-bcc5-c58a416ecb66@7',
+                          u'title': u'Accuracy, Precision, and Significant Figures'},
+                         {u'id': u'5838b105-41cd-4c3d-a957-3ac004a48af3@5',
+                          u'title': u'Approximation'}]},
+                    {u'id': u'subcol',
+                     u'title': u"Further Applications of Newton's Laws: Friction, Drag, and Elasticity",
+                     u'contents': [
+                         {u'id': u'24a2ed13-22a6-47d6-97a3-c8aa8d54ac6d@2',
+                          u'title': u'Introduction: Further Applications of Newton\u2019s Laws'},
+                         {u'id': u'ea271306-f7f2-46ac-b2ec-1d80ff186a59@5',
+                          u'title': u'Friction'},
+                         {u'id': u'26346a42-84b9-48ad-9f6a-62303c16ad41@6',
+                          u'title': u'Drag Forces'},
+                         {u'id': u'56f1c5c1-4014-450d-a477-2121e276beca@8',
+                          u'title': u'Elasticity: Stress and Strain'}]},
+                    {u'id': u'f6024d8a-1868-44c7-ab65-45419ef54881@3',
+                     u'title': u'Atomic Masses'},
+                    {u'id': u'7250386b-14a7-41a2-b8bf-9e9ab872f0dc@2',
+                     u'title': u'Selected Radioactive Isotopes'},
+                    {u'id': u'c0a76659-c311-405f-9a99-15c71af39325@5',
+                     u'title': u'Useful Inf\xf8rmation'},
+                    {u'id': u'ae3e18de-638d-4738-b804-dc69cd4db3a3@4',
+                     u'title': u'Glossary of Key Symbols and Notation'}]},
+            }
+        self.assertEqual(result, expected)
         self.assert_cors_headers(response)
 
         response = self.testapp.get(
@@ -814,61 +833,11 @@ class FunctionalTests(BaseFunctionalTestCase):
         result = response.json
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
-        self.assertEqual(result, {
-            u'submitter': SUBMITTER,
-            u'authors': [submitter_w_assign_date],
-            u'permissions': [u'edit', u'publish', u'view'],
-            u'publishers': [submitter_w_assign_date],
-            u'id': result['id'],
-            u'derivedFrom': post_data['derivedFrom'],
-            u'derivedFromTitle': u'Madlavning',
-            u'derivedFromUri': u'http://cnx.org/contents/{}'.format(
-                post_data['derivedFrom']),
-            u'title': u'Copy of Madlavning',
-            u'abstract': u'',
-            u'content': u'',
-            u'language': u'da',
-            u'mediaType': u'application/vnd.org.cnx.collection',
-            u'version': u'draft',
-            u'license': {
-                u'abbr': u'by',
-                u'name': u'Attribution',
-                u'url': u'http://creativecommons.org/licenses/by/4.0/',
-                u'version': u'4.0'},
-            u'tree': {
-                u'id': u'{}@draft'.format(result['id']),
-                u'title': u'Copy of Madlavning',
-                u'contents': [
-                    {u'id': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
-                        u'title': u'Indkøb'},
-                    {u'id': u'subcol',
-                        u'contents': [
-                            {u'id': u'f6b979cb-8904-4265-bf2d-f059cc362217@1',
-                                u'title': u'Fødevarer'},
-                            {u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
-                                u'title': u'Hygiejne'},
-                            ],
-                        u'title': u'Fødevarer og Hygiejne'},
-                    {u'id': u'b0db72d9-fac3-4b43-9926-7e6e801663fb@1',
-                        u'title': u'Tilberedning'}
-                    ],
-                },
-            u'subjects': [u'Arts'],
-            u'keywords': [u'køkken', u'Madlavning'],
-            u'state': u'Draft',
-            u'permissions': [u'edit', u'publish', u'view'],
-            u'publication': None,
-            u'containedIn': [],
-            u'editors': [],
-            u'translators': [],
-            u'licensors': [submitter_w_assign_date],
-            u'copyrightHolders': [submitter_w_assign_date],
-            u'illustrators': [],
-            })
+        self.assertTrue(result.pop('abstract') is not None)        
+        self.assertEqual(result, expected)
         self.assert_cors_headers(response)
 
     def test_post_content_revision_403(self):
-        self.mock_archive()
         self.logout()
         self.login('user2')
         post_data = {
@@ -885,7 +854,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                 post_data, status=403)
 
     def test_post_content_revision_404(self):
-        self.mock_archive()
         post_data = {
             'id': 'edf794be-28bc-4242-8ae2-b043e4dd32ef@1',
             'title': u"Turning DNA through resonance",
@@ -900,7 +868,6 @@ class FunctionalTests(BaseFunctionalTestCase):
                 post_data, status=404)
 
     def test_post_content_revision(self):
-        self.mock_archive()
         self.logout()
         self.login('Rasmus1975')
         post_data = {
@@ -928,94 +895,55 @@ class FunctionalTests(BaseFunctionalTestCase):
         content = result.pop('content')
         self.assertTrue(u'Lav en madplan for den kommende uge' in content)
 
+        # FIXME the user info we have in archive differs from
+        #       that here in authoring.
+        rasmus_user_info = {
+            u'email': u'rasmus@example.com',
+            u'firstname': u'Rasmus',
+            u'fullname': u'Rasmus Ruby',
+            u'id': u'Rasmus1975',
+            u'surname': u'Ruby',
+            u'type': u'cnx-id',
+            }
+        rasmus_role = rasmus_user_info.copy()
+        rasmus_role.update({
+            u'assignmentDate': formatted_now,
+            u'hasAccepted': True,
+            u'requester': rasmus_user_info['id'],
+            u'email': u'',
+            u'emails': [u'rasmus@example.org'],
+            u'suffix': None,
+            u'surname': u'',
+            u'title': None,
+            u'website': None,
+            u'fullname': u'Rasmus de 1975',
+        })
+
         self.assertEqual(result, {
-            u'submitter': {
-                u'id': u'Rasmus1975',
-                u'firstname': u'Rasmus',
-                u'surname': u'Ruby',
-                u'fullname': u'Rasmus Ruby',
-                u'email': u'rasmus@example.com',
-                u'type': u'cnx-id',
-                },
-            u'authors': [{
-                u'website': u'',
-                u'surname': u'One',
-                u'suffix': u'',
-                u'firstname': u'User',
-                u'title': u'',
-                u'othername': u'',
-                u'email': u'user1@example.com',
-                u'fullname': u'User One',
-                u'id': u'user1',
-                u'type': u'cnx-id',
-                u'hasAccepted': True,
-                }],
-            u'permissions': [u'edit', u'publish', u'view'],
-            u'publishers': [{
-                u'website': u'',
-                u'surname': u'Ruby',
-                u'suffix': u'',
-                u'firstname': u'Rasmus',
-                u'title': u'',
-                u'othername': u'',
-                u'email': u'rasmus@example.com',
-                u'fullname': u'Rasmus Ruby',
-                u'id': u'Rasmus1975',
-                u'type': u'cnx-id',
-                u'requester': u'Rasmus1975',
-                u'assignmentDate': formatted_now,
-                u'hasAccepted': True,
-                }],
-            u'id': post_data['id'].split('@')[0],
+            u'abstract': u'Theories on turning DNA structures',
+            u'authors': [rasmus_role],
+            u'cnx-archive-uri': post_data['id'],
+            u'containedIn': [],
+            u'copyrightHolders': [rasmus_role],
             u'derivedFrom': None,
             u'derivedFromTitle': None,
             u'derivedFromUri': None,
-            u'title': u'Turning DNA through resonance',
-            u'abstract': u'Theories on turning DNA structures',
-            u'language': u'en',
-            u'mediaType': u'application/vnd.org.cnx.module',
-            u'version': u'draft',
-            u'subjects': [u'Science and Technology'],
+            u'editors': [],
+            u'id': post_data['id'].split('@')[0],
+            u'illustrators': [],
             u'keywords': [u'DNA', u'resonance'],
-            u'state': u'Draft',
+            u'language': u'en',
+            u'licensors': [rasmus_role],
+            u'mediaType': u'application/vnd.org.cnx.module',
             u'permissions': [u'edit', u'publish', u'view'],
             u'publication': None,
-            u'cnx-archive-uri': post_data['id'],
-            u'containedIn': [],
-            u'editors': [],
+            u'publishers': [rasmus_role],
+            u'state': u'Draft',
+            u'subjects': [u'Science and Technology'],
+            u'submitter': rasmus_user_info,
+            u'title': u'Turning DNA through resonance',
             u'translators': [],
-            u'licensors': [{
-                u'website': u'',
-                u'surname': u'Ruby',
-                u'suffix': u'',
-                u'firstname': u'Rasmus',
-                u'title': u'',
-                u'othername': u'',
-                u'email': u'rasmus@example.com',
-                u'fullname': u'Rasmus Ruby',
-                u'id': u'Rasmus1975',
-                u'type': u'cnx-id',
-                u'requester': u'Rasmus1975',
-                u'assignmentDate': formatted_now,
-                u'hasAccepted': True,
-                }],
-            u'copyrightHolders': [{
-                u'website': u'',
-                u'surname': u'Ruby',
-                u'suffix': u'',
-                u'firstname': u'Rasmus',
-                u'title': u'',
-                u'othername': u'',
-                u'email': u'rasmus@example.com',
-                u'fullname': u'Rasmus Ruby',
-                u'id': u'Rasmus1975',
-                u'type': u'cnx-id',
-                u'requester': u'Rasmus1975',
-                u'assignmentDate': formatted_now,
-                u'hasAccepted': True,
-                }],
-            u'illustrators': [],
-            })
+            u'version': u'draft'})
         self.assert_cors_headers(response)
 
         response = self.testapp.get(
@@ -1027,43 +955,10 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
         self.assertEqual(result, {
-            u'submitter': {
-                u'id': u'Rasmus1975',
-                u'firstname': u'Rasmus',
-                u'surname': u'Ruby',
-                u'fullname': u'Rasmus Ruby',
-                u'email': u'rasmus@example.com',
-                u'type': u'cnx-id',
-                },
-            u'authors': [{
-                u'website': u'',
-                u'surname': u'One',
-                u'suffix': u'',
-                u'firstname': u'User',
-                u'title': u'',
-                u'othername': u'',
-                u'email': u'user1@example.com',
-                u'fullname': u'User One',
-                u'id': u'user1',
-                u'type': u'cnx-id',
-                u'hasAccepted': True,
-                }],
+            u'submitter': rasmus_user_info,
+            u'authors': [rasmus_role],
             u'permissions': [u'edit', u'publish', u'view'],
-            u'publishers': [{
-                u'website': u'',
-                u'surname': u'Ruby',
-                u'suffix': u'',
-                u'firstname': u'Rasmus',
-                u'title': u'',
-                u'othername': u'',
-                u'email': u'rasmus@example.com',
-                u'fullname': u'Rasmus Ruby',
-                u'id': u'Rasmus1975',
-                u'type': u'cnx-id',
-                u'requester': u'Rasmus1975',
-                u'assignmentDate': formatted_now,
-                u'hasAccepted': True,
-                }],
+            u'publishers': [rasmus_role],
             u'id': result['id'],
             u'derivedFrom': None,
             u'derivedFromTitle': None,
@@ -1088,36 +983,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'containedIn': [],
             u'editors': [],
             u'translators': [],
-            u'licensors': [{
-                u'website': u'',
-                u'surname': u'Ruby',
-                u'suffix': u'',
-                u'firstname': u'Rasmus',
-                u'title': u'',
-                u'othername': u'',
-                u'email': u'rasmus@example.com',
-                u'fullname': u'Rasmus Ruby',
-                u'id': u'Rasmus1975',
-                u'type': u'cnx-id',
-                u'requester': u'Rasmus1975',
-                u'assignmentDate': formatted_now,
-                u'hasAccepted': True,
-                }],
-            u'copyrightHolders': [{
-                u'website': u'',
-                u'surname': u'Ruby',
-                u'suffix': u'',
-                u'firstname': u'Rasmus',
-                u'title': u'',
-                u'othername': u'',
-                u'email': u'rasmus@example.com',
-                u'fullname': u'Rasmus Ruby',
-                u'id': u'Rasmus1975',
-                u'type': u'cnx-id',
-                u'requester': u'Rasmus1975',
-                u'assignmentDate': formatted_now,
-                u'hasAccepted': True,
-                }],
+            u'licensors': [rasmus_role],
+            u'copyrightHolders': [rasmus_role],
             u'illustrators': [],
             })
         self.assert_cors_headers(response)
@@ -1354,7 +1221,6 @@ class FunctionalTests(BaseFunctionalTestCase):
         post_data = {
             'derivedFrom': u'91cb5f28-2b8a-4324-9373-dac1d617bc24@1',
             }
-        self.mock_archive()
 
         response = self.testapp.post_json(
             '/users/contents', post_data, status=201)
@@ -1402,21 +1268,21 @@ class FunctionalTests(BaseFunctionalTestCase):
             in response.body.decode('utf-8'))
 
     def test_put_content_binder(self):
+        # Create a derived binder
         post_data = {
-            'derivedFrom': u'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+            'derivedFrom': u'a733d0d2-de9b-43f9-8aa9-f0895036899e@1.1',
             }
-        self.mock_archive()
-
         created = datetime.datetime.now(TZINFO)
         with mock.patch('datetime.datetime') as mock_datetime:
             mock_datetime.now.return_value = created
             response = self.testapp.post_json(
                 '/users/contents', post_data, status=201)
-        result = response.json
+        binder = response.json
         self.assert_cors_headers(response)
 
         update_data = {
             'title': u'...',
+            'abstract': u'...',
             'tree': {
                 'contents': [{
                     u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
@@ -1424,32 +1290,33 @@ class FunctionalTests(BaseFunctionalTestCase):
                     }],
                 },
             }
+
         revised = datetime.datetime.now(TZINFO)
         with mock.patch('datetime.datetime') as mock_datetime:
             mock_datetime.now.return_value = revised
             response = self.testapp.put_json(
-                '/contents/{}@draft.json'.format(result['id']),
+                '/contents/{}@draft.json'.format(binder['id']),
                 update_data, status=200)
-        result = response.json
+        binder = response.json
         submitter_w_assign_date = SUBMITTER_WITH_ACCEPTANCE.copy()
-        submitter_w_assign_date['assignmentDate'] = created.astimezone(
-            TZINFO).isoformat()
-        self.assertEqual(result, {
-            u'created': created.astimezone(TZINFO).isoformat(),
-            u'revised': revised.astimezone(TZINFO).isoformat(),
+        submitter_w_assign_date[u'assignmentDate'] = unicode(
+            created.astimezone(TZINFO).isoformat())
+        self.assertEqual(binder, {
+            u'created': unicode(created.astimezone(TZINFO).isoformat()),
+            u'revised': unicode(revised.astimezone(TZINFO).isoformat()),
             u'submitter': SUBMITTER,
             u'authors': [submitter_w_assign_date],
             u'permissions': [u'edit', u'publish', u'view'],
             u'publishers': [submitter_w_assign_date],
-            u'id': result['id'],
+            u'id': binder['id'],
             u'derivedFrom': post_data['derivedFrom'],
-            u'derivedFromTitle': u'Madlavning',
+            u'derivedFromTitle': u'Derived Copy of College Physics',
             u'derivedFromUri': u'http://cnx.org/contents/{}'.format(
                 post_data['derivedFrom']),
-            u'abstract': u'',
+            u'abstract': u'...',
             u'containedIn': [],
             u'content': u'',
-            u'language': u'da',
+            u'language': u'en',
             u'mediaType': u'application/vnd.org.cnx.collection',
             u'version': u'draft',
             u'license': {
@@ -1459,15 +1326,15 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'version': u'4.0'},
             u'title': u'...',
             u'tree': {
-                u'id': u'{}@draft'.format(result['id']),
+                u'id': u'{}@draft'.format(binder['id']),
                 u'title': u'...',
                 u'contents': [{
                     u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
                     u'title': u'Hygiene',
                     }],
                 },
-            u'subjects': [u'Arts'],
-            u'keywords': [u'køkken', u'Madlavning'],
+            u'subjects': [],
+            u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
             u'publication': None,
@@ -1480,24 +1347,24 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
         response = self.testapp.get(
-            '/contents/{}@draft.json'.format(result['id']), status=200)
-        result = response.json
-        self.assertEqual(result, {
+            '/contents/{}@draft.json'.format(binder['id']), status=200)
+        binder = response.json
+        self.assertEqual(binder, {
             u'created': created.astimezone(TZINFO).isoformat(),
             u'revised': revised.astimezone(TZINFO).isoformat(),
             u'submitter': SUBMITTER,
             u'authors': [submitter_w_assign_date],
             u'permissions': [u'edit', u'publish', u'view'],
             u'publishers': [submitter_w_assign_date],
-            u'id': result['id'],
+            u'id': binder['id'],
             u'derivedFrom': post_data['derivedFrom'],
-            u'derivedFromTitle': u'Madlavning',
+            u'derivedFromTitle': u'Derived Copy of College Physics',
             u'derivedFromUri': u'http://cnx.org/contents/{}'.format(
                 post_data['derivedFrom']),
-            u'abstract': u'',
+            u'abstract': u'...',
             u'containedIn': [],
             u'content': u'',
-            u'language': u'da',
+            u'language': u'en',
             u'mediaType': u'application/vnd.org.cnx.collection',
             u'version': u'draft',
             u'license': {
@@ -1507,15 +1374,15 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'version': u'4.0'},
             u'title': u'...',
             u'tree': {
-                u'id': u'{}@draft'.format(result['id']),
+                u'id': u'{}@draft'.format(binder['id']),
                 u'title': u'...',
                 u'contents': [{
                     u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
                     u'title': u'Hygiene',
                     }],
                 },
-            u'subjects': [u'Arts'],
-            u'keywords': [u'køkken', u'Madlavning'],
+            u'subjects': [],
+            u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
             u'publication': None,
@@ -2527,8 +2394,6 @@ class FunctionalTests(BaseFunctionalTestCase):
             })
 
         self.assert_cors_headers(response)
-
-        self.mock_archive()
 
         one_week_ago = datetime.datetime.now(TZINFO) - datetime.timedelta(7)
         two_weeks_ago = datetime.datetime.now(TZINFO) - datetime.timedelta(14)
