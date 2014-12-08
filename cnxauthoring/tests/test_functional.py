@@ -3385,9 +3385,9 @@ class PublicationTests(BaseFunctionalTestCase):
 
         # should not be able to view or edit the content anymore
         self.testapp.get(
-            '/contents/{}@draft/acceptance'.format(page['id']), status=403)
+            '/contents/{}@draft/acceptance'.format(page['id']))
         self.testapp.get(
-            '/contents/{}@draft.json'.format(page['id']), status=403)
+            '/contents/{}@draft.json'.format(page['id']))
         self.testapp.put_json(
             '/contents/{}@draft.json'.format(page['id']), {}, status=403)
 
