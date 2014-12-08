@@ -2918,6 +2918,14 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(result['publication'], unicode(publication_id))
 
     def test_publish_revision_single_page(self):
+        id = '91cb5f28-2b8a-4324-9373-dac1d617bc24'
+        # If the content already exists, because of other tests, remove it.
+        from ..storage import storage
+        document = storage.get(id=id)
+        if document is not None:
+            storage.remove(document)
+            storage.persist()
+
         self.logout()
         # Create the revision
         self.login('Rasmus1975')
