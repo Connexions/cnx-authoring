@@ -164,7 +164,7 @@ class UtilsTests(unittest.TestCase):
         self.assertEqual(utils.structured_query(test1),
                          [('text', 'Phrase without quotes')])
 
-    def test_create_acl_for(self):
+    def test_declare_acl_on_create(self):
         from ..models import create_content
 
         document = create_content(
@@ -178,53 +178,38 @@ class UtilsTests(unittest.TestCase):
             licensors=[{'id': 'licensor'}],
             illustrators=[{'id': 'illustrator'}],
             )
-        request = mock.Mock()
-        request.registry.settings = {
+        settings = {
             'publishing.url': 'http://publishing/',
             'publishing.api_key': 'trusted-publisher',
             }
 
-        with mock.patch('requests.post') as post:
-            post.return_value.status_code = 202
-            utils.create_acl_for(request, document)
-            self.assertEqual(post.call_count, 1)
-            (url,), kwargs = post.call_args
-            self.assertEqual(url,
-                             'http://publishing/contents/{}/permissions'
-                             .format(document.id))
-            self.assertEqual(json.loads(kwargs['data']),
-                             [{'uid': 'me', 'permission': 'publish'},
-                              {'uid': 'you', 'permission': 'publish'}])
-            self.assertEqual(kwargs['headers'], {
-                'x-api-key': 'trusted-publisher',
-                'content-type': 'application/json',
-                })
-
-    def test_get_acl_for(self):
-        from ..models import create_content
-
-        document = create_content(title='My Document')
-        request = mock.Mock()
-        request.registry.settings = {
-            'publishing.url': 'http://publishing/',
-            'publishing.api_key': 'trusted-publisher',
-            }
-
+        records = [
+            {'uid': 'me', 'permission': 'publish'},
+            {'uid': 'you', 'permission': 'publish'},
+            ]
         with mock.patch('requests.get') as get:
             get.return_value.status_code = 200
-            get.return_value.json.return_value = [{
-                'uuid': document.id,
-                'uid': 'me',
-                'permission': 'publish',
-                }]
-            utils.get_acl_for(request, document)
-            self.assertEqual(get.call_count, 1)
-            (url,), kwargs = get.call_args
-            self.assertEqual(url,
-                             'http://publishing/contents/{}/permissions'
-                             .format(document.id))
-            self.assertEqual(document.acls,
-                             {'me': ('view', 'edit', 'publish')})
+            get.json.side_effect = ([], records,)
+            with mock.patch('requests.post') as post:
+                post.return_value.status_code = 202
+
+                with testing.testConfig(settings=settings):
+                    utils.declare_acl(document)
+
+                self.assertEqual(post.call_count, 1)
+                (url,), kwargs = post.call_args
+                self.assertEqual(
+                    url,
+                    'http://publishing/contents/{}/permissions' \
+                    .format(document.id))
+                self.assertEqual(
+                    json.loads(kwargs['data']),
+                    [{'uid': 'me', 'permission': 'publish'},
+                     {'uid': 'you', 'permission': 'publish'}])
+                self.assertEqual(kwargs['headers'], {
+                    'x-api-key': 'trusted-publisher',
+                    'content-type': 'application/json',
+                    })
 
     @mock.patch('cnxauthoring.utils.get_current_registry')
     def test_notify_role_for_acceptance(self, mock_registry):

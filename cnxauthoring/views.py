@@ -337,14 +337,10 @@ def post_content_single(request, cstruct):
 
     content = create_content(**appstruct)
 
-    if not archive_id:
-        # new content, need to create acl entry in publishing
-        utils.create_acl_for(request, content)
     utils.accept_license(content, user)
     utils.declare_roles(content)
     utils.declare_licensors(content)
-    # get acl entry from publishing
-    utils.get_acl_for(request, content)
+    utils.declare_acl(content)
 
     resources = []
     if content.mediatype != BINDER_MEDIATYPE and (derived_from or archive_id):
@@ -476,6 +472,7 @@ def delete_content_single(request, id, user_id=None, raise_error=True):
                     permissions = list(permissions)
                     permissions.remove('view')
                     content.acls[uid] = permissions
+            utils.declare_acl(content)
             storage.update(content)
         else:
             resource = storage.remove(content)
@@ -559,8 +556,7 @@ def put_content(request):
     utils.accept_license(content, user)
     utils.declare_roles(content)
     utils.declare_licensors(content)
-    utils.create_acl_for(request, content)
-    utils.get_acl_for(request, content)
+    utils.declare_acl(content)
     try:
         storage.update(content)
         if content.mediatype == BINDER_MEDIATYPE:
@@ -812,7 +808,7 @@ def post_acceptance_info(request):
 
     utils.declare_roles(content)
     utils.declare_licensors(content)
-    utils.get_acl_for(request, content)
+    utils.declare_acl(content)
 
     if tobe_updated_roles:
         storage.update(content)

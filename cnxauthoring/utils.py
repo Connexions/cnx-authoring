@@ -33,6 +33,15 @@ from parsimonious.exceptions import IncompleteParseError
 TZINFO = tzlocal.get_localzone()
 logger = logging.getLogger('cnxauthoring')
 
+PUBLISHING_ROLES_MAPPING = {
+    'Author': 'authors',
+    'Copyright Holder': 'licensors',
+    'Editor': 'editors',
+    'Illustrator': 'illustrators',
+    'Publisher': 'publishers',
+    'Translator': 'translators',
+    }
+
 
 def utf8(item):
     if isinstance(item, list):
@@ -252,83 +261,6 @@ def update_containment(binder, deletion = False):
                 doc.metadata['contained_in'].remove(b_id)
                 storage.update(doc)
 
-def create_acl_for(request, document):
-    """Submit content identifiers to publishing and allow users to
-    publish
-    """
-    from .models import PublishingError
-
-    settings = request.registry.settings
-    publishing_url = settings['publishing.url']
-    api_key = settings['publishing.api_key']
-    headers = {
-            'x-api-key': api_key,
-            'content-type': 'application/json',
-            }
-
-    payload = []
-    for user in document.metadata['publishers']:
-        if user.get('has_accepted'):
-            payload.append({'uid': user['id'], 'permission': 'publish'})
-
-    acl_url = urlparse.urljoin(
-        publishing_url, '/contents/{}/permissions'.format(document.id))
-    response = requests.post(
-        acl_url, data=json.dumps(payload), headers=headers)
-    if response.status_code != 202:
-        raise PublishingError(response)
-
-
-def get_acl_for(request, document):
-    """Get document ACL from publishing"""
-    from .models import PublishingError
-
-    # Set the acl using roles
-    old_permissions = document.acls
-    document.acls = {}
-    roles_acl = {}
-    users_pending_acceptance = []
-    for role_type_attr_name in cnxepub.ATTRIBUTED_ROLE_KEYS:
-        for role in document.metadata.get(role_type_attr_name, []):
-            permissions = []
-            if role_type_attr_name == 'publishers' \
-               and role.get('has_accepted'):
-                permissions.append('publish')
-            if role.get('has_accepted'):
-                permissions.append('edit')
-            if role.get('has_accepted') is None:
-                users_pending_acceptance.append(role['id'])
-            permissions.append('view')
-            roles_acl.setdefault(role['id'], set([]))
-            roles_acl[role['id']].update(permissions)
-
-    for uid, permissions in roles_acl.items():
-        # Don't re-add the view permission if it has been removed
-        if (uid in old_permissions and
-                'view' not in old_permissions[uid] and
-                uid not in users_pending_acceptance):
-            if 'view' in permissions:
-                permissions.remove('view')
-        document.acls[uid] = tuple(permissions)
-
-    # Get additional acl from publishing
-    settings = request.registry.settings
-    publishing_url = settings['publishing.url']
-    acl_url = urlparse.urljoin(
-        publishing_url, '/contents/{}/permissions'.format(document.id))
-
-    response = requests.get(acl_url)
-    if response.status_code != 200:
-        raise PublishingError(response)
-    acl = response.json()
-    for user_permission in acl:
-        uid = user_permission['uid']
-        permissions = ['view', 'edit', 'publish']
-        # Don't re-add the view permission if it has been removed
-        if uid in document.acls and 'view' not in document.acls[uid]:
-            permissions.remove('view')
-        document.acls[uid] = tuple(permissions)
-
 
 def get_roles(document, uid):
     field_to_roles = (
@@ -403,14 +335,96 @@ def accept_license(document, user):
         document.licensor_acceptance.append(user_copy)
 
 
-PUBLISHING_ROLES_MAPPING = {
-    'Author': 'authors',
-    'Copyright Holder': 'licensors',
-    'Editor': 'editors',
-    'Illustrator': 'illustrators',
-    'Publisher': 'publishers',
-    'Translator': 'translators',
-    }
+def declare_acl(model):
+    """Declare publication permission on the model and within publishing.
+    The model is updated as part of this procedure, but it is not persisted.
+    """
+    from .models import PublishingError
+
+    # Put together the information necessary to make publishing requests.
+    settings = get_current_registry().settings
+    publishing_url = settings['publishing.url']
+    api_key = settings['publishing.api_key']
+    headers = {
+            'x-api-key': api_key,
+            'content-type': 'application/json',
+            }
+    url = urlparse.urljoin(publishing_url,
+                           '/contents/{}/permissions'.format(model.id))
+
+    # Acquire the current ACL
+    #   (which at this time only contains the publish permission)
+    upstream_acl_ids = set([])
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        upstream_acl_ids = set([x['uid'] for x in response.json()])
+    elif response.status_code >= 400:
+        raise PublishingError(response)
+
+    # Push out the current set of publishers.
+    payload = []
+    for user in model.metadata['publishers']:
+        if user.get('has_accepted'):
+            payload.append({'uid': user['id'], 'permission': 'publish'})
+    response = requests.post(url, data=json.dumps(payload), headers=headers)
+    if response.status_code != 202:
+        raise PublishingError(response)
+
+    local_acl_ids = set([x['uid'] for x in payload])
+    # Remove any roles that are no longer part of the local set.
+    removal_payload = [{'permission': 'publish', 'uid': uid}
+                       for uid in upstream_acl_ids.difference(local_acl_ids)]
+    if removal_payload:
+        response = requests.delete(url, headers=headers,
+                                   data=json.dumps(removal_payload))
+        if response.status_code != 200:
+            raise PublishingError(response)
+
+    # Aquire the updated ACL
+    response = requests.get(url, headers=headers)
+    upstream_acl = response.json()
+
+    # Update the model's ACL attribute.
+    previous_acl = model.acls
+    model.acls = {}  # Clear the current ACL values.
+    roles_acl = {}
+    users_pending_acceptance = []
+    for role_type_attr_name in cnxepub.ATTRIBUTED_ROLE_KEYS:
+        for role in model.metadata.get(role_type_attr_name, []):
+            permissions = ['view']
+            if role_type_attr_name == 'publishers' \
+               and role.get('has_accepted'):
+                permissions.extend(['edit', 'publish'])
+            elif role.get('has_accepted'):
+                permissions.append('edit')
+            elif role.get('has_accepted') is None:
+                users_pending_acceptance.append(role['id'])
+            roles_acl.setdefault(role['id'], set([]))
+            roles_acl[role['id']].update(permissions)
+
+    # Note, it's possible for a user to have removed themselves from
+    #   the model by deleting their view permission, which eliminates
+    #   the model from the workspace. This means the user will have
+    #   edit and possibly publish permissions, but not view.
+
+    for uid, permissions in roles_acl.items():
+        # Don't re-add the view permission if it has been removed
+        if uid in previous_acl \
+           and 'view' not in previous_acl[uid] \
+           and uid not in users_pending_acceptance:
+            try:
+                permissions.remove('view')
+            except KeyError:
+                pass
+        model.acls[uid] = tuple(permissions)
+
+    for user_entry in upstream_acl:
+        uid = user_entry['uid']
+        permissions = set(['view', 'edit', 'publish'])
+        # Don't re-add the view permission if it has been removed
+        if uid in model.acls and 'view' not in model.acls[uid]:
+            permissions.remove('view')
+        model.acls[uid] = permissions
 
 
 def declare_roles(model):
