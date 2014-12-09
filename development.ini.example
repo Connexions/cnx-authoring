@@ -48,3 +48,35 @@ pyramid.includes = pyramid_translogger
 use = egg:waitress#main
 host = 0.0.0.0
 port = 8080
+
+###
+# logging configuration
+###
+
+[loggers]
+keys = root, cnxauthoring
+
+[handlers]
+keys = console
+
+[formatters]
+keys = generic
+
+[logger_root]
+level = DEBUG
+handlers = console
+
+[logger_cnxauthoring]
+level = DEBUG
+handlers =
+qualname = cnxauthoring
+
+[handler_console]
+class = StreamHandler
+args = (sys.stderr,)
+level = NOTSET
+formatter = generic
+
+[formatter_generic]
+format = %(asctime)s %(levelname)-5.5s [%(name)s][%(threadName)s] %(message)s
+
