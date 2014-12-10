@@ -535,6 +535,78 @@ Thank you from your friends at OpenStax CNX
                          expected)
 
     @httpretty.activate
+    @mock.patch('cnxauthoring.utils.get_current_request')
+    @mock.patch('cnxauthoring.utils.notify_role_for_acceptance')
+    def test_declare_roles_on_revision(self, mock_notify, mock_request):
+        from ..models import create_content
+
+        id = '916849b5-d71f-40e3-aaf8-7da2aa82508e'
+        document = create_content(
+            id=id,
+            title='My Document',
+            authors=[{'id': 'smoo'}, {'id': 'fred'}],
+            )
+        publishing_url = 'http://publishing/'
+        settings = {
+            'publishing.url': publishing_url,
+            'publishing.api_key': 'trusted-publisher',
+            }
+
+        url = urlparse.urljoin(publishing_url,
+                               '/contents/{}/roles'.format(document.id))
+        # get_responses = [
+        #     httpretty.Response(
+        #         body=json.dumps([
+        #             {'uid': 'smoo', 'role': 'Author', 'has_accepted': True},
+        #             {'uid': 'fred', 'role': 'Author', 'has_accepted': True},
+        #             ], status=200),
+        get_response = [
+            {'uid': 'smoo', 'role': 'Author',
+             'has_accepted': True, 'uuid': id},
+            {'uid': 'fred', 'role': 'Author',
+             'has_accepted': True, 'uuid': id},
+            ]
+        httpretty.register_uri(httpretty.GET, url,
+                               body=json.dumps(get_response), status=200)
+        httpretty.register_uri(httpretty.POST, url, status=202)
+
+        mock_request().authenticated_userid = 'smoo'
+        now = datetime.datetime.now()
+        formatted_now = now.isoformat()
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            with testing.testConfig(settings=settings):
+                utils.declare_roles(document)
+
+        # Check the roles for acceptance.
+        expected = [
+            {'assignment_date': formatted_now,
+             'has_accepted': True,
+             u'id': u'smoo',
+             'requester': 'smoo'},
+            {'assignment_date': formatted_now,
+             'has_accepted': True,
+             u'id': u'fred',
+             'requester': 'smoo'}]
+        self.assertTrue(document.metadata['authors'], expected)
+
+        # Now change the has_accepted on one role to verify the syncing
+        #   only happens during role addtion.
+        document.metadata['authors'][1]['has_accepted'] = False
+        document.metadata['authors'].append({'id': 'ren'})
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            with testing.testConfig(settings=settings):
+                utils.declare_roles(document)
+        expected[1]['has_accepted'] = False
+        expected.append(
+            {'assignment_date': formatted_now,
+             'has_accepted': None,
+             'id': 'ren',
+             'requester': 'smoo'})
+        self.assertEqual(document.metadata['authors'], expected)
+
+    @httpretty.activate
     def test_declare_licensors(self):
         from ..models import create_content, DEFAULT_LICENSE
 

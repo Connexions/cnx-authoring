@@ -443,6 +443,23 @@ def declare_roles(model):
     url = urlparse.urljoin(publishing_url,
                            '/contents/{}/roles'.format(model.id))
 
+    # Sync with the current set of attributed roles.
+    response = requests.get(url, headers=headers)
+    upstream_role_entities = []
+    if response.status_code == 200:
+        upstream_role_entities = response.json()
+    elif response.status_code >= 400 and response.status_code != 404:
+        raise PublishingError(response)
+
+    for role_entity in upstream_role_entities:
+        user_id = role_entity['uid']
+        has_accepted = role_entity['has_accepted']
+        role_attr = PUBLISHING_ROLES_MAPPING[role_entity['role']]
+        for role in model.metadata.get(role_attr, []):
+            if role['id'] == user_id and 'has_accepted' not in role:
+                role['has_accepted'] = has_accepted
+                break
+
     # Send roles to publishing.
     _roles_mapping = {v: k for k, v in PUBLISHING_ROLES_MAPPING.items()}
     role_submission_keys = ('uid', 'role', 'has_accepted',)
@@ -455,6 +472,7 @@ def declare_roles(model):
             has_accepted = role.get('has_accepted', None)
             # Assume this is a new record when the requester is missing.
             if role.get('requester', None) is None:
+                role['has_accepted'] = has_accepted
                 role['requester'] = authenticated_userid
                 now = datetime.datetime.now(TZINFO).isoformat()
                 role['assignment_date'] = now
