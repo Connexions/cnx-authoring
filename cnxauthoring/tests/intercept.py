@@ -105,7 +105,69 @@ def _amend_publishing_data():
     """This contains data modifications of the publishing/archive data
     that are specific to the authoring tests.
     """
-    # NOOP
+    conn_str = publishing_settings()[config.CONNECTION_STRING]
+
+    with psycopg2.connect(conn_str) as db_connection:
+        with db_connection.cursor() as cursor:
+            cursor.execute("""\
+INSERT INTO role_acceptances (uuid, user_id, role_type, accepted)
+  SELECT uuid, unnest(authors), 'Author', TRUE FROM modules
+  UNION
+  SELECT uuid, unnest(maintainers), 'Publisher'::role_types, TRUE FROM modules
+  UNION
+  SELECT uuid, unnest(licensors), 'Copyright Holder'::role_types, TRUE
+  FROM modules
+  UNION
+  SELECT m.uuid, unnest(personids), 'Author'::role_types, TRUE
+  FROM moduleoptionalroles NATURAL JOIN latest_modules AS m
+  WHERE roleid = 1
+  UNION
+  SELECT m.uuid, unnest(personids), 'Copyright Holder'::role_types, TRUE
+  FROM moduleoptionalroles NATURAL JOIN latest_modules AS m
+  WHERE roleid = 2
+  UNION
+  SELECT m.uuid, unnest(personids), 'Publisher'::role_types, TRUE
+  FROM moduleoptionalroles NATURAL JOIN latest_modules AS m
+  WHERE roleid = 3
+  UNION
+  SELECT m.uuid, unnest(personids), 'Translator'::role_types, TRUE
+  FROM moduleoptionalroles NATURAL JOIN latest_modules AS m
+  WHERE roleid = 4
+  UNION
+  SELECT m.uuid, unnest(personids), 'Editor'::role_types, TRUE
+  FROM moduleoptionalroles NATURAL JOIN latest_modules AS m
+  WHERE roleid = 5
+  -- Note, no legacy mapping for Illustrator
+;
+
+INSERT INTO license_acceptances (uuid, user_id, accepted)
+  SELECT uuid, unnest(authors), TRUE FROM modules
+  UNION
+  SELECT uuid, unnest(maintainers), TRUE FROM modules
+  UNION
+  SELECT uuid, unnest(licensors), TRUE
+  FROM modules
+  UNION
+  SELECT m.uuid, unnest(personids), TRUE
+  FROM moduleoptionalroles NATURAL JOIN latest_modules AS m
+  WHERE roleid = 1
+  UNION
+  SELECT m.uuid, unnest(personids), TRUE
+  FROM moduleoptionalroles NATURAL JOIN latest_modules AS m
+  WHERE roleid = 2
+  UNION
+  SELECT m.uuid, unnest(personids), TRUE
+  FROM moduleoptionalroles NATURAL JOIN latest_modules AS m
+  WHERE roleid = 3
+  UNION
+  SELECT m.uuid, unnest(personids), TRUE
+  FROM moduleoptionalroles NATURAL JOIN latest_modules AS m
+  WHERE roleid = 4
+  UNION
+  SELECT m.uuid, unnest(personids), TRUE
+  FROM moduleoptionalroles NATURAL JOIN latest_modules AS m
+  WHERE roleid = 5
+;""")
 
 
 def install_intercept():
