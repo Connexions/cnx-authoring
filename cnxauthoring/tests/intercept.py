@@ -20,6 +20,12 @@ from wsgi_intercept import (
     add_wsgi_intercept, remove_wsgi_intercept,
     )
 
+from cnxarchive import config
+from cnxarchive.database import initdb as archive_initdb
+from cnxarchive import main as archive_main
+from cnxpublishing.db import initdb as publishing_initdb
+from cnxpublishing.main import main as publishing_main
+
 from .testing import integration_test_settings
 
 
@@ -57,6 +63,51 @@ def _parse_url_from_settings(settings, url_key):
     return host, port
 
 
+def _amend_archive_data():
+    """This contains data modifications to archive that are specific to
+    the authoring tests.
+    """
+    # **Only add to this function if you really really must.**
+    # The idea is to utilize as much of the archive data as possible.
+    # We do this because that data has been tested and adding things here
+    # may unintentionally insert an assumption about the data in archive.
+
+    conn_str = publishing_settings()[config.CONNECTION_STRING]
+
+    with psycopg2.connect(conn_str) as db_connection:
+        with db_connection.cursor() as cursor:
+            cursor.execute("""\
+INSERT INTO document_controls (uuid, licenseid) VALUES
+  ('a3f7c934-2a89-4baf-a9a9-a89d957586d2', 11);
+INSERT INTO abstracts (abstractid, abstract, html) VALUES
+  (9000, '', '');
+INSERT INTO modules
+  (module_ident, portal_type, uuid,
+   name, abstractid, licenseid, doctype, stateid,
+   submitter, submitlog,
+   authors)
+  VALUES
+  (9000, 'Module', 'a3f7c934-2a89-4baf-a9a9-a89d957586d2',
+   'missing resource', 9000, 11, '', null,
+   'cnxcap', 'tests derive-from with missing resource',
+   '{cnxcap}');
+INSERT INTO files
+  (fileid, file)
+  VALUES
+  (9000, '<html xmlns="http://www.w3.org/1999/xhtml"><head></head><body><p>module with a missing resource</p><img src="/resources/aca93d69479e75244b01272902968d8349a548f4/python"/></body></html>');
+INSERT INTO module_files
+  (module_ident, fileid, filename, mimetype)
+  VALUES
+  (9000, 9000, 'index.cnxml.html', 'text/html');""")
+
+
+def _amend_publishing_data():
+    """This contains data modifications of the publishing/archive data
+    that are specific to the authoring tests.
+    """
+    # NOOP
+
+
 def install_intercept():
     """Initializes both the archive and publishing applications.
     Then this will register intercepts for both applications using
@@ -66,7 +117,6 @@ def install_intercept():
     Therefore, it is a good idea to only initialize the applications
     during testcase class setup (i.e. setUpClass).
     """
-    from cnxarchive import config
     settings = publishing_settings()
     authoring_settings = integration_test_settings()
 
@@ -77,11 +127,9 @@ def install_intercept():
             cursor.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public")
         
     # Initialize the archive database.
-    from cnxarchive.database import initdb
-    initdb(settings)
+    archive_initdb(settings)
     # Initialize the publishing database.
-    from cnxpublishing.db import initdb
-    initdb(connection_string)
+    publishing_initdb(connection_string)
     with psycopg2.connect(connection_string) as db_connection:
         with db_connection.cursor() as cursor:
             filepath = config.TEST_DATA_SQL_FILE
@@ -101,11 +149,14 @@ def install_intercept():
                 with open(filepath, 'r') as fb:
                     cursor.execute(fb.read())
 
+    # Make amendments to the data that are specific to the authoring tests.
+    _amend_archive_data()
+    _amend_publishing_data()
+
     # Set up the intercept for archive
-    from cnxarchive import main
     global _archive_app
     if not _archive_app:
-        _archive_app = main({}, **publishing_settings())
+        _archive_app = archive_main({}, **publishing_settings())
     make_app = lambda : _archive_app
     # Grab the configured archive url from the authoring config.
     host, port = _parse_url_from_settings(authoring_settings,
@@ -113,10 +164,9 @@ def install_intercept():
     add_wsgi_intercept(host, port, make_app)
 
     # Set up the intercept for publishing
-    from cnxpublishing.main import main
     global _publishing_app
     if not _publishing_app:
-        _publishing_app = main({}, **publishing_settings())
+        _publishing_app = publishing_main({}, **publishing_settings())
     make_app = lambda : _publishing_app
     # Grab the configured publishing url from the authoring config.
     host, port = _parse_url_from_settings(authoring_settings,

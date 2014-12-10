@@ -53,8 +53,7 @@ class ViewsTests(unittest.TestCase):
         self.addCleanup(delattr, testing.DummyRequest, 'user')
 
         for mock_target in (
-            'cnxauthoring.utils.create_acl_for',
-            'cnxauthoring.utils.get_acl_for',
+            'cnxauthoring.utils.declare_acl',
             'cnxauthoring.utils.declare_roles',
             'cnxauthoring.utils.declare_licensors',
             'cnxauthoring.utils.accept_roles',

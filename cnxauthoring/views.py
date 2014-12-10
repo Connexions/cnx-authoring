@@ -25,9 +25,12 @@ import requests
 from openstax_accounts.interfaces import *
 
 from cnxepub.models import ATTRIBUTED_ROLE_KEYS
-from .models import (create_content, derive_content, revise_content,
-        Document, Binder, Resource, BINDER_MEDIATYPE, DOCUMENT_MEDIATYPE,
-        DocumentNotFoundError)
+from .models import (
+    BINDER_MEDIATYPE, DOCUMENT_MEDIATYPE,
+    ArchiveConnectionError, DocumentNotFoundError,
+    create_content, derive_content, revise_content,
+    Document, Binder, Resource,
+    )
 from .schemata import AcceptanceSchema, DocumentSchema, BinderSchema, UserSchema
 from .storage import storage
 from . import utils
@@ -244,7 +247,7 @@ def post_content_single(request, cstruct):
         try:
             cstruct = derive_content(request, **cstruct)
             derived_from = '{}@{}'.format(cstruct['id'],cstruct['version'])
-        except DocumentNotFoundError:
+        except (DocumentNotFoundError, ArchiveConnectionError):
             raise httpexceptions.HTTPBadRequest(
                     'Derive failed: {}'.format(derived_from))
 
@@ -324,7 +327,9 @@ def post_content_single(request, cstruct):
     try:
         appstruct = schema.bind().deserialize(cstruct)
     except Exception as e:
-        raise httpexceptions.HTTPBadRequest(body=json.dumps(e.asdict()))
+        raise httpexceptions.HTTPBadRequest(
+            body=json.dumps(e.asdict()),
+            headers=[('Content-type', 'application/json',)])
     appstruct['derived_from'] = derived_from
     if archive_id:
         appstruct['id'] = archive_id.split('@')[0]
@@ -332,25 +337,25 @@ def post_content_single(request, cstruct):
 
     content = create_content(**appstruct)
 
-    if not archive_id:
-        # new content, need to create acl entry in publishing
-        utils.create_acl_for(request, content)
     utils.accept_license(content, user)
     utils.declare_roles(content)
     utils.declare_licensors(content)
-    # get acl entry from publishing
-    utils.get_acl_for(request, content)
+    utils.declare_acl(content)
 
     resources = []
     if content.mediatype != BINDER_MEDIATYPE and (derived_from or archive_id):
         resources = utils.derive_resources(request, content)
 
-    for r in resources:
-        try:
+    try:
+        for r in resources:
             storage.add(r)
-            storage.persist()
-        except storage.Error:
-            storage.abort()
+    except ArchiveConnectionError:
+        raise httpexceptions.HTTPBadRequest(
+            'Derive failed: {}'.format(derived_from))
+    except storage.Error:
+        storage.abort()
+    else:
+        storage.persist()
 
     try:
         content = storage.add(content)
@@ -467,6 +472,7 @@ def delete_content_single(request, id, user_id=None, raise_error=True):
                     permissions = list(permissions)
                     permissions.remove('view')
                     content.acls[uid] = permissions
+            utils.declare_acl(content)
             storage.update(content)
         else:
             resource = storage.remove(content)
@@ -550,8 +556,7 @@ def put_content(request):
     utils.accept_license(content, user)
     utils.declare_roles(content)
     utils.declare_licensors(content)
-    utils.create_acl_for(request, content)
-    utils.get_acl_for(request, content)
+    utils.declare_acl(content)
     try:
         storage.update(content)
         if content.mediatype == BINDER_MEDIATYPE:
@@ -803,7 +808,7 @@ def post_acceptance_info(request):
 
     utils.declare_roles(content)
     utils.declare_licensors(content)
-    utils.get_acl_for(request, content)
+    utils.declare_acl(content)
 
     if tobe_updated_roles:
         storage.update(content)
