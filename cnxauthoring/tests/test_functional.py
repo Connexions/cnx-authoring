@@ -993,6 +993,158 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(response.content_type, 'image/jpeg')
         self.assert_cors_headers(response)
 
+    def test_post_content_revision_w_multiroles(self):
+        self.logout()
+        self.login('OpenStaxCollege')
+        post_data = {
+            'id': u'e79ffde3-7fb4-4af3-9ec8-df648b391597@7.1',
+            }
+
+        now = datetime.datetime.now(TZINFO)
+        formatted_now = unicode(now.astimezone(TZINFO).isoformat())
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.post_json(
+                '/users/contents', post_data, status=201)
+        result = response.json
+
+        # Test the object for internal data correctness
+        from ..storage import storage
+        document = storage.get(id=result['id'])
+        self.assertEqual(
+            sorted(document.licensor_acceptance, key=lambda v: v['id']),
+            [{'has_accepted': True, 'id': 'OSCRiceUniversity'},
+             {'has_accepted': True, 'id': 'OpenStaxCollege'},
+             {'has_accepted': True, 'id': 'cnxcap'}])
+        # Test the response data
+        license = result.pop('license')
+        self.assertEqual(license['url'], DEFAULT_LICENSE.url)
+        created = result.pop('created')
+        self.assertTrue(created.startswith('2013-07-31'))
+        revised = result.pop('revised')
+        self.assertEqual(revised, formatted_now)
+        abstract = result.pop('abstract')
+        self.assertTrue('two-semester college physics book' in abstract)
+        keywords = result.pop('keywords')
+        self.assertIn('drag', keywords)
+        # Test the tree for contents.
+        tree = result.pop('tree')
+        flattener = cnxepub.flatten_tree_to_ident_hashes(tree)
+        contained_ids = [id for id in flattener]
+        self.assertIn(u'e79ffde3-7fb4-4af3-9ec8-df648b391597@draft',
+                      contained_ids)
+        self.assertIn(u'56f1c5c1-4014-450d-a477-2121e276beca@8',
+                      contained_ids)
+
+        # FIXME the user info we have in archive differs from
+        #       that here in authoring.
+        osc_user_info = {
+            u'email': u'OpenStaxCollege@example.com',
+            u'firstname': u'Test',
+            u'fullname': u'Test User',
+            u'id': u'OpenStaxCollege',
+            u'surname': u'User',
+            u'type': u'cnx-id',
+            }
+        osc_role = osc_user_info.copy()
+        osc_role.update({
+            u'assignmentDate': formatted_now,
+            u'hasAccepted': True,
+            u'email': u'',
+            u'emails': [u'info@openstaxcollege.org'],
+            u'firstname': u'OpenStax College',
+            u'fullname': u'OpenStax College',
+            u'requester': u'OpenStaxCollege',
+            u'suffix': None,
+            u'surname': u'',
+            u'title': None,
+            u'website': None,
+        })
+        cnxcap_role = {
+            u'assignmentDate': formatted_now,
+            u'email': u'',
+            u'emails': [u'info@openstaxcollege.org'],
+            u'firstname': u'College',
+            u'fullname': u'OSC Physics Maintainer',
+            u'hasAccepted': True,
+            u'id': u'cnxcap',
+            u'requester': u'OpenStaxCollege',
+            u'suffix': None,
+            u'surname': u'Physics',
+            u'title': None,
+            u'type': u'cnx-id',
+            u'website': None,
+            }
+        rice_role = {
+            u'assignmentDate': formatted_now,
+            u'email': u'',
+            u'emails': [u'daniel@openstaxcollege.org'],
+            u'firstname': u'Rice',
+            u'fullname': u'Rice University',
+            u'hasAccepted': True,
+            u'id': u'OSCRiceUniversity',
+            u'requester': u'OpenStaxCollege',
+            u'suffix': None,
+            u'surname': u'University',
+            u'title': None,
+            u'type': u'cnx-id',
+            u'website': None,
+            }
+        expected = {
+            u'authors': [osc_role],
+            u'cnx-archive-uri': post_data['id'],
+            u'containedIn': [],
+            u'content': u'',
+            u'copyrightHolders': [rice_role],
+            u'derivedFrom': None,
+            u'derivedFromTitle': None,
+            u'derivedFromUri': None,
+            u'editors': [],
+            u'id': post_data['id'].split('@')[0],
+            u'illustrators': [],
+            u'language': u'en',
+            u'licensors': [rice_role],
+            u'mediaType': u'application/vnd.org.cnx.collection',
+            u'permissions': [u'edit', u'publish', u'view'],
+            u'publication': None,
+            u'publishers': [cnxcap_role, osc_role],
+            u'state': u'Draft',
+            u'subjects': [
+                u'Mathematics and Statistics',
+                u'Science and Technology',
+                u'OpenStax Featured'],
+            u'submitter': osc_user_info,
+            u'title': u'College Physics',
+            u'translators': [],
+            u'version': u'draft',
+            }
+        self.assertEqual(result, expected)
+        self.assert_cors_headers(response)
+
+        response = self.testapp.get(
+            '/contents/{}@draft.json'.format(result['id']), status=200)
+        result = response.json
+        license = result.pop('license')
+        self.assertEqual(license['url'], DEFAULT_LICENSE.url)
+        created = result.pop('created')
+        self.assertTrue(created.startswith('2013-07-31'))
+        revised = result.pop('revised')
+        self.assertEqual(revised, formatted_now)
+        abstract = result.pop('abstract')
+        self.assertTrue('two-semester college physics book' in abstract)
+        keywords = result.pop('keywords')
+        self.assertIn('drag', keywords)
+        # Test the tree for contents.
+        tree = result.pop('tree')
+        flattener = cnxepub.flatten_tree_to_ident_hashes(tree)
+        contained_ids = [id for id in flattener]
+        self.assertIn(u'e79ffde3-7fb4-4af3-9ec8-df648b391597@draft',
+                      contained_ids)
+        self.assertIn(u'56f1c5c1-4014-450d-a477-2121e276beca@8',
+                      contained_ids)
+        self.assertEqual(result, expected)
+        self.assert_cors_headers(response)
+
     def test_post_content(self):
         post_data = {
             'title': u"Turning DNA through resonance",
@@ -3231,13 +3383,15 @@ class PublicationTests(BaseFunctionalTestCase):
                         u'role': u'publishers'}],
             })
 
-        # add user2 to authors and editors, add user1 to editors, add user3 and
-        # user4 to translators
+        # add user2 to authors and editors, add user1 to editors, add user3 to
+        # translators, licensors and publishers, add user4 to translators
         post_data = {
             'authors': page['authors'] + [{'id': 'user2'}],
             'editors': page['editors'] + [{'id': 'user1'}, {'id': 'user2'}],
             'translators': page['translators'] +
                            [{'id': 'user3'}, {'id': 'user4'}],
+            'licensors': page['licensors'] + [{'id': 'user3'}],
+            'publishers': page['publishers'] + [{'id': 'user3'}],
             }
         now = datetime.datetime.now(TZINFO)
         formatted_now = now.astimezone(TZINFO).isoformat()
@@ -3352,7 +3506,8 @@ class PublicationTests(BaseFunctionalTestCase):
         self.logout()
         self.login('user3')
 
-        # user3 should have translators in the acceptance info
+        # user3 should have translators, licensors and publishers in the
+        # acceptance info
         response = self.testapp.get(
             '/contents/{}@draft/acceptance'.format(page['id']))
         acceptance = response.json
@@ -3368,7 +3523,15 @@ class PublicationTests(BaseFunctionalTestCase):
             u'id': page['id'],
             u'title': u'My Page',
             u'user': u'user3',
-            u'roles': [{u'role': u'translators',
+            u'roles': [{u'role': u'copyright_holders',
+                        u'assignmentDate': formatted_now,
+                        u'requester': u'user1',
+                        u'hasAccepted': None},
+                       {u'role': u'publishers',
+                        u'assignmentDate': formatted_now,
+                        u'requester': u'user1',
+                        u'hasAccepted': None},
+                       {u'role': u'translators',
                         u'assignmentDate': formatted_now,
                         u'requester': u'user1',
                         u'hasAccepted': None}],
@@ -3377,13 +3540,33 @@ class PublicationTests(BaseFunctionalTestCase):
         # user3 rejects their roles
         post_data = {
             'license': False,
-            'roles': [{'role': 'translators', 'hasAccepted': False}],
+            'roles': [{'role': 'translators', 'hasAccepted': False},
+                      {'role': 'copyright_holders', 'hasAccepted': False},
+                      {'role': 'publishers', 'hasAccepted': False}],
             }
         response = self.testapp.post_json(
             '/contents/{}@draft/acceptance'.format(page['id']),
             post_data, status=200)
 
-        # should not be able to view or edit the content anymore
+        # check the acceptance info for user3 again
+        response = self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']))
+        acceptance = response.json
+        self.assertEqual(acceptance['roles'], [
+            {u'role': u'copyright_holders',
+             u'assignmentDate': formatted_now,
+             u'requester': u'user1',
+             u'hasAccepted': False},
+            {u'role': u'publishers',
+             u'assignmentDate': formatted_now,
+             u'requester': u'user1',
+             u'hasAccepted': False},
+            {u'role': u'translators',
+             u'assignmentDate': formatted_now,
+             u'requester': u'user1',
+             u'hasAccepted': False}])
+
+        # user3 should still be able to view the content, but not edit
         self.testapp.get(
             '/contents/{}@draft/acceptance'.format(page['id']))
         self.testapp.get(
@@ -3391,11 +3574,46 @@ class PublicationTests(BaseFunctionalTestCase):
         self.testapp.put_json(
             '/contents/{}@draft.json'.format(page['id']), {}, status=403)
 
-        # content should not be in the workspace
+        # user3 changes their mind and accepts one of their roles
+        post_data = {
+            'license': True,
+            'roles': [{'role': 'copyright_holders', 'hasAccepted': True}],
+            }
+        response = self.testapp.post_json(
+            '/contents/{}@draft/acceptance'.format(page['id']),
+            post_data, status=200)
+
+        # check the acceptance info for user3 again
+        response = self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']))
+        acceptance = response.json
+        self.assertEqual(acceptance['roles'], [
+            {u'role': u'copyright_holders',
+             u'assignmentDate': formatted_now,
+             u'requester': u'user1',
+             u'hasAccepted': True},
+            {u'role': u'publishers',
+             u'assignmentDate': formatted_now,
+             u'requester': u'user1',
+             u'hasAccepted': False},
+            {u'role': u'translators',
+             u'assignmentDate': formatted_now,
+             u'requester': u'user1',
+             u'hasAccepted': False}])
+
+        # user3 should be able to view and edit the content
+        self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']))
+        self.testapp.get(
+            '/contents/{}@draft.json'.format(page['id']))
+        self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']), {})
+
+        # content should be in the workspace
         response = self.testapp.get('/users/contents')
         workspace = response.json
         content_ids = [i['id'] for i in workspace['results']['items']]
-        self.assertNotIn(page['id'], content_ids)
+        self.assertIn('{}@draft'.format(page['id']), content_ids)
 
         # login as user4
         self.logout()

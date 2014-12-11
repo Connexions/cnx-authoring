@@ -19,6 +19,66 @@ def deferred_datetime_missing(node, kw):
     return dt
 
 
+class Trinary(colander.SchemaType):
+    """A type representing a trivalued logic object with - 3 states.
+    That is true, false and unknown. These are represented in Python
+    as True, False and None.
+    """
+
+    def __init__(self, false_choices=('false', '0',),
+                 true_choices=('true', '1',),
+                 unknown_choices=('none', '',),
+                 true_val=True, false_val=False, unknown_val=None):
+        self.true_val = true_val
+        self.false_val = false_val
+        self.unknown_val = unknown_val
+        self.false_choices = false_choices
+        self.true_choices = true_choices
+        self.unknown_choices = unknown_choices
+
+    def serialize(self, node, appstruct):
+        if appstruct is colander.null:
+            return colander.null
+
+        if appstruct is None:
+            return self.unknown_val
+        else:
+            return appstruct and self.true_val or self.false_val
+
+    def deserialize(self, node, cstruct):
+        _ = colander._
+        if cstruct is colander.null:
+            return colander.null
+        elif cstruct is None:
+            return None
+
+        try:
+            result = str(cstruct)
+        except:
+            raise colander.Invalid(
+                node,
+                _('${val} is not a string', mapping={'val':cstruct})
+                )
+        result = result.lower()
+
+        if result in self.unknown_choices:
+            state = None
+        elif result in self.false_choices:
+            state = False
+        elif result in self.true_choices:
+            state = True
+        else:
+            raise colander.Invalid(
+                node,
+                _('"${val}" is neither in (${false_choices}) '
+                  'nor in (${true_choices})',
+                  mapping={'val':cstruct,
+                           'false_choices': self.false_reprs,
+                           'true_choices': self.true_reprs })
+                )
+        return state
+
+
 class LicenseSchema(colander.MappingSchema):
     """Schema for ``License``"""
 
@@ -74,7 +134,7 @@ class UserSchema(colander.MappingSchema):
 
 class RoleSchema(UserSchema):
     has_accepted = colander.SchemaNode(
-        colander.Boolean(),
+        Trinary(),
         missing=colander.drop,
         )
     requester = colander.SchemaNode(

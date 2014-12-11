@@ -443,6 +443,23 @@ def declare_roles(model):
     url = urlparse.urljoin(publishing_url,
                            '/contents/{}/roles'.format(model.id))
 
+    # Sync with the current set of attributed roles.
+    response = requests.get(url, headers=headers)
+    upstream_role_entities = []
+    if response.status_code == 200:
+        upstream_role_entities = response.json()
+    elif response.status_code >= 400 and response.status_code != 404:
+        raise PublishingError(response)
+
+    for role_entity in upstream_role_entities:
+        user_id = role_entity['uid']
+        has_accepted = role_entity['has_accepted']
+        role_attr = PUBLISHING_ROLES_MAPPING[role_entity['role']]
+        for role in model.metadata.get(role_attr, []):
+            if role['id'] == user_id and 'has_accepted' not in role:
+                role['has_accepted'] = has_accepted
+                break
+
     # Send roles to publishing.
     _roles_mapping = {v: k for k, v in PUBLISHING_ROLES_MAPPING.items()}
     role_submission_keys = ('uid', 'role', 'has_accepted',)
@@ -455,6 +472,7 @@ def declare_roles(model):
             has_accepted = role.get('has_accepted', None)
             # Assume this is a new record when the requester is missing.
             if role.get('requester', None) is None:
+                role['has_accepted'] = has_accepted
                 role['requester'] = authenticated_userid
                 now = datetime.datetime.now(TZINFO).isoformat()
                 role['assignment_date'] = now
@@ -471,6 +489,11 @@ def declare_roles(model):
                              headers=headers)
     if response.status_code != 202:
         raise PublishingError(response)
+
+    # BBB 10-Dec-2014 licensors - deprecated property 'licensors'
+    #     needs changed in webview and archive before removing here.
+    model.metadata['copyright_holders'] = model.metadata['licensors']
+    # /BBB
 
     # Notify any new roles that they need to accept the assigned attribution.
     logger.debug("Sending notification message to {}".format(', '.join(tobe_notified)))
@@ -503,6 +526,8 @@ def declare_licensors(model):
     else:
         upstream_license_info = response.json()
     upstream = upstream_license_info.get('licensors', [])
+    upstream_user_ids = [x['uid'] for x in upstream]
+    existing_licensor_ids = set([l['id'] for l in model.licensor_acceptance])
 
     # Scan the roles for newly added attribution. In the event that
     #   one or more has been added, add them to the licensor_acceptance.
@@ -511,10 +536,15 @@ def declare_licensors(model):
     for role_type in PUBLISHING_ROLES_MAPPING.values():
         local_roles.extend(model.metadata.get(role_type, []))
     local_role_ids = set([r['id'] for r in local_roles])
-    existing_licensor_ids = set([l['id'] for l in model.licensor_acceptance])
-    for new_role in local_role_ids.difference(existing_licensor_ids):
-        model.licensor_acceptance.append({'id': new_role,
-                                          'has_accepted': None})
+    for uid in local_role_ids.difference(existing_licensor_ids):
+        has_accepted = None
+        if uid in upstream_user_ids:
+            # In the event that the role exists upstream,
+            # use their previous acceptance value.
+            idx = upstream_user_ids.index(uid)
+            has_accepted = upstream[idx]['has_accepted']
+        model.licensor_acceptance.append({'id': uid,
+                                          'has_accepted': has_accepted})
 
     # Send licensors to publishing.
     payload = {
