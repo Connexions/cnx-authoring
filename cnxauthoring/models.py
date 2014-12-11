@@ -157,12 +157,17 @@ class BaseContent:
 
     def __json__(self, request=None):
         result = self.to_dict()
+        result['is_publishable'] = self.is_publishable
         utils.change_dict_keys(result, utils.underscore_to_camelcase)
         if request and hasattr(self,'acls'):
            result['permissions'] = sorted(self.acls.get(
                request.unauthenticated_userid, []))
         return result
 
+    @property
+    def is_publishable(self):
+        """Flag to say whether this content is publishable."""
+        return utils.is_valid_for_publish(self)
 
 
 class Document(cnxepub.Document, BaseContent):
@@ -356,6 +361,15 @@ class Binder(cnxepub.Binder, BaseContent):
         result = to_dict(self.metadata)
         result['tree'] = cnxepub.model_to_tree(self)
         return result
+
+    @property
+    def is_publishable(self):
+        """Flag to say whether this content is publishable."""
+        is_self_publishable = utils.is_valid_for_publish(self)
+        has_publishable_docs = True
+        for doc in cnxepub.flatten_to_documents(self):
+            has_publishable_docs = has_publishable_docs and doc.is_publishable
+        return is_self_publishable and has_publishable_docs
 
 
 def create_content(**appstruct):
