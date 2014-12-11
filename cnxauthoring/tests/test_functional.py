@@ -1868,7 +1868,7 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         # make sure the editor can also edit the content after accepting their
         # role
-        self.testapp.post_json(
+        self.testapp.put_json(
             '/contents/{}@draft/acceptance'.format(page['id']),
             {'license': True,
              'roles': [{'role': 'editors', 'hasAccepted': True}]},

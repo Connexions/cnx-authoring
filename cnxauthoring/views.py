@@ -738,7 +738,7 @@ def get_acceptance_info(request):
     return info
 
 
-@view_config(route_name='acceptance-info', request_method='POST')
+@view_config(route_name='acceptance-info', request_method=('POST', 'PUT'))
 @authenticated_only
 def post_acceptance_info(request):
     """Post role and license acceptance info
