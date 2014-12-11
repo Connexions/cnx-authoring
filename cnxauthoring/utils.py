@@ -490,6 +490,11 @@ def declare_roles(model):
     if response.status_code != 202:
         raise PublishingError(response)
 
+    # BBB 10-Dec-2014 licensors - deprecated property 'licensors'
+    #     needs changed in webview and archive before removing here.
+    model.metadata['copyright_holders'] = model.metadata['licensors']
+    # /BBB
+
     # Notify any new roles that they need to accept the assigned attribution.
     logger.debug("Sending notification message to {}".format(', '.join(tobe_notified)))
     for user_id in tobe_notified:
