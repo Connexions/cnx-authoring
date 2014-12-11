@@ -1011,6 +1011,11 @@ class FunctionalTests(BaseFunctionalTestCase):
         # Test the object for internal data correctness
         from ..storage import storage
         document = storage.get(id=result['id'])
+        self.assertEqual(
+            sorted(document.licensor_acceptance, key=lambda v: v['id']),
+            [{'has_accepted': True, 'id': 'OSCRiceUniversity'},
+             {'has_accepted': True, 'id': 'OpenStaxCollege'},
+             {'has_accepted': True, 'id': 'cnxcap'}])
         # Test the response data
         license = result.pop('license')
         self.assertEqual(license['url'], DEFAULT_LICENSE.url)
