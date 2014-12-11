@@ -3383,13 +3383,15 @@ class PublicationTests(BaseFunctionalTestCase):
                         u'role': u'publishers'}],
             })
 
-        # add user2 to authors and editors, add user1 to editors, add user3 and
-        # user4 to translators
+        # add user2 to authors and editors, add user1 to editors, add user3 to
+        # translators, licensors and publishers, add user4 to translators
         post_data = {
             'authors': page['authors'] + [{'id': 'user2'}],
             'editors': page['editors'] + [{'id': 'user1'}, {'id': 'user2'}],
             'translators': page['translators'] +
                            [{'id': 'user3'}, {'id': 'user4'}],
+            'licensors': page['licensors'] + [{'id': 'user3'}],
+            'publishers': page['publishers'] + [{'id': 'user3'}],
             }
         now = datetime.datetime.now(TZINFO)
         formatted_now = now.astimezone(TZINFO).isoformat()
@@ -3504,7 +3506,8 @@ class PublicationTests(BaseFunctionalTestCase):
         self.logout()
         self.login('user3')
 
-        # user3 should have translators in the acceptance info
+        # user3 should have translators, licensors and publishers in the
+        # acceptance info
         response = self.testapp.get(
             '/contents/{}@draft/acceptance'.format(page['id']))
         acceptance = response.json
@@ -3520,7 +3523,15 @@ class PublicationTests(BaseFunctionalTestCase):
             u'id': page['id'],
             u'title': u'My Page',
             u'user': u'user3',
-            u'roles': [{u'role': u'translators',
+            u'roles': [{u'role': u'copyright_holders',
+                        u'assignmentDate': formatted_now,
+                        u'requester': u'user1',
+                        u'hasAccepted': None},
+                       {u'role': u'publishers',
+                        u'assignmentDate': formatted_now,
+                        u'requester': u'user1',
+                        u'hasAccepted': None},
+                       {u'role': u'translators',
                         u'assignmentDate': formatted_now,
                         u'requester': u'user1',
                         u'hasAccepted': None}],
@@ -3529,13 +3540,33 @@ class PublicationTests(BaseFunctionalTestCase):
         # user3 rejects their roles
         post_data = {
             'license': False,
-            'roles': [{'role': 'translators', 'hasAccepted': False}],
+            'roles': [{'role': 'translators', 'hasAccepted': False},
+                      {'role': 'copyright_holders', 'hasAccepted': False},
+                      {'role': 'publishers', 'hasAccepted': False}],
             }
         response = self.testapp.post_json(
             '/contents/{}@draft/acceptance'.format(page['id']),
             post_data, status=200)
 
-        # should not be able to view or edit the content anymore
+        # check the acceptance info for user3 again
+        response = self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']))
+        acceptance = response.json
+        self.assertEqual(acceptance['roles'], [
+            {u'role': u'copyright_holders',
+             u'assignmentDate': formatted_now,
+             u'requester': u'user1',
+             u'hasAccepted': False},
+            {u'role': u'publishers',
+             u'assignmentDate': formatted_now,
+             u'requester': u'user1',
+             u'hasAccepted': False},
+            {u'role': u'translators',
+             u'assignmentDate': formatted_now,
+             u'requester': u'user1',
+             u'hasAccepted': False}])
+
+        # user3 should still be able to view the content, but not edit
         self.testapp.get(
             '/contents/{}@draft/acceptance'.format(page['id']))
         self.testapp.get(
@@ -3543,11 +3574,46 @@ class PublicationTests(BaseFunctionalTestCase):
         self.testapp.put_json(
             '/contents/{}@draft.json'.format(page['id']), {}, status=403)
 
-        # content should not be in the workspace
+        # user3 changes their mind and accepts one of their roles
+        post_data = {
+            'license': True,
+            'roles': [{'role': 'copyright_holders', 'hasAccepted': True}],
+            }
+        response = self.testapp.post_json(
+            '/contents/{}@draft/acceptance'.format(page['id']),
+            post_data, status=200)
+
+        # check the acceptance info for user3 again
+        response = self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']))
+        acceptance = response.json
+        self.assertEqual(acceptance['roles'], [
+            {u'role': u'copyright_holders',
+             u'assignmentDate': formatted_now,
+             u'requester': u'user1',
+             u'hasAccepted': True},
+            {u'role': u'publishers',
+             u'assignmentDate': formatted_now,
+             u'requester': u'user1',
+             u'hasAccepted': False},
+            {u'role': u'translators',
+             u'assignmentDate': formatted_now,
+             u'requester': u'user1',
+             u'hasAccepted': False}])
+
+        # user3 should be able to view and edit the content
+        self.testapp.get(
+            '/contents/{}@draft/acceptance'.format(page['id']))
+        self.testapp.get(
+            '/contents/{}@draft.json'.format(page['id']))
+        self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']), {})
+
+        # content should be in the workspace
         response = self.testapp.get('/users/contents')
         workspace = response.json
         content_ids = [i['id'] for i in workspace['results']['items']]
-        self.assertNotIn(page['id'], content_ids)
+        self.assertIn('{}@draft'.format(page['id']), content_ids)
 
         # login as user4
         self.logout()
