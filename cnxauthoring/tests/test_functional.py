@@ -993,6 +993,153 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(response.content_type, 'image/jpeg')
         self.assert_cors_headers(response)
 
+    def test_post_content_revision_w_multiroles(self):
+        self.logout()
+        self.login('OpenStaxCollege')
+        post_data = {
+            'id': u'e79ffde3-7fb4-4af3-9ec8-df648b391597@7.1',
+            }
+
+        now = datetime.datetime.now(TZINFO)
+        formatted_now = unicode(now.astimezone(TZINFO).isoformat())
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            response = self.testapp.post_json(
+                '/users/contents', post_data, status=201)
+        result = response.json
+
+        # Test the object for internal data correctness
+        from ..storage import storage
+        document = storage.get(id=result['id'])
+        # Test the response data
+        license = result.pop('license')
+        self.assertEqual(license['url'], DEFAULT_LICENSE.url)
+        created = result.pop('created')
+        self.assertTrue(created.startswith('2013-07-31'))
+        revised = result.pop('revised')
+        self.assertEqual(revised, formatted_now)
+        abstract = result.pop('abstract')
+        self.assertTrue('two-semester college physics book' in abstract)
+        keywords = result.pop('keywords')
+        self.assertIn('drag', keywords)
+        # Test the tree for contents.
+        tree = result.pop('tree')
+        flattener = cnxepub.flatten_tree_to_ident_hashes(tree)
+        contained_ids = [id for id in flattener]
+        self.assertIn(u'e79ffde3-7fb4-4af3-9ec8-df648b391597@draft',
+                      contained_ids)
+        self.assertIn(u'56f1c5c1-4014-450d-a477-2121e276beca@8',
+                      contained_ids)
+
+        # FIXME the user info we have in archive differs from
+        #       that here in authoring.
+        osc_user_info = {
+            u'email': u'OpenStaxCollege@example.com',
+            u'firstname': u'Test',
+            u'fullname': u'Test User',
+            u'id': u'OpenStaxCollege',
+            u'surname': u'User',
+            u'type': u'cnx-id',
+            }
+        osc_role = osc_user_info.copy()
+        osc_role.update({
+            u'assignmentDate': formatted_now,
+            u'hasAccepted': True,
+            u'email': u'',
+            u'emails': [u'info@openstaxcollege.org'],
+            u'firstname': u'OpenStax College',
+            u'fullname': u'OpenStax College',
+            u'requester': u'OpenStaxCollege',
+            u'suffix': None,
+            u'surname': u'',
+            u'title': None,
+            u'website': None,
+        })
+        cnxcap_role = {
+            u'assignmentDate': formatted_now,
+            u'email': u'',
+            u'emails': [u'info@openstaxcollege.org'],
+            u'firstname': u'College',
+            u'fullname': u'OSC Physics Maintainer',
+            u'hasAccepted': True,
+            u'id': u'cnxcap',
+            u'requester': u'OpenStaxCollege',
+            u'suffix': None,
+            u'surname': u'Physics',
+            u'title': None,
+            u'type': u'cnx-id',
+            u'website': None,
+            }
+        rice_role = {
+            u'assignmentDate': formatted_now,
+            u'email': u'',
+            u'emails': [u'daniel@openstaxcollege.org'],
+            u'firstname': u'Rice',
+            u'fullname': u'Rice University',
+            u'hasAccepted': True,
+            u'id': u'OSCRiceUniversity',
+            u'requester': u'OpenStaxCollege',
+            u'suffix': None,
+            u'surname': u'University',
+            u'title': None,
+            u'type': u'cnx-id',
+            u'website': None,
+            }
+        expected = {
+            u'authors': [osc_role],
+            u'cnx-archive-uri': post_data['id'],
+            u'containedIn': [],
+            u'content': u'',
+            u'copyrightHolders': [rice_role],
+            u'derivedFrom': None,
+            u'derivedFromTitle': None,
+            u'derivedFromUri': None,
+            u'editors': [],
+            u'id': post_data['id'].split('@')[0],
+            u'illustrators': [],
+            u'language': u'en',
+            u'licensors': [rice_role],
+            u'mediaType': u'application/vnd.org.cnx.collection',
+            u'permissions': [u'edit', u'publish', u'view'],
+            u'publication': None,
+            u'publishers': [cnxcap_role, osc_role],
+            u'state': u'Draft',
+            u'subjects': [
+                u'Mathematics and Statistics',
+                u'Science and Technology',
+                u'OpenStax Featured'],
+            u'submitter': osc_user_info,
+            u'title': u'College Physics',
+            u'translators': [],
+            u'version': u'draft',
+            }
+        self.assertEqual(result, expected)
+        self.assert_cors_headers(response)
+
+        response = self.testapp.get(
+            '/contents/{}@draft.json'.format(result['id']), status=200)
+        result = response.json
+        license = result.pop('license')
+        self.assertEqual(license['url'], DEFAULT_LICENSE.url)
+        created = result.pop('created')
+        self.assertTrue(created.startswith('2013-07-31'))
+        revised = result.pop('revised')
+        self.assertEqual(revised, formatted_now)
+        abstract = result.pop('abstract')
+        self.assertTrue('two-semester college physics book' in abstract)
+        keywords = result.pop('keywords')
+        self.assertIn('drag', keywords)
+        # Test the tree for contents.
+        tree = result.pop('tree')
+        flattener = cnxepub.flatten_tree_to_ident_hashes(tree)
+        contained_ids = [id for id in flattener]
+        self.assertIn(u'e79ffde3-7fb4-4af3-9ec8-df648b391597@draft',
+                      contained_ids)
+        self.assertIn(u'56f1c5c1-4014-450d-a477-2121e276beca@8',
+                      contained_ids)
+        self.assertEqual(result, expected)
+        self.assert_cors_headers(response)
+
     def test_post_content(self):
         post_data = {
             'title': u"Turning DNA through resonance",
