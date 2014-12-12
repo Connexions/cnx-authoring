@@ -396,7 +396,11 @@ class Binder(cnxepub.Binder, BaseContent):
         has_publishable_docs = True
         for doc in cnxepub.flatten_to_documents(self):
             has_publishable_docs = has_publishable_docs and doc.is_publishable
-        return self.is_publishable and has_publishable_docs
+        if (not self.is_publishable and has_publishable_docs) \
+           or (self.is_publishable and not has_publishable_docs):
+            return None
+        else:
+            return self.is_publishable and has_publishable_docs
 
     def __json__(self, request=None):
         data = super(Binder, self).__json__(request)

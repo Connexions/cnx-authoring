@@ -763,7 +763,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         submitter_w_assign_date[u'assignmentDate'] = unicode(
             now.astimezone(TZINFO).isoformat())
         expected = {
-            u'areContainedPublishable': False,
+            u'areContainedPublishable': None,
             u'submitter': SUBMITTER,
             u'authors': [submitter_w_assign_date],
             u'permissions': [u'edit', u'publish', u'view'],
@@ -1105,7 +1105,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'website': None,
             }
         expected = {
-            u'areContainedPublishable': False,
+            u'areContainedPublishable': None,
             u'authors': [osc_role],
             u'cnx-archive-uri': post_data['id'],
             u'containedIn': [],
@@ -1474,7 +1474,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         submitter_w_assign_date[u'assignmentDate'] = unicode(
             created.astimezone(TZINFO).isoformat())
         self.assertEqual(binder, {
-            u'areContainedPublishable': False,
+            u'areContainedPublishable': None,
             u'created': unicode(created.astimezone(TZINFO).isoformat()),
             u'revised': unicode(revised.astimezone(TZINFO).isoformat()),
             u'submitter': SUBMITTER,
@@ -1525,7 +1525,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             '/contents/{}@draft.json'.format(binder['id']), status=200)
         binder = response.json
         self.assertEqual(binder, {
-            u'areContainedPublishable': False,
+            u'areContainedPublishable': None,
             u'created': created.astimezone(TZINFO).isoformat(),
             u'revised': revised.astimezone(TZINFO).isoformat(),
             u'submitter': SUBMITTER,
