@@ -54,7 +54,7 @@ class PublishingError(Exception):
         return self.message
 
 
-class License:
+class License(object):
     """A declaration of authority typically assigned to things."""
 
     def __init__(self, name, url, abbr=None, version=None):
@@ -120,7 +120,7 @@ class Resource(cnxepub.Resource):
                 )
 
 
-class BaseContent:
+class BaseContent(object):
     """A base class for common code in Document and Binder
     """
 
@@ -389,13 +389,20 @@ class Binder(cnxepub.Binder, BaseContent):
         return result
 
     @property
-    def is_publishable(self):
-        """Flag to say whether this content is publishable."""
-        is_self_publishable = utils.is_valid_for_publish(self)
+    def are_contained_publishable(self):
+        """Flag to say whether this content and it's contained
+        models are publishable.
+        """
         has_publishable_docs = True
         for doc in cnxepub.flatten_to_documents(self):
             has_publishable_docs = has_publishable_docs and doc.is_publishable
-        return is_self_publishable and has_publishable_docs
+        return self.is_publishable and has_publishable_docs
+
+    def __json__(self, request=None):
+        data = super(Binder, self).__json__(request)
+        data['are_contained_publishable'] = self.are_contained_publishable
+        utils.change_dict_keys(data, utils.underscore_to_camelcase)
+        return data
 
 
 def create_content(**appstruct):

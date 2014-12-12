@@ -565,13 +565,13 @@ def _has_accepted_roles_and_license(model):
     users = set([])
     for role_type in cnxepub.ATTRIBUTED_ROLE_KEYS:
         for role in model.metadata[role_type]:
-            accepted_roles.add(role['has_accepted'])
+            accepted_roles.add(role.get('has_accepted'))
             users.add(role['id'])
     index_map = {r['id']: i for i, r in enumerate(model.licensor_acceptance)}
     accepted_licensors = set([])
     for user_id in users:
         entry = model.licensor_acceptance[index_map[user_id]]
-        accepted_licensors.add(entry['has_accepted'])
+        accepted_licensors.add(entry.get('has_accepted'))
 
     has_accepted = (
         not (None in accepted_roles or False in accepted_roles) \

@@ -763,6 +763,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         submitter_w_assign_date[u'assignmentDate'] = unicode(
             now.astimezone(TZINFO).isoformat())
         expected = {
+            u'areContainedPublishable': False,
             u'submitter': SUBMITTER,
             u'authors': [submitter_w_assign_date],
             u'permissions': [u'edit', u'publish', u'view'],
@@ -1104,6 +1105,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'website': None,
             }
         expected = {
+            u'areContainedPublishable': False,
             u'authors': [osc_role],
             u'cnx-archive-uri': post_data['id'],
             u'containedIn': [],
@@ -1275,6 +1277,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'id': book['id'],
             u'title': u'Book',
             u'abstract': u'Book abstract',
+            u'areContainedPublishable': False,
             u'containedIn': [],
             u'content': u'',
             u'mediaType': u'application/vnd.org.cnx.collection',
@@ -1295,7 +1298,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'tree': {
                 u'id': u'{}@draft'.format(book['id']),
                 u'title': u'Book',
-                u'isPublishable': False,
+                u'isPublishable': True,
                 u'contents': [
                     {
                         u'id': u'{}@draft'.format(page1['id']),
@@ -1316,7 +1319,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     ],
                 },
             u'subjects': [],
-            u'isPublishable': False,
+            u'isPublishable': True,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -1471,6 +1474,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         submitter_w_assign_date[u'assignmentDate'] = unicode(
             created.astimezone(TZINFO).isoformat())
         self.assertEqual(binder, {
+            u'areContainedPublishable': False,
             u'created': unicode(created.astimezone(TZINFO).isoformat()),
             u'revised': unicode(revised.astimezone(TZINFO).isoformat()),
             u'submitter': SUBMITTER,
@@ -1521,6 +1525,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             '/contents/{}@draft.json'.format(binder['id']), status=200)
         binder = response.json
         self.assertEqual(binder, {
+            u'areContainedPublishable': False,
             u'created': created.astimezone(TZINFO).isoformat(),
             u'revised': revised.astimezone(TZINFO).isoformat(),
             u'submitter': SUBMITTER,
@@ -1638,7 +1643,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result['tree'], {
             'id': '{}@draft'.format(binder['id']),
             'title': 'etst book',
-            'isPublishable': False,
+            'isPublishable': True,
             'contents': [
                 {
                     'id': 'f309a0f9-63fb-46ca-9585-d1e1dc96a142@3',
