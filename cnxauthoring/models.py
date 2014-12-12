@@ -321,6 +321,32 @@ def to_dict(metadata):
     return result
 
 
+def model_to_tree(model, title=None,
+                  lucent_id=cnxepub.TRANSLUCENT_BINDER_ID):
+    """Given an model, build the tree::
+
+        tree := {'id': <id>|'subcol', 'title': <title>,
+                 'is_publishable': <True|False|None>,  # optional
+                 'contents': [<tree>, ...]}
+
+    """
+    if type(model) is cnxepub.TranslucentBinder:
+        id = lucent_id
+    else:
+        id = model.ident_hash
+    title = title is not None and title or model.metadata.get('title')
+    tree = {'id': id, 'title': title}
+    if id.endswith('draft'):
+        tree['is_publishable'] = model.is_publishable
+    if hasattr(model, '__iter__'):
+        contents = tree['contents'] = []
+        for node in model:
+            item = model_to_tree(node, model.get_title_for_node(node),
+                                 lucent_id=lucent_id)
+            contents.append(item)
+    return tree
+
+
 class Binder(cnxepub.Binder, BaseContent):
     """A collection of documents
     """
@@ -359,7 +385,7 @@ class Binder(cnxepub.Binder, BaseContent):
 
     def to_dict(self):
         result = to_dict(self.metadata)
-        result['tree'] = cnxepub.model_to_tree(self)
+        result['tree'] = model_to_tree(self)
         return result
 
     @property
