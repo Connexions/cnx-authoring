@@ -392,9 +392,9 @@ class Binder(cnxepub.Binder, BaseContent):
     def are_contained_publishable(self):
         """Flag to say whether any contained models are publishable.
         """
-        has_publishable_docs = True
+        has_publishable_docs = False
         for doc in cnxepub.flatten_to_documents(self):
-            has_publishable_docs = has_publishable_docs and doc.is_publishable
+            has_publishable_docs = has_publishable_docs or doc.is_publishable
         return has_publishable_docs
 
     def __json__(self, request=None):
