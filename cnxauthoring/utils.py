@@ -314,9 +314,13 @@ def accept_roles(cstruct, user):
     for field in cnxepub.ATTRIBUTED_ROLE_KEYS + ('licensors',):
         if field in cstruct:
             value = cstruct.get(field, [])
-            for role in value:
+            for i, role in enumerate(value):
                 if role.get('id') == user['id']:
-                    role['has_accepted'] = True
+                    if role.get('has_accepted', None) not in (None, True,):
+                        # Remove the role.
+                        del value[i]
+                    else:
+                        role['has_accepted'] = True
                     if not role.get('requester'):
                         role['requester'] = authenticated_userid
                         role['assignment_date'] = now
