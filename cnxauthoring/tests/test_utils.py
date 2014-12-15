@@ -26,6 +26,8 @@ from .. import utils
 
 class UtilsTests(unittest.TestCase):
 
+    maxDiff = None
+
     def test_change_dict_keys(self):
         data = {
             'id': '1234',
@@ -423,6 +425,67 @@ Thank you from your friends at OpenStax CNX
                 u'derived_from_uri': ('http://cnx.org/contents/feda4909-5bbd'
                                       '-431e-a017-049aff54416d@1.1'),
                 })
+
+    @mock.patch('cnxauthoring.utils.get_current_request')
+    def test_accept_roles_w_reject(self, mock_request):
+        now = datetime.datetime.now(utils.TZINFO)
+        formatted_now = now.astimezone(utils.TZINFO).isoformat()
+        cstruct = {
+            u'authors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'has_accepted': False,
+                 'assignment_date': formatted_now,
+                 'requester': 'user2',
+                 'id': 'user1'},
+                {'fullname': 'User Two',
+                 'surname': u'Two',
+                 'email': u'user2@example.com',
+                 'firstname': u'User',
+                 'has_accepted': True,
+                 'assignment_date': formatted_now,
+                 'requester': 'user2',
+                 'id': 'user2'},
+                ],
+            u'licensors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'has_accepted': True,
+                 'assignment_date': formatted_now,
+                 'requester': 'user2',
+                 'firstname': u'User',
+                 'id': 'user1'},
+                ],
+            }
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_request().authenticated_userid = 'user1'
+            mock_datetime.now.return_value = now
+            utils.accept_roles(cstruct, {'id': 'user1'})
+        self.assertEqual(cstruct, {
+            u'authors': [
+                {'fullname': 'User Two',
+                 'surname': u'Two',
+                 'email': u'user2@example.com',
+                 'firstname': u'User',
+                 'has_accepted': True,
+                 'assignment_date': formatted_now,
+                 'requester': 'user2',
+                 'id': 'user2'},
+                ],
+            u'licensors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'has_accepted': True,
+                 'assignment_date': formatted_now,
+                 'requester': 'user2',
+                 'firstname': u'User',
+                 'id': 'user1'},
+                ],
+            })
 
     def test_accept_license(self):
         from ..models import create_content
