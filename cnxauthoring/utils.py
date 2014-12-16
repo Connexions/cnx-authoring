@@ -317,12 +317,10 @@ def accept_roles(cstruct, user):
             value = cstruct.get(field, [])
             for i, role in enumerate(value):
                 if role.get('id') == user['id']:
-                    if role.get('has_accepted', None) not in (None, True,):
-                        # Remove the role.
-                        del value[i]
-                    else:
+                    if role.get('has_accepted', None) is None \
+                       and role.get('requester', None) is None:
+                        # This is a self assignment
                         role['has_accepted'] = True
-                    if not role.get('requester'):
                         role['requester'] = authenticated_userid
                         role['assignment_date'] = now
             cstruct[field] = value
