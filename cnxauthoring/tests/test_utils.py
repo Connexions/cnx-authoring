@@ -466,6 +466,81 @@ Thank you from your friends at OpenStax CNX
             utils.accept_roles(cstruct, {'id': 'user1'})
         self.assertEqual(cstruct, {
             u'authors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'has_accepted': False,
+                 'assignment_date': formatted_now,
+                 'requester': 'user2',
+                 'id': 'user1'},
+                {'fullname': 'User Two',
+                 'surname': u'Two',
+                 'email': u'user2@example.com',
+                 'firstname': u'User',
+                 'has_accepted': True,
+                 'assignment_date': formatted_now,
+                 'requester': 'user2',
+                 'id': 'user2'},
+                ],
+            u'licensors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'has_accepted': True,
+                 'assignment_date': formatted_now,
+                 'requester': 'user2',
+                 'firstname': u'User',
+                 'id': 'user1'},
+                ],
+            })
+
+    @mock.patch('cnxauthoring.utils.get_current_request')
+    def test_accept_roles_w_self_assignment(self, mock_request):
+        now = datetime.datetime.now(utils.TZINFO)
+        formatted_now = now.astimezone(utils.TZINFO).isoformat()
+        # authenticated user is 'user1'
+        cstruct = {
+            u'authors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'id': 'user1'},
+                {'fullname': 'User Two',
+                 'surname': u'Two',
+                 'email': u'user2@example.com',
+                 'firstname': u'User',
+                 'has_accepted': True,
+                 'assignment_date': formatted_now,
+                 'requester': 'user2',
+                 'id': 'user2'},
+                ],
+            u'licensors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'has_accepted': True,
+                 'assignment_date': formatted_now,
+                 'requester': 'user2',
+                 'firstname': u'User',
+                 'id': 'user1'},
+                ],
+            }
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_request().authenticated_userid = 'user1'
+            mock_datetime.now.return_value = now
+            utils.accept_roles(cstruct, {'id': 'user1'})
+        self.assertEqual(cstruct, {
+            u'authors': [
+                {'fullname': u'User One',
+                 'surname': u'One',
+                 'email': u'user1@example.com',
+                 'firstname': u'User',
+                 'has_accepted': True,
+                 'assignment_date': formatted_now,
+                 'requester': 'user1',
+                 'id': 'user1'},
                 {'fullname': 'User Two',
                  'surname': u'Two',
                  'email': u'user2@example.com',
