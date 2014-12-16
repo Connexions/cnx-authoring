@@ -277,6 +277,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'abstract': u'',
             u'version': u'draft',
             u'subjects': [],
+            u'isPublishable': False,
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
@@ -375,6 +376,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'contents': [],
             u'id': '{}@draft'.format(result['id']),
             u'title': result['title'],
+            u'isPublishable': False,
             })
 
         self.assert_cors_headers(response)
@@ -387,6 +389,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result['tree'], {
             u'contents': [],
             u'id': '{}@draft'.format(result['id']),
+            u'isPublishable': False,
             u'title': result['title'],
             })
         self.assert_cors_headers(response)
@@ -477,6 +480,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'subjects': [],
+            u'isPublishable': True,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -519,6 +523,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'subjects': [],
+            u'isPublishable': True,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -580,6 +585,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'subjects': [],
+            u'isPublishable': True,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -622,6 +628,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'subjects': [],
+            u'isPublishable': True,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -681,6 +688,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'subjects': [],
+            u'isPublishable': True,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -723,6 +731,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'subjects': [],
+            u'isPublishable': True,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -754,6 +763,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         submitter_w_assign_date[u'assignmentDate'] = unicode(
             now.astimezone(TZINFO).isoformat())
         expected = {
+            u'areContainedPublishable': False,
             u'submitter': SUBMITTER,
             u'authors': [submitter_w_assign_date],
             u'permissions': [u'edit', u'publish', u'view'],
@@ -773,7 +783,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Attribution',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
-            u'subjects': [],
+            u'isPublishable': True,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -784,9 +794,11 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [submitter_w_assign_date],
             u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
+            u'subjects': [],
             u'tree': {
                 u'id': u'{}@draft'.format(result['id']),
                 u'title': u'Copy of Derived Copy of College Physics',
+                u'isPublishable': True,
                 u'contents': [
                     {u'id': u'209deb1f-1a46-4369-9e0d-18674cf58a3e@7',
                      u'title': u'Preface'},
@@ -934,6 +946,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [rasmus_role],
             u'mediaType': u'application/vnd.org.cnx.module',
             u'permissions': [u'edit', u'publish', u'view'],
+            u'isPublishable': True,
             u'publication': None,
             u'publishers': [rasmus_role],
             u'state': u'Draft',
@@ -973,6 +986,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'version': u'4.0',
                 },
             u'subjects': [u'Science and Technology'],
+            u'isPublishable': True,
             u'keywords': [u'DNA', u'resonance'],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -1091,6 +1105,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'website': None,
             }
         expected = {
+            u'areContainedPublishable': False,
             u'authors': [osc_role],
             u'cnx-archive-uri': post_data['id'],
             u'containedIn': [],
@@ -1102,6 +1117,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'id': post_data['id'].split('@')[0],
             u'illustrators': [],
+            u'isPublishable': True,
             u'language': u'en',
             u'licensors': [rice_role],
             u'mediaType': u'application/vnd.org.cnx.collection',
@@ -1191,6 +1207,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
             u'subjects': post_data['subjects'],
+            u'isPublishable': False,
             u'keywords': post_data['keywords'],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -1260,6 +1277,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'id': book['id'],
             u'title': u'Book',
             u'abstract': u'Book abstract',
+            u'areContainedPublishable': False,
             u'containedIn': [],
             u'content': u'',
             u'mediaType': u'application/vnd.org.cnx.collection',
@@ -1280,10 +1298,12 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'tree': {
                 u'id': u'{}@draft'.format(book['id']),
                 u'title': u'Book',
+                u'isPublishable': True,
                 u'contents': [
                     {
                         u'id': u'{}@draft'.format(page1['id']),
                         u'title': u'Page one',
+                        u'isPublishable': False,
                         },
                     {
                         u'id': u'subcol',
@@ -1292,12 +1312,14 @@ class FunctionalTests(BaseFunctionalTestCase):
                             {
                                 u'id': u'{}@draft'.format(page2['id']),
                                 u'title': u'Page two',
+                                u'isPublishable': False,
                                 },
                             ],
                         },
                     ],
                 },
             u'subjects': [],
+            u'isPublishable': True,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -1452,6 +1474,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         submitter_w_assign_date[u'assignmentDate'] = unicode(
             created.astimezone(TZINFO).isoformat())
         self.assertEqual(binder, {
+            u'areContainedPublishable': False,
             u'created': unicode(created.astimezone(TZINFO).isoformat()),
             u'revised': unicode(revised.astimezone(TZINFO).isoformat()),
             u'submitter': SUBMITTER,
@@ -1478,6 +1501,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'tree': {
                 u'id': u'{}@draft'.format(binder['id']),
                 u'title': u'...',
+                u'isPublishable': True,
                 u'contents': [{
                     u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
                     u'title': u'Hygiene',
@@ -1485,6 +1509,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 },
             u'subjects': [],
             u'keywords': [],
+            u'isPublishable': True,
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
             u'publication': None,
@@ -1500,6 +1525,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             '/contents/{}@draft.json'.format(binder['id']), status=200)
         binder = response.json
         self.assertEqual(binder, {
+            u'areContainedPublishable': False,
             u'created': created.astimezone(TZINFO).isoformat(),
             u'revised': revised.astimezone(TZINFO).isoformat(),
             u'submitter': SUBMITTER,
@@ -1526,6 +1552,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'tree': {
                 u'id': u'{}@draft'.format(binder['id']),
                 u'title': u'...',
+                u'isPublishable': True,
                 u'contents': [{
                     u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
                     u'title': u'Hygiene',
@@ -1533,6 +1560,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 },
             u'subjects': [],
             u'keywords': [],
+            u'isPublishable': True,
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
             u'publication': None,
@@ -1615,6 +1643,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result['tree'], {
             'id': '{}@draft'.format(binder['id']),
             'title': 'etst book',
+            'isPublishable': True,
             'contents': [
                 {
                     'id': 'f309a0f9-63fb-46ca-9585-d1e1dc96a142@3',
@@ -1626,7 +1655,8 @@ class FunctionalTests(BaseFunctionalTestCase):
                     },
                 {
                     'id': '{}@draft'.format(page['id']),
-                    'title': 'test page'
+                    'title': 'test page',
+                    'isPublishable': False,
                     }
                 ]
             })

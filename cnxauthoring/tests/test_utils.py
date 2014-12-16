@@ -711,3 +711,104 @@ Thank you from your friends at OpenStax CNX
         self.assertEqual(data['license_url'], DEFAULT_LICENSE.url)
         self.assertEqual(sorted(data['licensors'], key=lambda v: v['uid']),
                          expected_licensors)
+
+    def test_is_valid_for_publish_on_document(self):
+        from ..models import create_content, DEFAULT_LICENSE
+
+        def make_doc():
+            document = create_content(
+                title='My Document',
+                license={'url': DEFAULT_LICENSE.url},
+                authors=[{'id': 'me', 'has_accepted': True}],
+                publishers=[{'id': 'me', 'has_accepted': True}],
+                editors=[{'id': 'me', 'has_accepted': True},
+                         {'id': 'you', 'has_accepted': True}],
+                translators=[{'id': 'you', 'has_accepted': True}],
+                licensor_acceptance=[{'id': 'me', 'has_accepted': True},
+                                     {'id': 'you', 'has_accepted': True}],
+                content="<p>Hello world!</p>",
+                )
+            return document
+
+        self.assertTrue(utils.is_valid_for_publish(make_doc()))
+
+        # False when missing content
+        doc = make_doc()
+        doc.content = ""
+        self.assertFalse(utils.is_valid_for_publish(doc))
+
+        # False when not all roles have accepted.
+        doc = make_doc()
+        doc.metadata['authors'][0]['has_accepted'] = False
+        self.assertFalse(utils.is_valid_for_publish(doc))
+
+        # False when not all roles have accepted the license.
+        doc = make_doc()
+        doc.licensor_acceptance[1]['has_accepted'] = None
+        self.assertFalse(utils.is_valid_for_publish(doc))
+
+    def test_is_valid_for_publish_on_binder(self):
+        from ..models import create_content, DEFAULT_LICENSE, BINDER_MEDIATYPE
+
+        def make_doc():
+            document = create_content(
+                title='My Document',
+                license={'url': DEFAULT_LICENSE.url},
+                authors=[{'id': 'me', 'has_accepted': True}],
+                publishers=[{'id': 'me', 'has_accepted': True}],
+                editors=[{'id': 'me', 'has_accepted': True},
+                         {'id': 'you', 'has_accepted': True}],
+                translators=[{'id': 'you', 'has_accepted': True}],
+                licensor_acceptance=[{'id': 'me', 'has_accepted': True},
+                                     {'id': 'you', 'has_accepted': True}],
+                content="<p>Hello world!</p>",
+                )
+            return document
+
+        def make_binder(docs=[]):
+            contents = [{'id': '{}@draft'.format(doc.id)} for doc in docs]
+            binder = create_content(
+                media_type=BINDER_MEDIATYPE,
+                tree={'contents': contents},
+                title='My Binder',
+                license={'url': DEFAULT_LICENSE.url},
+                authors=[{'id': 'me', 'has_accepted': True}],
+                publishers=[{'id': 'me', 'has_accepted': True}],
+                editors=[{'id': 'me', 'has_accepted': True},
+                         {'id': 'you', 'has_accepted': True}],
+                translators=[{'id': 'you', 'has_accepted': True}],
+                licensor_acceptance=[{'id': 'me', 'has_accepted': True},
+                                     {'id': 'you', 'has_accepted': True}],
+                )
+            return binder
+
+        from .. import storage
+        from ..storage.memory import MemoryStorage
+        setattr(storage, 'storage', MemoryStorage())
+
+        from ..storage import storage
+        docs = (make_doc(), make_doc(),)
+        for doc in docs:
+            storage.add(doc)
+        storage.persist()
+
+        self.assertTrue(utils.is_valid_for_publish(make_binder(docs)))
+
+        # False when missing content
+        doc = make_doc()
+        doc.content = ""
+        self.assertFalse(utils.is_valid_for_publish(doc))
+
+        # False when not all roles have accepted.
+        doc = make_doc()
+        doc.metadata['authors'][0]['has_accepted'] = False
+        self.assertFalse(utils.is_valid_for_publish(doc))
+
+        # False when not all roles have accepted the license.
+        doc = make_doc()
+        doc.licensor_acceptance[1]['has_accepted'] = None
+        self.assertFalse(utils.is_valid_for_publish(doc))
+
+    def test_is_valid_for_publish_on_obj(self):
+        with self.assertRaises(ValueError):
+            utils.is_valid_for_publish(object())

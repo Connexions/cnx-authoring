@@ -54,7 +54,7 @@ class PublishingError(Exception):
         return self.message
 
 
-class License:
+class License(object):
     """A declaration of authority typically assigned to things."""
 
     def __init__(self, name, url, abbr=None, version=None):
@@ -120,7 +120,7 @@ class Resource(cnxepub.Resource):
                 )
 
 
-class BaseContent:
+class BaseContent(object):
     """A base class for common code in Document and Binder
     """
 
@@ -157,12 +157,17 @@ class BaseContent:
 
     def __json__(self, request=None):
         result = self.to_dict()
+        result['is_publishable'] = self.is_publishable
         utils.change_dict_keys(result, utils.underscore_to_camelcase)
         if request and hasattr(self,'acls'):
            result['permissions'] = sorted(self.acls.get(
                request.unauthenticated_userid, []))
         return result
 
+    @property
+    def is_publishable(self):
+        """Flag to say whether this content is publishable."""
+        return utils.is_valid_for_publish(self)
 
 
 class Document(cnxepub.Document, BaseContent):
@@ -316,6 +321,32 @@ def to_dict(metadata):
     return result
 
 
+def model_to_tree(model, title=None,
+                  lucent_id=cnxepub.TRANSLUCENT_BINDER_ID):
+    """Given an model, build the tree::
+
+        tree := {'id': <id>|'subcol', 'title': <title>,
+                 'is_publishable': <True|False|None>,  # optional
+                 'contents': [<tree>, ...]}
+
+    """
+    if type(model) is cnxepub.TranslucentBinder:
+        id = lucent_id
+    else:
+        id = model.ident_hash
+    title = title is not None and title or model.metadata.get('title')
+    tree = {'id': id, 'title': title}
+    if id.endswith('draft'):
+        tree['is_publishable'] = model.is_publishable
+    if hasattr(model, '__iter__'):
+        contents = tree['contents'] = []
+        for node in model:
+            item = model_to_tree(node, model.get_title_for_node(node),
+                                 lucent_id=lucent_id)
+            contents.append(item)
+    return tree
+
+
 class Binder(cnxepub.Binder, BaseContent):
     """A collection of documents
     """
@@ -354,8 +385,23 @@ class Binder(cnxepub.Binder, BaseContent):
 
     def to_dict(self):
         result = to_dict(self.metadata)
-        result['tree'] = cnxepub.model_to_tree(self)
+        result['tree'] = model_to_tree(self)
         return result
+
+    @property
+    def are_contained_publishable(self):
+        """Flag to say whether any contained models are publishable.
+        """
+        has_publishable_docs = False
+        for doc in cnxepub.flatten_to_documents(self):
+            has_publishable_docs = has_publishable_docs or doc.is_publishable
+        return has_publishable_docs
+
+    def __json__(self, request=None):
+        data = super(Binder, self).__json__(request)
+        data['are_contained_publishable'] = self.are_contained_publishable
+        utils.change_dict_keys(data, utils.underscore_to_camelcase)
+        return data
 
 
 def create_content(**appstruct):

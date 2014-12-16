@@ -68,6 +68,7 @@ class ModelJSONRendering(unittest.TestCase):
                 'version': '4.0',
                 },
             'subjects': [],
+            'isPublishable': False,
             'keywords': [],
             'state': 'Draft',
             'publication': None,

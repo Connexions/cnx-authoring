@@ -23,6 +23,7 @@ import cnxepub
 from cnxepub.models import Document, DocumentPointer, TranslucentBinder
 import requests
 import tzlocal
+from lxml import etree
 from openstax_accounts.interfaces import IOpenstaxAccounts
 from pyramid.threadlocal import get_current_registry, get_current_request
 from cnxquerygrammar.query_parser import grammar, DictFormater
@@ -560,3 +561,59 @@ def declare_licensors(model):
                              headers=headers)
     if response.status_code != 202:
         raise PublishingError(response)
+
+
+def _has_accepted_roles_and_license(model):
+    """Have all the roles accepted both the attributed role(s) and license?"""
+    accepted_roles = set([])
+    users = set([])
+    for role_type in cnxepub.ATTRIBUTED_ROLE_KEYS:
+        for role in model.metadata[role_type]:
+            accepted_roles.add(role.get('has_accepted'))
+            users.add(role['id'])
+    index_map = {r['id']: i for i, r in enumerate(model.licensor_acceptance)}
+    accepted_licensors = set([])
+    for user_id in users:
+        entry = model.licensor_acceptance[index_map[user_id]]
+        accepted_licensors.add(entry.get('has_accepted'))
+
+    has_accepted = (
+        not (None in accepted_roles or False in accepted_roles) \
+        and \
+        not (None in accepted_licensors or False in accepted_licensors))
+    return has_accepted
+
+
+def _has_required_data(model):
+    """Does the model have the required data?"""
+    has_required_data = False
+    if isinstance(model, cnxepub.Document):
+
+        # Check for content...
+        contains_content = False
+        # Wrap the content so that we can parse it.
+        content = u"<html><body>{}</body></html>".format(model.content)
+        tree = etree.parse(io.StringIO(content))
+        for element_text in tree.xpath('/html/body/*/text()'):
+            if element_text != '':
+                contains_content = True
+                break
+
+        has_required_data = contains_content
+    elif isinstance(model, cnxepub.Binder):
+        # Does the binder have documents
+        documents_generator = cnxepub.flatten_to_documents(
+            model, include_pointers=True)
+        contains_docs = len([x for x in documents_generator]) >= 1
+
+        has_required_data = contains_docs
+    else:
+        raise ValueError('{} is not a Document or a Binder'.format(model))
+    return has_required_data
+
+
+def is_valid_for_publish(model):
+    """Validate a model (``Document`` or ``Binder``) is publish ready."""
+    is_valid = _has_required_data(model) \
+               and _has_accepted_roles_and_license(model)
+    return is_valid
