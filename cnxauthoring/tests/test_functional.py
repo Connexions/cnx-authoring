@@ -2219,11 +2219,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.get('/users/search')
         result = response.json
         self.assertEqual(result, {
-            u'num_matching_users': 0,
-            u'per_page': 10,
+            u'total_count': 0,
             u'users': [],
-            u'order_by': u'username ASC',
-            u'page': 0,
             })
         self.assert_cors_headers(response)
 
@@ -2231,48 +2228,14 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.get('/users/search?q=')
         result = response.json
         self.assertEqual(result, {
-            u'num_matching_users': 0,
-            u'per_page': 10,
+            u'total_count': 0,
             u'users': [],
-            u'order_by': u'username ASC',
-            u'page': 0,
             })
         self.assert_cors_headers(response)
 
     def test_user_search(self):
         mock_accounts_search_results = {
-                u'application_users': [
-                    {
-                        u'unread_updates': 1,
-                        u'application_id': 9,
-                        u'id': 14,
-                        u'user': {u'username': u'admin', u'id': 1}},
-                    {
-                        u'unread_updates': 1,
-                        u'application_id': 9,
-                        u'id': 15,
-                        u'user': {u'username': u'karenc', u'id': 6}},
-                    {
-                        u'unread_updates': 1,
-                        u'application_id': 9,
-                        u'id': 13,
-                        u'user': {u'username': u'karenchan', u'id': 4}},
-                    {
-                        u'unread_updates': 1,
-                        u'application_id': 9,
-                        u'id': 12,
-                        u'user': {
-                            u'username': u'karenchan2014',
-                            u'first_name': u'Karen', u'last_name': u'Chan',
-                            u'id': 10, u'full_name': u'Karen Chan'}},
-                    {
-                        u'unread_updates': 1,
-                        u'application_id': 9,
-                        u'id': 11,
-                        u'user': {u'username': u'user_30187', u'id': 9}}
-                    ],
-                u'order_by': u'username ASC',
-                u'users': [
+                u'items': [
                     {u'username': u'admin', u'id': 1},
                     {u'username': u'karenc', u'id': 6},
                     {u'username': u'karenchan', u'id': 4},
@@ -2283,9 +2246,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                         u'full_name': u'Karen Chan'},
                     {u'username': u'user_30187', u'id': 9}
                     ],
-                u'num_matching_users': 5,
-                u'per_page': 10,
-                u'page': 0}
+                u'total_count': 5}
         with mock.patch('openstax_accounts.stub.OpenstaxAccounts.search'
                         ) as accounts_search:
             accounts_search.return_value = mock_accounts_search_results
@@ -2333,10 +2294,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     u'fullname': u'',
                     },
                 ],
-            u'order_by': u'username ASC',
-            u'num_matching_users': 5,
-            u'per_page': 10,
-            u'page': 0,
+            u'total_count': 5,
             })
         self.assert_cors_headers(response)
 

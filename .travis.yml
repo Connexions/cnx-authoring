@@ -4,6 +4,7 @@ python:
 addons:
   postgresql: 9.3
 before_install:
+  - sudo apt-get update
   - sudo apt-get remove python-zope.interface
   # Install cnx-archive
   # * Install the 'plpython' extension language
