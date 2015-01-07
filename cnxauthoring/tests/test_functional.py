@@ -378,6 +378,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'id': '{}@draft'.format(result['id']),
             u'title': result['title'],
             u'isPublishable': False,
+            u'publishBlockers': [u'no_content'],
             })
 
         self.assert_cors_headers(response)
@@ -391,6 +392,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'contents': [],
             u'id': '{}@draft'.format(result['id']),
             u'isPublishable': False,
+            u'publishBlockers': [u'no_content'],
             u'title': result['title'],
             })
         self.assert_cors_headers(response)
@@ -807,6 +809,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'id': u'{}@draft'.format(result['id']),
                 u'title': u'Copy of Derived Copy of College Physics',
                 u'isPublishable': True,
+                u'publishBlockers': None,
                 u'contents': [
                     {u'id': u'209deb1f-1a46-4369-9e0d-18674cf58a3e@7',
                      u'title': u'Preface'},
@@ -1311,11 +1314,13 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'id': u'{}@draft'.format(book['id']),
                 u'title': u'Book',
                 u'isPublishable': True,
+                u'publishBlockers': None,
                 u'contents': [
                     {
                         u'id': u'{}@draft'.format(page1['id']),
                         u'title': u'Page one',
                         u'isPublishable': False,
+                        u'publishBlockers': [u'no_content'],
                         },
                     {
                         u'id': u'subcol',
@@ -1325,6 +1330,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                                 u'id': u'{}@draft'.format(page2['id']),
                                 u'title': u'Page two',
                                 u'isPublishable': False,
+                                u'publishBlockers': [u'no_content'],
                                 },
                             ],
                         },
@@ -1515,6 +1521,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'id': u'{}@draft'.format(binder['id']),
                 u'title': u'...',
                 u'isPublishable': True,
+                u'publishBlockers': None,
                 u'contents': [{
                     u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
                     u'title': u'Hygiene',
@@ -1567,6 +1574,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'id': u'{}@draft'.format(binder['id']),
                 u'title': u'...',
                 u'isPublishable': True,
+                u'publishBlockers': None,
                 u'contents': [{
                     u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
                     u'title': u'Hygiene',
@@ -1659,6 +1667,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             'id': '{}@draft'.format(binder['id']),
             'title': 'etst book',
             'isPublishable': True,
+            'publishBlockers': None,
             'contents': [
                 {
                     'id': 'f309a0f9-63fb-46ca-9585-d1e1dc96a142@3',
@@ -1672,6 +1681,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'id': '{}@draft'.format(page['id']),
                     'title': 'test page',
                     'isPublishable': False,
+                    'publishBlockers': ['no_content'],
                     }
                 ]
             })

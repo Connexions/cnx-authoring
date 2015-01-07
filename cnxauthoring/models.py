@@ -343,6 +343,7 @@ def model_to_tree(model, title=None,
     tree = {'id': id, 'title': title}
     if id.endswith('draft'):
         tree['is_publishable'] = model.is_publishable
+        tree['publish_blockers'] = model.publication_blockers
     if hasattr(model, '__iter__'):
         contents = tree['contents'] = []
         for node in model:
