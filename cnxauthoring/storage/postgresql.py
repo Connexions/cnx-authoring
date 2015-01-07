@@ -67,6 +67,57 @@ class PostgresqlStorage(BaseStorage):
         for obj in self.get_all(type_=type_, **kwargs):
             return obj
 
+    def _reassemble_model_from_document_entry(self, **row):
+        """Reassembles a document ``row`` (in dictionary result format)
+        into model object.
+        """
+        cursor = self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+        # FIXME media-type is called 'media_type' in a document/binder query
+        #       and 'mediatype' in a resource query.
+        #       If this is fixed this will read better at the very least.
+        #       The fix should be rename the resources field to mediatype.
+        #       This can then be fixed to something like:
+        ## if row['mediatype'] in MEDIATTYPES.values(): 
+        ##     # then process as a Document/Binder.
+        ## else:
+        ##     # then process as a Resource.
+        if 'mediatype' in row:  # It's a resource...
+            model = Resource(row['mediatype'], io.BytesIO(row['data'][:]),
+                             filename=row['hash'])
+        else:  # It's a Document/Binder...
+            row['license'] = eval(row['license'])
+            for field in ('user_id', 'permission', 'uuid'):
+                if field in row:
+                    row.pop(field)
+            if row['media_type'] == MEDIATYPES['binder']:
+                row['tree'] = json.loads(row.pop('content'))
+            # BBB 05-Jan-2015 licensors - deprecated property 'licensors'
+            #     needs changed in webview and archive before removing here.
+            row['licensors'] = row['copyright_holders']
+            # /BBB
+            model = create_content(**row)
+
+            # Attach ACL and license acceptance info.
+            checked_execute(cursor, SQL['get'].format(
+                tablename='document_acl',
+                where_clause='uuid = %(uuid)s'), {'uuid': row['id']})
+            permissions_by_users = {}
+            for acl in cursor.fetchall():
+                permissions_by_users.setdefault(acl['user_id'], [])
+                permissions_by_users[acl['user_id']].append(
+                        acl['permission'])
+            for user_id, permissions in permissions_by_users.items():
+                model.acls[user_id] = tuple(set(permissions))
+            checked_execute(cursor, SQL['get'].format(
+                tablename='document_licensor_acceptance',
+                where_clause='uuid = %(uuid)s'), {'uuid': row['id']})
+            licensor_acceptance = [
+                {'id': r['user_id'], 'has_accepted': r['has_accepted']}
+                for r in cursor.fetchall()]
+            model.licensor_acceptance = licensor_acceptance
+        return model
+
     def get_all(self, type_=Document, user_id=None, permissions=None,
                 **kwargs):
         """Retrieve ``Document`` objects from storage."""
@@ -127,39 +178,8 @@ class PostgresqlStorage(BaseStorage):
             self.conn.rollback() # Frees the connection
         if res:
             for r in res:
-                if 'license' in r:
-                    r['license'] = eval(r['license'])
-                    rd = dict(r)
-                    for field in ('user_id', 'permission', 'uuid'):
-                        if field in rd:
-                            rd.pop(field)
-                    if rd['media_type'] == MEDIATYPES['binder']:
-                        rd['tree'] = json.loads(rd.pop('content'))
-                    rd['licensors'] = rd['copyright_holders']
-                    document = create_content(**rd)
-                    checked_execute(cursor, SQL['get'].format(
-                        tablename='document_acl',
-                        where_clause='uuid = %(uuid)s'), {'uuid': rd['id']})
-                    permissions_by_users = {}
-                    for acl in cursor.fetchall():
-                        permissions_by_users.setdefault(acl['user_id'], [])
-                        permissions_by_users[acl['user_id']].append(
-                                acl['permission'])
-                    for user_id, permissions in permissions_by_users.items():
-                        document.acls[user_id] = tuple(set(permissions))
-                    checked_execute(cursor, SQL['get'].format(
-                        tablename='document_licensor_acceptance',
-                        where_clause='uuid = %(uuid)s'), {'uuid': rd['id']})
-                    licensor_acceptance = [
-                        {'id': r['user_id'], 'has_accepted': r['has_accepted']}
-                        for r in cursor.fetchall()]
-                    document.licensor_acceptance = licensor_acceptance
-                    yield document
-                else:
-                    rd = dict(r)
-                    rd.pop('hash')
-                    rd['data'] = io.BytesIO(rd['data'][:])
-                    yield type_(**dict(rd))
+                yield self._reassemble_model_from_document_entry(**r)
+        raise StopIteration
 
     def add(self, item_or_items):
         """Adds any item or set of items to storage."""
@@ -330,11 +350,6 @@ class PostgresqlStorage(BaseStorage):
         if not in_progress:
             self.conn.rollback() # Frees the connection
         if res:
-            results = []
             for item in res:
-                if 'license' in item:
-                    item['license'] = eval(item['license'])
-                    results.append(create_content(**dict(item)))
-
-            for item in results:
-                yield item
+                yield self._reassemble_model_from_document_entry(**item)
+        raise StopIteration
