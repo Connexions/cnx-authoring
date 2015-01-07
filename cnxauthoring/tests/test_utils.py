@@ -787,7 +787,7 @@ Thank you from your friends at OpenStax CNX
         self.assertEqual(sorted(data['licensors'], key=lambda v: v['uid']),
                          expected_licensors)
 
-    def test_is_valid_for_publish_on_document(self):
+    def test_validate_for_publish_on_document(self):
         from ..models import create_content, DEFAULT_LICENSE
 
         def make_doc():
@@ -805,24 +805,27 @@ Thank you from your friends at OpenStax CNX
                 )
             return document
 
-        self.assertTrue(utils.is_valid_for_publish(make_doc()))
+        self.assertEqual(utils.validate_for_publish(make_doc()), None)
 
         # False when missing content
         doc = make_doc()
         doc.content = ""
-        self.assertFalse(utils.is_valid_for_publish(doc))
+        self.assertEqual(utils.validate_for_publish(doc),
+                         [utils.VALIDATION_NO_CONTENT])
 
         # False when not all roles have accepted.
         doc = make_doc()
         doc.metadata['authors'][0]['has_accepted'] = False
-        self.assertFalse(utils.is_valid_for_publish(doc))
+        self.assertEqual(utils.validate_for_publish(doc),
+                         [utils.VALIDATION_ROLES_REJECTED])
 
         # False when not all roles have accepted the license.
         doc = make_doc()
         doc.licensor_acceptance[1]['has_accepted'] = None
-        self.assertFalse(utils.is_valid_for_publish(doc))
+        self.assertEqual(utils.validate_for_publish(doc),
+                         [utils.VALIDATION_ROLES_PENDING])
 
-    def test_is_valid_for_publish_on_binder(self):
+    def test_validate_for_publish_on_binder(self):
         from ..models import create_content, DEFAULT_LICENSE, BINDER_MEDIATYPE
 
         def make_doc():
@@ -862,28 +865,47 @@ Thank you from your friends at OpenStax CNX
         setattr(storage, 'storage', MemoryStorage())
 
         from ..storage import storage
+
+        def persist(models):
+            for model in models:
+                storage.add(model)
+            storage.persist()
+
         docs = (make_doc(), make_doc(),)
-        for doc in docs:
-            storage.add(doc)
-        storage.persist()
+        persist(docs)
+        self.assertEqual(utils.validate_for_publish(make_binder(docs)), None)
 
-        self.assertTrue(utils.is_valid_for_publish(make_binder(docs)))
+        # Missing content
+        binder = make_binder()
+        self.assertEqual(utils.validate_for_publish(binder),
+                         [utils.VALIDATION_NO_CONTENT])
 
-        # False when missing content
-        doc = make_doc()
-        doc.content = ""
-        self.assertFalse(utils.is_valid_for_publish(doc))
+        # Not all roles have accepted
+        docs = (make_doc(), make_doc(),)
+        persist(docs)
+        binder = make_binder(docs)
+        binder.metadata['authors'][0]['has_accepted'] = False
+        binder.metadata['editors'][0]['has_accepted'] = None
+        self.assertEqual(utils.validate_for_publish(binder),
+                         [utils.VALIDATION_ROLES_PENDING,
+                          utils.VALIDATION_ROLES_REJECTED])
 
-        # False when not all roles have accepted.
-        doc = make_doc()
-        doc.metadata['authors'][0]['has_accepted'] = False
-        self.assertFalse(utils.is_valid_for_publish(doc))
+        # Not all roles have accepted on contained
+        docs = (make_doc(), make_doc(),)
+        persist(docs)
+        binder = make_binder(docs)
+        binder.metadata['authors'][0]['has_accepted'] = False
+        self.assertEqual(utils.validate_for_publish(binder),
+                         [utils.VALIDATION_ROLES_REJECTED])
 
-        # False when not all roles have accepted the license.
-        doc = make_doc()
-        doc.licensor_acceptance[1]['has_accepted'] = None
-        self.assertFalse(utils.is_valid_for_publish(doc))
+        # Not all roles have accepted the license
+        docs = (make_doc(), make_doc(),)
+        persist(docs)
+        binder = make_binder(docs)
+        binder.licensor_acceptance[0]['has_accepted'] = None
+        self.assertEqual(utils.validate_for_publish(binder),
+                         [utils.VALIDATION_ROLES_PENDING])
 
     def test_is_valid_for_publish_on_obj(self):
         with self.assertRaises(ValueError):
-            utils.is_valid_for_publish(object())
+            utils.validate_for_publish(object())

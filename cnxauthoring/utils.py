@@ -561,7 +561,17 @@ def declare_licensors(model):
         raise PublishingError(response)
 
 
-def _has_accepted_roles_and_license(model):
+VALIDATION_ROLES_PENDING = 'roles_pending'
+VALIDATION_ROLES_REJECTED = 'roles_rejected'
+VALIDATION_NO_CONTENT = 'no_content'
+VALIDATION_BLOCKERS = (
+    VALIDATION_ROLES_PENDING,
+    VALIDATION_ROLES_REJECTED,
+    VALIDATION_NO_CONTENT,
+    )
+
+
+def _validate_accepted_roles_and_license(model):
     """Have all the roles accepted both the attributed role(s) and license?"""
     accepted_roles = set([])
     users = set([])
@@ -575,18 +585,18 @@ def _has_accepted_roles_and_license(model):
         entry = model.licensor_acceptance[index_map[user_id]]
         accepted_licensors.add(entry.get('has_accepted'))
 
-    has_accepted = (
-        not (None in accepted_roles or False in accepted_roles) \
-        and \
-        not (None in accepted_licensors or False in accepted_licensors))
-    return has_accepted
+    validation_errors = []
+    if None in accepted_roles or None in accepted_licensors:
+        validation_errors.append(VALIDATION_ROLES_PENDING)
+    if False in accepted_roles or False in accepted_licensors:
+        validation_errors.append(VALIDATION_ROLES_REJECTED)
+    return validation_errors
 
 
-def _has_required_data(model):
+def _validate_required_data(model):
     """Does the model have the required data?"""
-    has_required_data = False
+    validation_errors = []
     if isinstance(model, cnxepub.Document):
-
         # Check for content...
         contains_content = False
         # Wrap the content so that we can parse it.
@@ -596,22 +606,26 @@ def _has_required_data(model):
             if element_text != '':
                 contains_content = True
                 break
-
-        has_required_data = contains_content
+        if not contains_content:
+            validation_errors.append(VALIDATION_NO_CONTENT)
     elif isinstance(model, cnxepub.Binder):
         # Does the binder have documents
         documents_generator = cnxepub.flatten_to_documents(
             model, include_pointers=True)
         contains_docs = len([x for x in documents_generator]) >= 1
 
-        has_required_data = contains_docs
+        if not contains_docs:
+            validation_errors.append(VALIDATION_NO_CONTENT)
     else:
         raise ValueError('{} is not a Document or a Binder'.format(model))
-    return has_required_data
+    return validation_errors
 
 
-def is_valid_for_publish(model):
-    """Validate a model (``Document`` or ``Binder``) is publish ready."""
-    is_valid = _has_required_data(model) \
-               and _has_accepted_roles_and_license(model)
-    return is_valid
+def validate_for_publish(model):
+    """Validate a model (``Document`` or ``Binder``) is publish ready.
+    Returns blockers (list) or None.
+    """
+    blockers = []
+    blockers.extend(_validate_required_data(model))
+    blockers.extend(_validate_accepted_roles_and_license(model))
+    return blockers and blockers or None
