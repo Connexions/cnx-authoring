@@ -906,6 +906,6 @@ Thank you from your friends at OpenStax CNX
         self.assertEqual(utils.validate_for_publish(binder),
                          [utils.VALIDATION_ROLES_PENDING])
 
-    def test_is_valid_for_publish_on_obj(self):
+    def test_validate_for_publish_on_obj(self):
         with self.assertRaises(ValueError):
             utils.validate_for_publish(object())
