@@ -499,7 +499,8 @@ def declare_roles(model):
     # /BBB
 
     # Notify any new roles that they need to accept the assigned attribution.
-    logger.debug("Sending notification message to {}".format(', '.join(tobe_notified)))
+    if tobe_notified:
+        logger.debug("Sending notification message to '{}', from '{}'".format(', '.join(tobe_notified),authenticated_userid))
     for user_id in tobe_notified:
         notify_role_for_acceptance(user_id, authenticated_userid, model)
 
