@@ -278,6 +278,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'version': u'draft',
             u'subjects': [],
             u'isPublishable': False,
+            u'publishBlockers': [u'no_content'],
             u'keywords': [],
             u'state': u'Draft',
             u'publication': None,
@@ -377,6 +378,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'id': '{}@draft'.format(result['id']),
             u'title': result['title'],
             u'isPublishable': False,
+            u'publishBlockers': [u'no_content'],
             })
 
         self.assert_cors_headers(response)
@@ -390,6 +392,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'contents': [],
             u'id': '{}@draft'.format(result['id']),
             u'isPublishable': False,
+            u'publishBlockers': [u'no_content'],
             u'title': result['title'],
             })
         self.assert_cors_headers(response)
@@ -481,6 +484,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'version': u'4.0'},
             u'subjects': [],
             u'isPublishable': True,
+            u'publishBlockers': None,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -524,6 +528,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'version': u'4.0'},
             u'subjects': [],
             u'isPublishable': True,
+            u'publishBlockers': None,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -586,6 +591,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'version': u'4.0'},
             u'subjects': [],
             u'isPublishable': True,
+            u'publishBlockers': None,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -629,6 +635,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'version': u'4.0'},
             u'subjects': [],
             u'isPublishable': True,
+            u'publishBlockers': None,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -689,6 +696,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'version': u'4.0'},
             u'subjects': [],
             u'isPublishable': True,
+            u'publishBlockers': None,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -732,6 +740,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'version': u'4.0'},
             u'subjects': [],
             u'isPublishable': True,
+            u'publishBlockers': None,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -784,6 +793,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'isPublishable': True,
+            u'publishBlockers': None,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -799,6 +809,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'id': u'{}@draft'.format(result['id']),
                 u'title': u'Copy of Derived Copy of College Physics',
                 u'isPublishable': True,
+                u'publishBlockers': None,
                 u'contents': [
                     {u'id': u'209deb1f-1a46-4369-9e0d-18674cf58a3e@7',
                      u'title': u'Preface'},
@@ -947,6 +958,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.module',
             u'permissions': [u'edit', u'publish', u'view'],
             u'isPublishable': True,
+            u'publishBlockers': None,
             u'publication': None,
             u'publishers': [rasmus_role],
             u'state': u'Draft',
@@ -987,6 +999,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 },
             u'subjects': [u'Science and Technology'],
             u'isPublishable': True,
+            u'publishBlockers': None,
             u'keywords': [u'DNA', u'resonance'],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -1118,6 +1131,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'id': post_data['id'].split('@')[0],
             u'illustrators': [],
             u'isPublishable': True,
+            u'publishBlockers': None,
             u'language': u'en',
             u'licensors': [rice_role],
             u'mediaType': u'application/vnd.org.cnx.collection',
@@ -1208,6 +1222,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'version': u'draft',
             u'subjects': post_data['subjects'],
             u'isPublishable': False,
+            u'publishBlockers': ['no_content'],
             u'keywords': post_data['keywords'],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -1299,11 +1314,13 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'id': u'{}@draft'.format(book['id']),
                 u'title': u'Book',
                 u'isPublishable': True,
+                u'publishBlockers': None,
                 u'contents': [
                     {
                         u'id': u'{}@draft'.format(page1['id']),
                         u'title': u'Page one',
                         u'isPublishable': False,
+                        u'publishBlockers': [u'no_content'],
                         },
                     {
                         u'id': u'subcol',
@@ -1313,6 +1330,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                                 u'id': u'{}@draft'.format(page2['id']),
                                 u'title': u'Page two',
                                 u'isPublishable': False,
+                                u'publishBlockers': [u'no_content'],
                                 },
                             ],
                         },
@@ -1320,6 +1338,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 },
             u'subjects': [],
             u'isPublishable': True,
+            u'publishBlockers': None,
             u'keywords': [],
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
@@ -1502,6 +1521,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'id': u'{}@draft'.format(binder['id']),
                 u'title': u'...',
                 u'isPublishable': True,
+                u'publishBlockers': None,
                 u'contents': [{
                     u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
                     u'title': u'Hygiene',
@@ -1510,6 +1530,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'subjects': [],
             u'keywords': [],
             u'isPublishable': True,
+            u'publishBlockers': None,
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
             u'publication': None,
@@ -1553,6 +1574,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'id': u'{}@draft'.format(binder['id']),
                 u'title': u'...',
                 u'isPublishable': True,
+                u'publishBlockers': None,
                 u'contents': [{
                     u'id': u'7d089006-5a95-4e24-8e04-8168b5c41aa3@1',
                     u'title': u'Hygiene',
@@ -1561,6 +1583,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'subjects': [],
             u'keywords': [],
             u'isPublishable': True,
+            u'publishBlockers': None,
             u'state': u'Draft',
             u'permissions': [u'edit', u'publish', u'view'],
             u'publication': None,
@@ -1644,6 +1667,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             'id': '{}@draft'.format(binder['id']),
             'title': 'etst book',
             'isPublishable': True,
+            'publishBlockers': None,
             'contents': [
                 {
                     'id': 'f309a0f9-63fb-46ca-9585-d1e1dc96a142@3',
@@ -1657,6 +1681,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'id': '{}@draft'.format(page['id']),
                     'title': 'test page',
                     'isPublishable': False,
+                    'publishBlockers': ['no_content'],
                     }
                 ]
             })

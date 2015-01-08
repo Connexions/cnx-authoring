@@ -158,6 +158,7 @@ class BaseContent(object):
     def __json__(self, request=None):
         result = self.to_dict()
         result['is_publishable'] = self.is_publishable
+        result['publishBlockers'] = self.publication_blockers
         utils.change_dict_keys(result, utils.underscore_to_camelcase)
         if request and hasattr(self,'acls'):
            result['permissions'] = sorted(self.acls.get(
@@ -165,9 +166,13 @@ class BaseContent(object):
         return result
 
     @property
+    def publication_blockers(self):
+        return utils.validate_for_publish(self)
+
+    @property
     def is_publishable(self):
         """Flag to say whether this content is publishable."""
-        return utils.is_valid_for_publish(self)
+        return not bool(self.publication_blockers)
 
 
 class Document(cnxepub.Document, BaseContent):
@@ -338,6 +343,7 @@ def model_to_tree(model, title=None,
     tree = {'id': id, 'title': title}
     if id.endswith('draft'):
         tree['is_publishable'] = model.is_publishable
+        tree['publish_blockers'] = model.publication_blockers
     if hasattr(model, '__iter__'):
         contents = tree['contents'] = []
         for node in model:
