@@ -603,7 +603,7 @@ def _validate_required_data(model):
         # Wrap the content so that we can parse it.
         content = u"<html><body>{}</body></html>".format(model.content)
         tree = etree.parse(io.StringIO(content))
-        for element_text in tree.xpath('/html/body/*/text()'):
+        for element_text in tree.xpath('/html/body//text()'):
             if element_text != '':
                 contains_content = True
                 break
