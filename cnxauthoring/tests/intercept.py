@@ -273,7 +273,7 @@ class TestSingluarRunIntercept(unittest.TestCase):
 
         data = resp.json()
         self.assertEqual(data['legacy_id'], 'm42091')
-        self.assertIn('cnxcap', [r['id'] for r in data['maintainers']])
+        self.assertIn('cnxcap', [r['id'] for r in data['publishers']])
 
     def test_publishing(self):
         """Check the intercept for communications with publishing."""
