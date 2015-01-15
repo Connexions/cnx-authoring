@@ -435,6 +435,7 @@ def revise_content(request, **kwargs):
     document.update(kwargs)
     document['revised'] = None
     document['license'] = {'url': DEFAULT_LICENSE.url}
+    document['maintainers'] = document['publishers']
     return document
 
 
