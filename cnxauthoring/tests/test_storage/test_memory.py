@@ -73,12 +73,20 @@ class MemoryStorageTests(unittest.TestCase):
 
         result = self.storage.get(id=d2_id)
         self.assertEqual(result.to_dict(), d2.to_dict())
+        self.assertEqual({k: tuple(sorted(v)) for k, v in result.acls.items()},
+                         {})
 
     def test_add_get_and_remove_binder(self):
         d1_id = uuid.uuid4()
         d = Document('Document Title: One', id=d1_id, submitter=SUBMITTER)
+        d.acls = {'user2': ('view',)}
         self.storage.add(d)
         self.storage.persist()
+
+        result = self.storage.get(id=d1_id)
+        self.assertEqual(result.to_dict(), d.to_dict())
+        self.assertEqual({k: tuple(sorted(v)) for k, v in result.acls.items()},
+                         {'user2': ('view',)})
 
         b1_id = uuid.uuid4()
         b = Binder('Book Title', {
@@ -86,15 +94,35 @@ class MemoryStorageTests(unittest.TestCase):
                 {'id': str(d1_id)},
                 ]},
             id=b1_id, submitter=SUBMITTER)
+        b.acls = {'user1': ('view', 'edit', 'publish') }
         self.storage.add(b)
         self.storage.persist()
 
         result = self.storage.get(id=b1_id)
         self.assertEqual(result.to_dict(), b.to_dict())
+        self.assertEqual({k: tuple(sorted(v)) for k, v in result.acls.items()},
+                         {'user1': ('edit', 'publish', 'view')})
+
+        #BBB update_containment should become a hidden side effect inside storage
+        d.metadata['contained_in'] = [str(b1_id)]
+        self.storage.update(d)
+
+        result = self.storage.get(id=d1_id)
+        self.assertEqual(result.to_dict(), d.to_dict())
+        self.assertEqual({k: tuple(sorted(v)) for k, v in result.acls.items()},
+                         {'user2': ('view',),'user1': ('edit', 'publish', 'view')})
 
         self.storage.remove(b)
         result = self.storage.get(id=b1_id)
         self.assertEqual(result, None)
+
+        #BBB update_containment should become a hidden side effect inside storage
+        d.metadata['contained_in'] = []
+        self.storage.update(d)
+        result = self.storage.get(id=d1_id)
+        self.assertEqual(result.to_dict(), d.to_dict())
+        self.assertEqual({k: tuple(sorted(v)) for k, v in result.acls.items()},
+                         {'user2': ('view',)})
 
     def test_add_get_and_remove_resource(self):
         with open(test_data('1x1.png'), 'rb') as f:
