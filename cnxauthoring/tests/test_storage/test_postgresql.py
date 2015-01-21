@@ -8,6 +8,10 @@
 from . import test_memory
 from ..testing import integration_test_settings
 
+import uuid
+from .. import test_data
+from ...models import Document, Resource, Binder
+from .test_memory import SUBMITTER
 
 class PostgresqlStorageTests(test_memory.MemoryStorageTests):
 
@@ -76,3 +80,4 @@ class PostgresqlStorageTests(test_memory.MemoryStorageTests):
         self.assertEqual(result.to_dict(), d.to_dict())
         self.assertEqual({k: tuple(sorted(v)) for k, v in result.acls.items()},
                          {'user2': ('view',)})
+
