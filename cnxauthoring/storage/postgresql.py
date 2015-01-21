@@ -107,8 +107,21 @@ class PostgresqlStorage(BaseStorage):
                 permissions_by_users.setdefault(acl['user_id'], [])
                 permissions_by_users[acl['user_id']].append(
                         acl['permission'])
+            #UNION with  the users' permissions on any containing draft binders
+            binders = model.metadata['contained_in']
+            if binders and binders != []:
+                for binderid in binders:
+                    checked_execute(cursor, SQL['get'].format(
+                        tablename='document_acl',
+                        where_clause='uuid = %(uuid)s'), {'uuid': binderid})
+                    for acl in cursor.fetchall():
+                        permissions_by_users.setdefault(acl['user_id'], [])
+                        if acl['permission'] not in permissions_by_users[acl['user_id']]:
+                            permissions_by_users[acl['user_id']].append(acl['permission'])
+
             for user_id, permissions in permissions_by_users.items():
                 model.acls[user_id] = tuple(set(permissions))
+
             checked_execute(cursor, SQL['get'].format(
                 tablename='document_licensor_acceptance',
                 where_clause='uuid = %(uuid)s'), {'uuid': row['id']})
