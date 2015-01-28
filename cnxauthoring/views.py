@@ -9,6 +9,7 @@ import io
 import datetime
 import functools
 import json
+import logging
 try:
     from urllib import urlencode # python 2
 except ImportError:
@@ -36,12 +37,32 @@ from .storage import storage
 from . import utils
 
 
+logger = logging.getLogger('cnxauthoring')
+
+
 def authenticated_only(function):
     @functools.wraps(function)
     def wrapper(request, *args, **kwargs):
         if not request.authenticated_userid:
             raise httpexceptions.HTTPUnauthorized()
         return function(request, *args, **kwargs)
+    return wrapper
+
+
+def storage_management(function):
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+        try:
+            response = function(*args, **kwargs)
+            storage.persist()
+            return response
+        except storage.Error:
+            logger.exception('Storage failure')
+            try:
+                storage.abort()
+            except storage.Error:
+                logger.exception('Storage failed to abort')
+            raise httpexceptions.HTTPServiceUnavailable()
     return wrapper
 
 
@@ -129,11 +150,7 @@ def update_content_state(request, content):
                 result = json.loads(response.content.decode('utf-8'))
                 if content.metadata['state'] != result['state']:
                     content.update(state=result['state'])
-                    try:
-                        storage.update(content)
-                        storage.persist()
-                    except storage.Error:
-                        storage.abort()
+                    storage.update(content)
             except (TypeError, ValueError):
                 # Not critical if there's a json problem here - perhaps log this
                 pass
@@ -141,6 +158,7 @@ def update_content_state(request, content):
 
 @view_config(route_name='user-contents', request_method='GET', renderer='json')
 @authenticated_only
+@storage_management
 def user_contents(request):
     """Extract of the contents that belong to the current logged in user"""
     items = []
@@ -201,6 +219,7 @@ def user_contents(request):
 
 @view_config(route_name='get-content-json', request_method='GET', renderer='json')
 @authenticated_only
+@storage_management
 def get_content(request):
     """Acquisition of content by id"""
     id = request.matchdict['id']
@@ -217,6 +236,7 @@ def get_content(request):
 
 @view_config(route_name='get-resource', request_method='GET')
 @authenticated_only
+@storage_management
 def get_resource(request):
     """Acquisition of a resource item"""
     hash = request.matchdict['hash']
@@ -253,23 +273,13 @@ def post_content_single(request, cstruct):
                               permissions=('edit',), user_id=current_uid)
         if content:
             if content.metadata['state'] == 'Done/Success':
-                # remove the content in the database if it's already
-                # published successfully
-                try:
-                    storage.remove(content)
-                    storage.persist()
-                except storage.Error:
-                    storage.abort()
+                storage.remove(content)
 
             # add view permission for the user
             else:
                 if 'view' not in content.acls[current_uid]:
                     content.acls[current_uid] += ('view',)
-                    try:
-                        storage.update(content)
-                        storage.persist()
-                    except storage.Error:
-                        storage.abort()
+                    storage.update(content)
                 return content
 
         # get content from archive
@@ -348,23 +358,16 @@ def post_content_single(request, cstruct):
     except ArchiveConnectionError:
         raise httpexceptions.HTTPBadRequest(
             'Derive failed: {}'.format(derived_from))
-    except storage.Error:
-        storage.abort()
-    else:
-        storage.persist()
 
-    try:
-        content = storage.add(content)
-        if content.mediatype == BINDER_MEDIATYPE:
-            utils.update_containment(content)
-        storage.persist()
-    except storage.Error:
-        storage.abort()
+    content = storage.add(content)
+    if content.mediatype == BINDER_MEDIATYPE:
+        utils.update_containment(content)
 
     return content
 
 @view_config(route_name='post-content', request_method='POST', renderer='json')
 @authenticated_only
+@storage_management
 def post_content(request):
     """Create content.
     Returns the content location and a copy of the newly created content.
@@ -402,6 +405,7 @@ def post_content(request):
 
 @view_config(route_name='post-resource', request_method='POST', renderer='string')
 @authenticated_only
+@storage_management
 def post_resource(request):
     """Accept a resource file.
     On success, the Location header is set to the resource location.
@@ -421,11 +425,8 @@ def post_resource(request):
         raise httpexceptions.HTTPBadRequest(
                 'File uploaded has exceeded limit {}MB'.format(size_limit))
 
-    try:
-        resource = storage.add(resource)
-        storage.persist()
-    except storage.Error:
-        storage.abort()
+
+    resource = storage.add(resource)
 
     resp = request.response
     resp.status = 201
@@ -460,24 +461,22 @@ def delete_content_single(request, id, user_id=None, raise_error=True):
                     id, content.metadata['contained_in']))
         return False
 
-    try:
-        if user_id and len(content.acls.keys()) > 1:
-            # remove "view" permission
-            for uid, permissions in content.acls.items():
-                if uid == user_id and 'view' in permissions:
-                    permissions = list(permissions)
-                    permissions.remove('view')
-                    content.acls[uid] = permissions
-            utils.declare_acl(content)
-            storage.update(content)
-        else:
-            resource = storage.remove(content)
-            if content.metadata['media_type'] == BINDER_MEDIATYPE:
-                utils.update_containment(content, deletion=True)
-        storage.persist()
-        return True
-    except storage.Error:
-        storage.abort()
+
+    if user_id and len(content.acls.keys()) > 1:
+        # remove "view" permission
+        for uid, permissions in content.acls.items():
+            if uid == user_id and 'view' in permissions:
+                permissions = list(permissions)
+                permissions.remove('view')
+                content.acls[uid] = permissions
+        utils.declare_acl(content)
+        storage.update(content)
+    else:
+        resource = storage.remove(content)
+        if content.metadata['media_type'] == BINDER_MEDIATYPE:
+            utils.update_containment(content, deletion=True)
+    return True
+
 
 
 @view_config(route_name='delete-user-content', request_method='DELETE',
@@ -487,6 +486,7 @@ def delete_content_single(request, id, user_id=None, raise_error=True):
 @view_config(route_name='delete-content-multiple', request_method='PUT',
              renderer='json')
 @authenticated_only
+@storage_management
 def delete_content(request):
     """delete a stored document"""
     if not request.matchdict.get('ident_hash'):
@@ -513,6 +513,7 @@ def delete_content(request):
 
 @view_config(route_name='put-content', request_method='PUT', renderer='json')
 @authenticated_only
+@storage_management
 def put_content(request):
     """Modify a stored document"""
     id = request.matchdict['id']
@@ -553,13 +554,9 @@ def put_content(request):
     utils.declare_roles(content)
     utils.declare_licensors(content)
     utils.declare_acl(content)
-    try:
-        storage.update(content)
-        if content.mediatype == BINDER_MEDIATYPE:
-            utils.update_containment(content)
-        storage.persist()
-    except storage.Error:
-        storage.abort()
+    storage.update(content)
+    if content.mediatype == BINDER_MEDIATYPE:
+        utils.update_containment(content)
 
     resp = request.response
     resp.status = 200
@@ -573,6 +570,7 @@ def put_content(request):
 
 @view_config(route_name='search-content', request_method='GET', renderer='json')
 @authenticated_only
+@storage_management
 def search_content(request):
     """Search documents by title and contents"""
     empty_response = {
@@ -661,6 +659,7 @@ def post_to_publishing(request, userid, submitlog, content_ids):
 
 @view_config(route_name='publish', request_method='POST', renderer='json')
 @authenticated_only
+@storage_management
 def publish(request):
     """Publish documents to archive
     """
@@ -678,7 +677,6 @@ def publish(request):
                     publication=str(result['publication']),
                     version=result['mapping'][content.id].split('@')[1])
             storage.update(content)
-            storage.persist()
         return result
     except (TypeError, ValueError):
         raise httpexceptions.HTTPBadRequest('Unable to publish: '
@@ -688,6 +686,7 @@ def publish(request):
 @view_config(route_name='acceptance-info', request_method='GET',
              renderer='json')
 @authenticated_only
+@storage_management
 def get_acceptance_info(request):
     """Retrieve role and license acceptance info
     on the routed content for the authenticated user.
@@ -736,6 +735,7 @@ def get_acceptance_info(request):
 
 @view_config(route_name='acceptance-info', request_method=('POST', 'PUT'))
 @authenticated_only
+@storage_management
 def post_acceptance_info(request):
     """Post role and license acceptance info
     on the routed content for the authenticated user.
@@ -808,7 +808,6 @@ def post_acceptance_info(request):
 
     if tobe_updated_roles:
         storage.update(content)
-        storage.persist()
 
     resp = request.response
     resp.status = 200
