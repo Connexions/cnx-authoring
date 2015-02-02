@@ -331,7 +331,7 @@ class PostgresqlStorage(BaseStorage):
         self.conn.commit()
 
     def abort(self):
-        """Persist/commit the changes."""
+        """Abort the changes"""
         self.conn.rollback()
 
     def search(self, limits, type_=Document, submitter_id=None):

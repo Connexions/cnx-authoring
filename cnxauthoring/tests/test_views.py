@@ -35,6 +35,9 @@ class ViewsTests(unittest.TestCase):
         declare_routes(self.config)
         from .. import storage as storage_pkg
         _storage_instance = self.storage_cls()
+        patch = mock.patch.object(_storage_instance, 'persist')
+        patch.start()
+        self.addCleanup(patch.stop)
         setattr(storage_pkg, 'storage', _storage_instance)
         self.addCleanup(setattr, storage_pkg, 'storage', None)
 

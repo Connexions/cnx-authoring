@@ -2799,6 +2799,51 @@ class FunctionalTests(BaseFunctionalTestCase):
                 },
             })
 
+    def test_service_unavailable_response(self):
+        '''
+        Test service unavailable response when a request is made during a
+        closed or lost database connection.
+        '''
+        import psycopg2
+        from ..storage import storage
+
+        self.addCleanup(setattr, storage, 'conn',
+                        psycopg2.connect(storage.conn.dsn))
+
+        storage.conn.close()
+
+        response = self.testapp.post_json(
+            '/users/contents',
+            {'title': u'My document タイトル'},
+            status=503,
+            expect_errors=True)
+        self.assertEqual(response.status, '503 Service Unavailable')
+
+        response = self.testapp.get(
+            '/resources/1234abcde',
+            status=503,
+            expect_errors=True)
+        self.assertEqual(response.status, '503 Service Unavailable')
+
+        response = self.testapp.put_json(
+            '/contents/1234abcde@draft.json',
+            {},
+            status=503,
+            expect_errors=True)
+        self.assertEqual(response.status, '503 Service Unavailable')
+
+        response = self.testapp.get(
+            '/search',
+            status=503,
+            expect_errors=True)
+        self.assertEqual(response.status, '503 Service Unavailable')
+
+        response = self.testapp.delete(
+            '/contents/{}@draft'.format(id),
+            status=503,
+            expect_errors=True)
+        self.assertEqual(response.status, '503 Service Unavailable')
+
 
 class PublicationTests(BaseFunctionalTestCase):
 
