@@ -61,6 +61,7 @@ class PostgresqlStorage(BaseStorage):
     def __init__(self, db_connection_string=None):
         #initialize db
         self.conn = psycopg2.connect(db_connection_string)
+        self.db_connection_string = db_connection_string
 
     def get(self, type_=Document, **kwargs):
         """Retrieve ``Document`` objects from storage."""
@@ -366,3 +367,7 @@ class PostgresqlStorage(BaseStorage):
             for item in res:
                 yield self._reassemble_model_from_document_entry(**item)
         raise StopIteration
+
+    def restart(self):
+        """Restart the interface"""
+        self.conn = psycopg2.connect(self.db_connection_string)

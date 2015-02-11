@@ -82,7 +82,10 @@ class MemoryStorage(BaseStorage):
     def abort(self):
         """Persist/commit the changes."""
         pass
-    
+
+    def restart(self):
+        """Restart the interface"""
+        pass
 
     def search(self, limits, type_=Document, submitter_id=None):
         """Retrieve any ``Document`` objects from storage that matches the

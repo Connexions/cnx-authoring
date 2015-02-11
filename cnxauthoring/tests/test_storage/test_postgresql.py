@@ -81,3 +81,23 @@ class PostgresqlStorageTests(test_memory.MemoryStorageTests):
         self.assertEqual({k: tuple(sorted(v)) for k, v in result.acls.items()},
                          {'user2': ('view',)})
 
+    def test_restart(self):
+        from ...storage.database import CONNECTION_SETTINGS_KEY
+        import psycopg2
+        settings = integration_test_settings()
+        test_db = settings[CONNECTION_SETTINGS_KEY]
+        self.addCleanup(setattr, self.storage,
+                        'conn', psycopg2.connect(test_db))
+
+        # 0 if the connection is open, nonzero if it is closed or broken.
+        OPEN = 0
+
+        self.assertEqual(self.storage.conn.closed, OPEN)
+
+        self.storage.conn.close()
+
+        self.assertNotEqual(self.storage.conn.closed, OPEN)
+
+        self.storage.restart()
+
+        self.assertEqual(self.storage.conn.closed, OPEN)

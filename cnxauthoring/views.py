@@ -62,7 +62,12 @@ def storage_management(function):
                 storage.abort()
             except storage.Error:
                 logger.exception('Storage failed to abort')
-            raise httpexceptions.HTTPServiceUnavailable()
+                try:
+                    storage.restart()
+                except storage.Error:
+                    logger.exception('Storage failed to restart')
+            finally:
+                raise httpexceptions.HTTPServiceUnavailable()
     return wrapper
 
 
