@@ -3269,9 +3269,10 @@ class PublicationTests(BaseFunctionalTestCase):
         response = self.testapp.post_json(
             '/publish', post_data, expect_errors=True)
 
-        publish = response.json
-        self.assertEqual(publish['state'], 'Failed/Error')
-        self.assertEqual(publish['messages'][0]['type'], 'InvalidReference')
+        self.assertEqual(response.status, '400 Bad Request')
+
+        self.assertEqual(response._headers['publish_state'], 'Failed/Error')
+        self.assertEqual(response._headers['error_type'], 'InvalidReference')
 
         # authoring should have the document in the db with status
         # "Failed/Error"

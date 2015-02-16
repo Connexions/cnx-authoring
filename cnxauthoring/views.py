@@ -674,13 +674,23 @@ def publish(request):
         result = json.loads(response.content.decode('utf-8'))
         for content in contents:
             content.update(state=result['state'],
-                    publication=str(result['publication']),
-                    version=result['mapping'][content.id].split('@')[1])
+                           publication=str(result['publication']),
+                           version=result['mapping'][content.id].split('@')[1])
             storage.update(content)
-        return result
     except (TypeError, ValueError):
-        raise httpexceptions.HTTPBadRequest('Unable to publish: '
-                'response body: {}'.format(response.content.decode('utf-8')))
+        raise httpexceptions.HTTPBadRequest(
+            'Unable to publish: response body: {}'.format(
+                response.content.decode('utf-8')))
+
+    if result['state'] == 'Failed/Error':
+        # FIXME: when publishing becomes asynchronous
+        # the response will always be a 201 Created
+        raise httpexceptions.HTTPBadRequest(
+            headers=[
+                ('publish_state', 'Failed/Error'),
+                ('json', response.content.decode('utf-8')),
+                ('error_type', result['messages'][0]['type'])])
+    return result
 
 
 @view_config(route_name='acceptance-info', request_method='GET',
