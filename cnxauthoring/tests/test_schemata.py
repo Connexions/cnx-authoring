@@ -44,9 +44,8 @@ class UserSchemaTestCase(unittest.TestCase):
         appstruct = user_schema.bind().deserialize(cstruct)
         self.assertEqual(appstruct, {
             'id': 'me',
-            'email': '',
-            'firstname': '',
-            'surname': '',
+            'firstname': None,
+            'surname': None,
             'type': 'cnx-id',
-            'fullname': '',
+            'fullname': None,
             })

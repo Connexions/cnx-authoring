@@ -106,26 +106,30 @@ class UserSchema(colander.MappingSchema):
     id = colander.SchemaNode(
             colander.String(),
             )
-    email = colander.SchemaNode(
-            colander.String(),
-            missing='',
-            )
-    firstname = colander.SchemaNode(
-            colander.String(),
-            missing='',
-            )
-    surname = colander.SchemaNode(
-            colander.String(),
-            missing='',
-            )
     type = colander.SchemaNode(
             colander.String(),
             missing='cnx-id',
             validator=colander.OneOf(['cnx-id']),
             )
+    firstname = colander.SchemaNode(
+            colander.String(),
+            missing=None,
+            )
+    surname = colander.SchemaNode(
+            colander.String(),
+            missing=None,
+            )
     fullname = colander.SchemaNode(
             colander.String(),
-            missing='',
+            missing=None,
+            )
+    suffix = colander.SchemaNode(
+            colander.String(),
+            missing=colander.drop,
+            )
+    title = colander.SchemaNode(
+            colander.String(),
+            missing=colander.drop,
             )
 
     def schema_type(self, **kw):

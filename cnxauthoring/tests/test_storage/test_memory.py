@@ -14,14 +14,12 @@ from ...models import Document, Resource, Binder
 
 SUBMITTER = {
         u'id': u'me',
-        u'email': u'me@example.com',
         u'firstname': u'User',
         u'surname': u'One',
         }
 
 USER2 = {
         u'id': u'you',
-        u'email': u'you@example.com',
         u'firstname': u'User',
         u'surname': u'Two',
         }

@@ -33,28 +33,19 @@ from ..models import DEFAULT_LICENSE, TZINFO
 
 
 USER_PROFILE = {
-        u'username': u'user1',
-        u'id': 1,
-        u'first_name': u'User',
-        u'last_name': u'One',
-        u'contact_infos': [
-            {
-                u'type': u'EmailAddress',
-                u'verified': True,
-                u'id': 1,
-                u'value': u'user1@example.com',
-                },
-            ],
-        }
+    u'username': u'user1',
+    u'id': 1,
+    u'first_name': u'User',
+    u'last_name': u'One',
+    }
 
 SUBMITTER = {
-        u'id': u'user1',
-        u'email': u'user1@example.com',
-        u'firstname': u'User',
-        u'surname': u'One',
-        u'fullname': u'User One',
-        u'type': u'cnx-id',
-        }
+    u'id': u'user1',
+    u'firstname': u'User',
+    u'surname': u'One',
+    u'fullname': u'User One',
+    u'type': u'cnx-id',
+    }
 
 SUBMITTER_WITH_ACCEPTANCE = SUBMITTER.copy()
 SUBMITTER_WITH_ACCEPTANCE[u'hasAccepted'] = True
@@ -919,7 +910,6 @@ class FunctionalTests(BaseFunctionalTestCase):
         # FIXME the user info we have in archive differs from
         #       that here in authoring.
         rasmus_user_info = {
-            u'email': u'rasmus@example.com',
             u'firstname': u'Rasmus',
             u'fullname': u'Rasmus Ruby',
             u'id': u'Rasmus1975',
@@ -931,12 +921,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'assignmentDate': formatted_now,
             u'hasAccepted': True,
             u'requester': rasmus_user_info['id'],
-            u'email': u'',
-            u'emails': [u'rasmus@example.org'],
-            u'suffix': None,
-            u'surname': u'',
-            u'title': None,
-            u'website': None,
+            u'surname': None,
             u'fullname': u'Rasmus de 1975',
         })
 
@@ -1066,7 +1051,6 @@ class FunctionalTests(BaseFunctionalTestCase):
         # FIXME the user info we have in archive differs from
         #       that here in authoring.
         osc_user_info = {
-            u'email': u'OpenStaxCollege@example.com',
             u'firstname': u'Test',
             u'fullname': u'Test User',
             u'id': u'OpenStaxCollege',
@@ -1077,45 +1061,30 @@ class FunctionalTests(BaseFunctionalTestCase):
         osc_role.update({
             u'assignmentDate': formatted_now,
             u'hasAccepted': True,
-            u'email': u'',
-            u'emails': [u'info@openstaxcollege.org'],
             u'firstname': u'OpenStax College',
             u'fullname': u'OpenStax College',
             u'requester': u'OpenStaxCollege',
-            u'suffix': None,
-            u'surname': u'',
-            u'title': None,
-            u'website': None,
+            u'surname': None,
         })
         cnxcap_role = {
             u'assignmentDate': formatted_now,
-            u'email': u'',
-            u'emails': [u'info@openstaxcollege.org'],
             u'firstname': u'College',
             u'fullname': u'OSC Physics Maintainer',
             u'hasAccepted': True,
             u'id': u'cnxcap',
             u'requester': u'OpenStaxCollege',
-            u'suffix': None,
             u'surname': u'Physics',
-            u'title': None,
             u'type': u'cnx-id',
-            u'website': None,
             }
         rice_role = {
             u'assignmentDate': formatted_now,
-            u'email': u'',
-            u'emails': [u'daniel@openstaxcollege.org'],
             u'firstname': u'Rice',
             u'fullname': u'Rice University',
             u'hasAccepted': True,
             u'id': u'OSCRiceUniversity',
             u'requester': u'OpenStaxCollege',
-            u'suffix': None,
             u'surname': u'University',
-            u'title': None,
             u'type': u'cnx-id',
-            u'website': None,
             }
         expected = {
             u'areContainedPublishable': False,
@@ -2285,38 +2254,43 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'users': [
                 {
                     u'id': u'admin',
-                    u'email': u'',
-                    u'firstname': u'',
-                    u'surname': u'',
-                    u'fullname': u'',
+                    u'firstname': None,
+                    u'surname': None,
+                    u'fullname': None,
+                    u'suffix': None,
+                    u'title': None,
                     },
                 {
                     u'id': u'karenc',
-                    u'email': u'',
-                    u'firstname': u'',
-                    u'surname': u'',
-                    u'fullname': u'',
+                    u'firstname': None,
+                    u'surname': None,
+                    u'fullname': None,
+                    u'suffix': None,
+                    u'title': None,
                     },
                 {
                     u'id': u'karenchan',
-                    u'email': u'',
-                    u'firstname': u'',
-                    u'surname': u'',
-                    u'fullname': u'',
+                    u'firstname': None,
+                    u'surname': None,
+                    u'fullname': None,
+                    u'suffix': None,
+                    u'title': None,
                     },
                 {
                     u'id': u'karenchan2014',
-                    u'email': u'',
                     u'firstname': u'Karen',
                     u'surname': u'Chan',
                     u'fullname': u'Karen Chan',
+                    u'suffix': None,
+                    u'title': None,
                     },
                 {
                     u'id': u'user_30187',
-                    u'email': u'',
-                    u'firstname': u'',
-                    u'surname': u'',
-                    u'fullname': u'',
+                    u'firstname': None,
+                    u'surname': None,
+                    u'fullname': None,
+                    u'suffix': None,
+                    u'title': None,
                     },
                 ],
             u'total_count': 5,

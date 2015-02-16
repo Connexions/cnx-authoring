@@ -221,23 +221,41 @@ def derive_resources(request, document):
 def profile_to_user_dict(profile):
     """Take a profile from openstax accounts and transform it into a local user
     format"""
-    # in case it's already in the local user format, no need to transform
-    if 'email' in profile:
-        return profile
-    email = None
-    for contact_info in profile.get('contact_infos') or []:
-        if contact_info.get('type') == 'EmailAddress':
-            email = contact_info.get('value')
-    firstname = profile.get('first_name') or ''
-    surname = profile.get('last_name') or ''
-    return {
-            'firstname': firstname,
-            'surname': surname,
-            'email': email or '',
-            'id': profile.get('username') or '',
-            'fullname': profile.get('fullname',
-                u'{} {}'.format(firstname, surname).strip()),
-            }
+    try:
+        # A username or id MUST be supplied.
+        id = profile.get('username') and profile['username'] or profile['id']
+    except KeyError:
+        raise ValueError("A 'username' or 'id' MUST be supplied "
+                         "in the profile argument.")
+
+    user_profile = {'id': id}
+    profile_attrs = [
+        # (<authoring-key>, <accounts-key>,),
+        ('firstname', 'first_name',),
+        ('surname', 'last_name',),
+        # ('fullname', 'full_name',),
+        ('suffix', 'suffix',),
+        ('title', 'title',),
+        ]
+
+    for au_key, acc_key in profile_attrs:
+        if au_key in profile:
+            user_profile[au_key] = profile[au_key]
+        else:
+            user_profile[au_key] = profile.get(acc_key, None)
+
+    if 'fullname' in profile:
+        user_profile['fullname'] = profile['fullname']
+    else:
+        fullname = profile.get('full_name', None)
+        if not fullname:
+            firstname = user_profile['firstname']
+            surname = user_profile['surname']
+            fullname = u' '.join([n for n in (firstname, surname) if n])
+        user_profile['fullname'] = fullname or None
+
+    return user_profile
+
 
 def update_containment(binder, deletion = False):
     """updates the containment status of all draft documents in this binder"""

@@ -197,19 +197,6 @@ def install_intercept():
             filepath = config.TEST_DATA_SQL_FILE
             with open(filepath, 'r') as fb:
                 cursor.execute(fb.read())
-    # Initialize the openstax accounts database.
-    connection_string = settings[config.ACCOUNTS_CONNECTION_STRING]
-    with psycopg2.connect(connection_string) as db_connection:
-        with db_connection.cursor() as cursor:
-            cursor.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public")
-            data_dir = config.TEST_DATA_DIRECTORY
-            filepaths = (
-                os.path.join(data_dir, 'osc-accounts.schema.sql'),
-                os.path.join(data_dir, 'osc-accounts.data.sql'),
-                )
-            for filepath in filepaths:
-                with open(filepath, 'r') as fb:
-                    cursor.execute(fb.read())
 
     # Make amendments to the data that are specific to the authoring tests.
     _amend_archive_data()
