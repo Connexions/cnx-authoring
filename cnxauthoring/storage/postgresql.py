@@ -59,8 +59,11 @@ class PostgresqlStorage(BaseStorage):
     Error = psycopg2.Error
 
     def __init__(self, db_connection_string=None):
-        #initialize db
+        # initialize db
         self.conn = psycopg2.connect(db_connection_string)
+        # adding a variable to store the db_connection string
+        # needed to restart the database when a connection
+        # is broken or lost.
         self.db_connection_string = db_connection_string
 
     def get(self, type_=Document, **kwargs):

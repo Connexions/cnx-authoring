@@ -82,6 +82,10 @@ class PostgresqlStorageTests(test_memory.MemoryStorageTests):
                          {'user2': ('view',)})
 
     def test_restart(self):
+        """
+        Testing PostrgressStorage class restart function
+        with a password connection string.
+        """
         from ...storage.database import CONNECTION_SETTINGS_KEY
         import psycopg2
         settings = integration_test_settings()
