@@ -77,41 +77,44 @@ class UtilsTests(unittest.TestCase):
         expected = {
             'firstname': '',
             'surname': '',
-            'email': '',
             'id': '',
             'fullname': '',
             }
-
-        self.assertEqual(utils.profile_to_user_dict({}), expected)
+        with self.assertRaises(ValueError) as caught_exc:
+            utils.profile_to_user_dict({})
+        self.assertEqual(
+            caught_exc.exception.args[0],
+            "A 'username' or 'id' MUST be supplied in the profile argument.")
 
     def test_full_profile_to_dict(self):
         profile = {
             'first_name': u'Cäroline',
             'last_name': u'Läne',
-            'contact_infos': [
-                {'type': 'PhoneNumber', 'value': 123456789},
-                {'type': 'EmailAddress', 'value': 'something@something.com'}],
+            'id': 1234,
+            'username': 'clane',
             }
         expected = {
             'firstname': u'Cäroline',
             'surname': u'Läne',
-            'email': 'something@something.com',
-            'id': '',
+            'id': 'clane',
             'fullname': u'Cäroline Läne',
+            'suffix': None,
+            'title': None,
             }
 
         self.assertEqual(utils.profile_to_user_dict(profile), expected)
 
     def test_profile_to_dict_twice(self):
-        expected = {
+        original = {
             'firstname': 'Caroline',
             'surname': 'Lane',
-            'email': 'something@something.com',
-            'id': '',
+            'id': 'clane',
             'fullname': 'Caroline Lane',
             }
-
-        self.assertEqual(utils.profile_to_user_dict(expected), expected)
+        expected = original.copy()
+        expected['title'] = None
+        expected['suffix'] = None
+        self.assertEqual(utils.profile_to_user_dict(original), expected)
 
     def test_utf8_single_string(self):
         test1 = b'simple test string!'
@@ -253,12 +256,10 @@ Thank you from your friends at OpenStax CNX
             u'editors': [
                 {'fullname': u'User One',
                  'surname': u'One',
-                 'email': u'user1@example.com',
                  'firstname': u'User',
                  'id': 'user1'},
                 {'fullname': 'User Two',
                  'surname': u'Two',
-                 'email': u'user2@example.com',
                  'firstname': u'User',
                  'id': 'user2'},
                 ],
@@ -270,7 +271,6 @@ Thank you from your friends at OpenStax CNX
             u'publishers': [
                 {'fullname': u'User One',
                  'surname': u'One',
-                 'email': u'user1@example.com',
                  'firstname': u'User',
                  'id': 'user1'}],
             u'parent_authors': [],
@@ -282,12 +282,10 @@ Thank you from your friends at OpenStax CNX
             u'authors': [
                 {'fullname': u'User One',
                  'surname': u'One',
-                 'email': u'user1@example.com',
                  'firstname': u'User',
                  'id': 'user1'},
                 {'fullname': 'User Two',
                  'surname': u'Two',
-                 'email': u'user2@example.com',
                  'firstname': u'User',
                  'id': 'user2'},
                 ],
@@ -295,7 +293,6 @@ Thank you from your friends at OpenStax CNX
             u'licensors': [
                 {'fullname': u'User One',
                  'surname': u'One',
-                 'email': u'user1@example.com',
                  'firstname': u'User',
                  'id': 'user1'}],
             u'roles': None,
@@ -313,7 +310,6 @@ Thank you from your friends at OpenStax CNX
             u'submitter': {
                 'fullname': u'User One',
                 'surname': u'One',
-                'email': u'user1@example.com',
                 'firstname': u'User',
                 'id': 'user1'},
             u'derived_from_uri': 'http://cnx.org/contents/'
@@ -327,7 +323,6 @@ Thank you from your friends at OpenStax CNX
             utils.accept_roles(cstruct, {
                 'fullname': u'User One',
                  'surname': u'One',
-                 'email': u'user1@example.com',
                  'firstname': u'User',
                  'has_accepted': True,
                  'id': 'user1'})
@@ -347,7 +342,6 @@ Thank you from your friends at OpenStax CNX
                 u'editors': [
                     {'fullname': u'User One',
                      'surname': u'One',
-                     'email': u'user1@example.com',
                      'firstname': u'User',
                      'has_accepted': True,
                      'assignment_date': formatted_now,
@@ -355,7 +349,6 @@ Thank you from your friends at OpenStax CNX
                      'id': 'user1'},
                     {'fullname': 'User Two',
                      'surname': u'Two',
-                     'email': u'user2@example.com',
                      'firstname': u'User',
                      'id': 'user2'},
                     ],
@@ -367,7 +360,6 @@ Thank you from your friends at OpenStax CNX
                 u'publishers': [
                     {'fullname': u'User One',
                      'surname': u'One',
-                     'email': u'user1@example.com',
                      'firstname': u'User',
                      'has_accepted': True,
                      'assignment_date': formatted_now,
@@ -382,7 +374,6 @@ Thank you from your friends at OpenStax CNX
                 u'authors': [
                     {'fullname': u'User One',
                      'surname': u'One',
-                     'email': u'user1@example.com',
                      'firstname': u'User',
                      'has_accepted': True,
                      'assignment_date': formatted_now,
@@ -390,7 +381,6 @@ Thank you from your friends at OpenStax CNX
                      'id': 'user1'},
                     {'fullname': 'User Two',
                      'surname': u'Two',
-                     'email': u'user2@example.com',
                      'firstname': u'User',
                      'id': 'user2'},
                     ],
@@ -398,7 +388,6 @@ Thank you from your friends at OpenStax CNX
                 u'licensors': [
                     {'fullname': u'User One',
                      'surname': u'One',
-                     'email': u'user1@example.com',
                      'has_accepted': True,
                      'assignment_date': formatted_now,
                      'requester': 'user1',
@@ -419,7 +408,6 @@ Thank you from your friends at OpenStax CNX
                 u'submitter': {
                     'fullname': u'User One',
                     'surname': u'One',
-                    'email': u'user1@example.com',
                     'firstname': u'User',
                     'id': 'user1'},
                 u'derived_from_uri': ('http://cnx.org/contents/feda4909-5bbd'
@@ -434,7 +422,6 @@ Thank you from your friends at OpenStax CNX
             u'authors': [
                 {'fullname': u'User One',
                  'surname': u'One',
-                 'email': u'user1@example.com',
                  'firstname': u'User',
                  'has_accepted': False,
                  'assignment_date': formatted_now,
@@ -442,7 +429,6 @@ Thank you from your friends at OpenStax CNX
                  'id': 'user1'},
                 {'fullname': 'User Two',
                  'surname': u'Two',
-                 'email': u'user2@example.com',
                  'firstname': u'User',
                  'has_accepted': True,
                  'assignment_date': formatted_now,
@@ -452,7 +438,6 @@ Thank you from your friends at OpenStax CNX
             u'licensors': [
                 {'fullname': u'User One',
                  'surname': u'One',
-                 'email': u'user1@example.com',
                  'has_accepted': True,
                  'assignment_date': formatted_now,
                  'requester': 'user2',
@@ -468,7 +453,6 @@ Thank you from your friends at OpenStax CNX
             u'authors': [
                 {'fullname': u'User One',
                  'surname': u'One',
-                 'email': u'user1@example.com',
                  'firstname': u'User',
                  'has_accepted': False,
                  'assignment_date': formatted_now,
@@ -476,7 +460,6 @@ Thank you from your friends at OpenStax CNX
                  'id': 'user1'},
                 {'fullname': 'User Two',
                  'surname': u'Two',
-                 'email': u'user2@example.com',
                  'firstname': u'User',
                  'has_accepted': True,
                  'assignment_date': formatted_now,
@@ -486,7 +469,6 @@ Thank you from your friends at OpenStax CNX
             u'licensors': [
                 {'fullname': u'User One',
                  'surname': u'One',
-                 'email': u'user1@example.com',
                  'has_accepted': True,
                  'assignment_date': formatted_now,
                  'requester': 'user2',
@@ -504,12 +486,10 @@ Thank you from your friends at OpenStax CNX
             u'authors': [
                 {'fullname': u'User One',
                  'surname': u'One',
-                 'email': u'user1@example.com',
                  'firstname': u'User',
                  'id': 'user1'},
                 {'fullname': 'User Two',
                  'surname': u'Two',
-                 'email': u'user2@example.com',
                  'firstname': u'User',
                  'has_accepted': True,
                  'assignment_date': formatted_now,
@@ -519,7 +499,6 @@ Thank you from your friends at OpenStax CNX
             u'licensors': [
                 {'fullname': u'User One',
                  'surname': u'One',
-                 'email': u'user1@example.com',
                  'has_accepted': True,
                  'assignment_date': formatted_now,
                  'requester': 'user2',
@@ -535,7 +514,6 @@ Thank you from your friends at OpenStax CNX
             u'authors': [
                 {'fullname': u'User One',
                  'surname': u'One',
-                 'email': u'user1@example.com',
                  'firstname': u'User',
                  'has_accepted': True,
                  'assignment_date': formatted_now,
@@ -543,7 +521,6 @@ Thank you from your friends at OpenStax CNX
                  'id': 'user1'},
                 {'fullname': 'User Two',
                  'surname': u'Two',
-                 'email': u'user2@example.com',
                  'firstname': u'User',
                  'has_accepted': True,
                  'assignment_date': formatted_now,
@@ -553,7 +530,6 @@ Thank you from your friends at OpenStax CNX
             u'licensors': [
                 {'fullname': u'User One',
                  'surname': u'One',
-                 'email': u'user1@example.com',
                  'has_accepted': True,
                  'assignment_date': formatted_now,
                  'requester': 'user2',
