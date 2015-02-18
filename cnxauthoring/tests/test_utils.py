@@ -24,6 +24,34 @@ from pyramid import testing
 from .. import utils
 
 
+class CaptureRequest:
+    """Used to capture a HTTPretty request.
+
+    Use in the ``register_uri`` method like so::
+
+        captured_request = CaptureRequest()
+        httpretty.register_uri(method, url, body=captured_request)
+
+    Then use the ``request`` attribute on the object after the request
+    has gone through.
+
+    """
+
+    def __init__(self, status=200, body=''):
+        self._resp_status = status
+        self._resp_body = body
+        # Place to put the captured values...
+        self.headers = None
+        self.body = None
+        self.request = None
+
+    def __call__(self, request, uri, headers):
+        self.request = request
+        self.headers = request.headers
+        self.body = request.body
+        return self._resp_status, headers, self._resp_body
+
+
 class UtilsTests(unittest.TestCase):
 
     maxDiff = None
@@ -633,22 +661,6 @@ Thank you from your friends at OpenStax CNX
         record_keys = ('role', 'uid', 'uuid', 'has_accepted',)
         get_response_body = [dict(zip(record_keys, r)) for r in records]
 
-        class CaptureRequest:
-
-            def __init__(self, status=200, body=''):
-                self._resp_status = status
-                self._resp_body = body
-                # Place to put the captured values...
-                self.headers = None
-                self.body = None
-                self.request = None
-
-            def __call__(self, request, uri, headers):
-                self.request = request
-                self.headers = request.headers
-                self.body = request.body
-                return self._resp_status, headers, self._resp_body
-
         url = urlparse.urljoin(publishing_url,
                                '/contents/{}/roles'.format(document.id))
         httpretty.register_uri(httpretty.GET, url,
@@ -834,6 +846,55 @@ Thank you from your friends at OpenStax CNX
         self.assertEqual(data['license_url'], DEFAULT_LICENSE.url)
         self.assertEqual(sorted(data['licensors'], key=lambda v: v['uid']),
                          expected_licensors)
+
+    @httpretty.activate
+    def test_declare_licensors_removal(self):
+        from ..models import create_content, DEFAULT_LICENSE
+
+        tracted_acceptance = {'id': 'me', 'has_accepted': None}
+        document = create_content(
+            title='My Document',
+            license={'url': DEFAULT_LICENSE.url},
+            authors=[{'id': 'me'}],
+            licensor_acceptance=[tracted_acceptance,
+                                 {'id': 'user2', 'has_accepted': True}],
+            )
+        uuid = document.id
+        publishing_url = 'http://publishing/'
+        settings = {
+            'publishing.url': publishing_url,
+            'publishing.api_key': 'trusted-publisher',
+            }
+
+        records = [
+            ('me', None, uuid,),
+            ('user2', True, uuid,),  # should remain
+            ('you', None, uuid,),  # should be removed
+            ('user1', False, uuid,),  # should be removed
+            ]
+        record_keys = ('uid', 'has_accepted', 'uuid',)
+        get_response_body = {
+            'license_url': DEFAULT_LICENSE.url,
+            'licensors': [dict(zip(record_keys, e)) for e in records],
+            }
+        url = urlparse.urljoin(publishing_url,
+                               '/contents/{}/licensors'.format(document.id))
+        httpretty.register_uri(httpretty.GET, url,
+                               body=json.dumps(get_response_body), status=200)
+        httpretty.register_uri(httpretty.POST, url, status=202)
+        captured_delete = CaptureRequest()
+        httpretty.register_uri(httpretty.DELETE, url, body=captured_delete)
+
+        with testing.testConfig(settings=settings):
+            utils.declare_licensors(document)
+
+        expected = {'licensors': [{'uid': e[0]} for e in records[2:]]}
+        self.assertEqual(
+            json.loads(captured_delete.body),
+            expected)
+
+        # Check the document's acceptor list remains intact
+        self.assertEqual(document.licensor_acceptance, [tracted_acceptance])
 
     def test_validate_for_publish_on_document(self):
         from ..models import create_content, DEFAULT_LICENSE
