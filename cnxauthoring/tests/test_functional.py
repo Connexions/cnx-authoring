@@ -2773,6 +2773,33 @@ class FunctionalTests(BaseFunctionalTestCase):
                 },
             })
 
+    def test_db_restart(self):
+        '''
+        Test to see if the database resets itself after a broken
+        connection
+        '''
+        import psycopg2
+        from ..storage import storage
+
+        self.addCleanup(setattr, storage, 'conn',
+                        psycopg2.connect(storage.conn.dsn))
+
+        storage.conn.close()
+
+        response = self.testapp.post_json(
+            '/users/contents',
+            {'title': u'My document タイトル'},
+            status=503,
+            expect_errors=True)
+        self.assertEqual(response.status, '503 Service Unavailable')
+
+        response = self.testapp.post_json(
+            '/users/contents',
+            {'title': u'My document タイトル'},
+            status=201,
+            expect_errors=True)
+        self.assertEqual(response.status, '201 Created')
+
     def test_service_unavailable_response(self):
         '''
         Test service unavailable response when a request is made during a
@@ -2793,11 +2820,15 @@ class FunctionalTests(BaseFunctionalTestCase):
             expect_errors=True)
         self.assertEqual(response.status, '503 Service Unavailable')
 
+        storage.conn.close()
+
         response = self.testapp.get(
             '/resources/1234abcde',
             status=503,
             expect_errors=True)
         self.assertEqual(response.status, '503 Service Unavailable')
+
+        storage.conn.close()
 
         response = self.testapp.put_json(
             '/contents/1234abcde@draft.json',
@@ -2806,17 +2837,46 @@ class FunctionalTests(BaseFunctionalTestCase):
             expect_errors=True)
         self.assertEqual(response.status, '503 Service Unavailable')
 
+        storage.conn.close()
+
         response = self.testapp.get(
             '/search',
             status=503,
             expect_errors=True)
         self.assertEqual(response.status, '503 Service Unavailable')
 
+        storage.conn.close()
+
         response = self.testapp.delete(
             '/contents/{}@draft'.format(id),
             status=503,
             expect_errors=True)
         self.assertEqual(response.status, '503 Service Unavailable')
+
+    @mock.patch('cnxauthoring.views.logger')
+    def test_database_restart_failed(self, logger):
+        import psycopg2
+        from ..storage import storage
+
+        self.addCleanup(setattr, storage, 'conn',
+                        psycopg2.connect(storage.conn.dsn))
+
+        storage.conn.close()
+
+        with mock.patch.object(storage, 'restart') as mock_restart:
+            mock_restart.side_effect = storage.Error
+
+            response = self.testapp.post_json(
+                '/users/contents',
+                {'title': 'Test Document'},
+                status=503)
+            self.assertEqual(mock_restart.call_count, 1)
+
+        self.assertEqual(logger.exception.call_count, 3)
+        args1, args2, args3 = logger.exception.call_args_list
+        self.assertEqual(args1[0], ('Storage failure',))
+        self.assertEqual(args2[0], ('Storage failed to abort',))
+        self.assertEqual(args3[0], ('Storage failed to restart',))
 
 
 class PublicationTests(BaseFunctionalTestCase):

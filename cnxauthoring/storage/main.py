@@ -40,3 +40,7 @@ class BaseStorage:
         """Retrieve any ``Document`` objects from storage that matches the
         search terms."""
         raise NotImplementedError()
+
+    def restart(self):
+        """Restart the storage interface """
+        raise NotImplementedError()
