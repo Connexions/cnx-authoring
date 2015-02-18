@@ -472,14 +472,23 @@ def declare_roles(model):
     elif response.status_code >= 400 and response.status_code != 404:
         raise PublishingError(response)
 
+    tobe_removed = []
     for role_entity in upstream_role_entities:
         user_id = role_entity['uid']
         has_accepted = role_entity['has_accepted']
         role_attr = PUBLISHING_ROLES_MAPPING[role_entity['role']]
+        found = False
         for role in model.metadata.get(role_attr, []):
             if role['id'] == user_id and 'has_accepted' not in role:
+                found = True
                 role['has_accepted'] = has_accepted
                 break
+        # Note, roles are only removed if they are in a false or unknown
+        #   acceptance state. Roles that have been accepted are kept,
+        #   in case the user is added to the model again.
+        has_not_accepted = not has_accepted
+        if not found and has_not_accepted:
+            tobe_removed.append((user_id, role_entity['role'],))
 
     # Send roles to publishing.
     _roles_mapping = {v: k for k, v in PUBLISHING_ROLES_MAPPING.items()}
@@ -506,6 +515,16 @@ def declare_roles(model):
             _roles.append(reformatted_role)
         payload.extend(_roles)
 
+    # Remove roles
+    if tobe_removed:
+        deletes_payload = [dict(zip(['uid', 'role'], e))
+                           for e in tobe_removed]
+        response = requests.delete(url, data=json.dumps(deletes_payload),
+                                   headers=headers)
+        if response.status_code != 200:
+            raise PublishingError(response)
+
+    # Post roles
     response = requests.post(url, data=json.dumps(payload),
                              headers=headers)
     if response.status_code != 202:

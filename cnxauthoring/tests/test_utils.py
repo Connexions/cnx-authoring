@@ -608,6 +608,78 @@ Thank you from your friends at OpenStax CNX
     @httpretty.activate
     @mock.patch('cnxauthoring.utils.get_current_request')
     @mock.patch('cnxauthoring.utils.notify_role_for_acceptance')
+    def test_declare_roles_removal(self, mock_notify, mock_request):
+        # Tests removal of roles removes the role from publishing as well.
+        from ..models import create_content
+
+        document = create_content(
+            title='My Document',
+            authors=[{'id': 'me'}],
+            editors=[{'id': 'me'}],
+            )
+        uuid = document.id
+        publishing_url = 'http://publishing/'
+        settings = {
+            'publishing.url': publishing_url,
+            'publishing.api_key': 'trusted-publisher',
+            }
+        records = [
+            ('Author', 'me', uuid, True),
+            ('Author', 'you', uuid, True),  # should remain
+            ('Editor', 'me', uuid, True),
+            ('Editor', 'you', uuid, None),  # should be removed
+            ('Translator', 'me', uuid, False),  # should be removed
+            ]
+        record_keys = ('role', 'uid', 'uuid', 'has_accepted',)
+        get_response_body = [dict(zip(record_keys, r)) for r in records]
+
+        class CaptureRequest:
+
+            def __init__(self, status=200, body=''):
+                self._resp_status = status
+                self._resp_body = body
+                # Place to put the captured values...
+                self.headers = None
+                self.body = None
+                self.request = None
+
+            def __call__(self, request, uri, headers):
+                self.request = request
+                self.headers = request.headers
+                self.body = request.body
+                return self._resp_status, headers, self._resp_body
+
+        url = urlparse.urljoin(publishing_url,
+                               '/contents/{}/roles'.format(document.id))
+        httpretty.register_uri(httpretty.GET, url,
+                               body=json.dumps(get_response_body), status=200)
+        httpretty.register_uri(httpretty.POST, url, status=202)
+        captured_delete = CaptureRequest()
+        httpretty.register_uri(httpretty.DELETE, url, body=captured_delete, status=200)
+
+        with testing.testConfig(settings=settings):
+            mock_request().authenticated_userid = 'me'
+            utils.declare_roles(document)
+
+        # Check that the correct data was sent.
+        self.assertEqual(
+            json.loads(captured_delete.body),
+            [dict(zip(record_keys[:2], e[:2])) for e in records[3:]])
+        # Check if it was called with the api key.
+        self.assertEqual(
+            captured_delete.request.headers['X-API-Key'],
+            'trusted-publisher')
+
+        # Check the document's roles remained intact
+        self.assertEqual(len(document.metadata['authors']), 1)
+        self.assertEqual(document.metadata['authors'][-1]['id'], 'me')
+        self.assertEqual(len(document.metadata['editors']), 1)
+        self.assertEqual(document.metadata['editors'][-1]['id'], 'me')
+        self.assertEqual(len(document.metadata.get('translators', [])), 0)
+
+    @httpretty.activate
+    @mock.patch('cnxauthoring.utils.get_current_request')
+    @mock.patch('cnxauthoring.utils.notify_role_for_acceptance')
     def test_declare_roles_w_invalid_role_type(self, mock_notify, mock_request):
         """Ignore invalid roles"""
         from ..models import create_content
