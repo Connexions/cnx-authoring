@@ -633,6 +633,47 @@ Thank you from your friends at OpenStax CNX
                     'content-type': 'application/json',
                     })
 
+    @mock.patch('cnxauthoring.utils.get_current_request')
+    @mock.patch('cnxauthoring.utils.notify_role_for_acceptance')
+    def test_declare_roles_raises_exception(self, mock_notify, mock_request):
+        from ..models import create_content
+
+        document = create_content(
+            title='My Document',
+            authors=[{'id': 'me'}],
+            publishers=[{'id': 'me'}],
+            editors=[{'id': 'me'}, {'id': 'you'}],
+            translators=[{'id': 'you'}],
+            )
+        settings = {
+            'publishing.url': 'http://publishing/',
+            'publishing.api_key': 'trusted-publisher',
+            }
+
+        from ..models import PublishingError
+
+        with testing.testConfig(settings=settings), \
+             mock.patch('requests.get') as get, \
+             mock.patch('requests.post') as post, \
+             mock.patch('requests.delete') as delete:
+                mock_request().authenticated_userid = 'user1'
+
+                get.return_value.status_code = 500
+                # The initial GET should fail.
+                with self.assertRaises(PublishingError):
+                    utils.declare_roles(document)
+                get.return_value.status_code = 200
+                get.return_value.json.return_value = [
+                    {'uid': 'you', 'role': 'Author', 'has_accepted': False}]
+                delete.return_value.status_code = 500
+                # Attempt to DELETE should fail.
+                with self.assertRaises(PublishingError):
+                    utils.declare_roles(document)
+                delete.return_value.status_code = 200
+                # Lastly, the POST of roles should fail.
+                with self.assertRaises(PublishingError):
+                    utils.declare_roles(document)
+
     @httpretty.activate
     @mock.patch('cnxauthoring.utils.get_current_request')
     @mock.patch('cnxauthoring.utils.notify_role_for_acceptance')
@@ -752,12 +793,6 @@ Thank you from your friends at OpenStax CNX
 
         url = urlparse.urljoin(publishing_url,
                                '/contents/{}/roles'.format(document.id))
-        # get_responses = [
-        #     httpretty.Response(
-        #         body=json.dumps([
-        #             {'uid': 'smoo', 'role': 'Author', 'has_accepted': True},
-        #             {'uid': 'fred', 'role': 'Author', 'has_accepted': True},
-        #             ], status=200),
         get_response = [
             {'uid': 'smoo', 'role': 'Author',
              'has_accepted': True, 'uuid': id},
@@ -846,6 +881,52 @@ Thank you from your friends at OpenStax CNX
         self.assertEqual(data['license_url'], DEFAULT_LICENSE.url)
         self.assertEqual(sorted(data['licensors'], key=lambda v: v['uid']),
                          expected_licensors)
+
+    def test_declare_licensors_raises_exception(self):
+        from ..models import create_content, DEFAULT_LICENSE
+
+        document = create_content(
+            title='My Document',
+            license={'url': DEFAULT_LICENSE.url},
+            authors=[{'id': 'me'}],
+            publishers=[{'id': 'me'}],
+            editors=[{'id': 'me'}, {'id': 'you'}],
+            translators=[{'id': 'you'}],
+            licensor_acceptance=[{'id': 'me', 'has_accepted': True},
+                                 {'id': 'you', 'has_accepted': None}],
+            )
+        publishing_url = 'http://publishing/'
+        settings = {
+            'publishing.url': publishing_url,
+            'publishing.api_key': 'trusted-publisher',
+            }
+
+        publishing_records = {
+            'license_url': DEFAULT_LICENSE.url,
+            'licensors': [{'uid': 'typo', 'has_accepted': False}],
+            }
+
+        from ..models import PublishingError
+
+        with testing.testConfig(settings=settings), \
+             mock.patch('requests.get') as get, \
+             mock.patch('requests.post') as post, \
+             mock.patch('requests.delete') as delete:
+            get.return_value.status_code = 500
+            post.return_value.status_code = 202
+            # No exception raised on a bad GET
+            utils.declare_licensors(document)
+            get.return_value.status_code = 200
+            get.return_value.json.return_value = publishing_records
+            delete.return_value.status_code = 500
+            # Check DELETE fails
+            with self.assertRaises(PublishingError):
+                utils.declare_licensors(document)
+            delete.return_value.status_code = 200
+            post.return_value.status_code = 500
+            # Check POST fails
+            with self.assertRaises(PublishingError):
+                utils.declare_licensors(document)
 
     @httpretty.activate
     def test_declare_licensors_removal(self):
