@@ -266,7 +266,7 @@ def build_metadata(
         submitter=None, state=None, publication=None, cnx_archive_uri=None,
         authors=None, publishers=None, contained_in=None,
         licensors=None, copyright_holders=None,
-        editors=None, translators=None, illustrators=None):
+        editors=None, translators=None, illustrators=None, print_style=None):
     metadata = {}
     metadata['title'] = title
     metadata['version'] = version is None and 'draft' or version
@@ -312,6 +312,7 @@ def build_metadata(
     metadata['editors'] = editors or []
     metadata['translators'] = translators or []
     metadata['illustrators'] = illustrators or []
+    metadata['print_style'] = print_style
     return metadata
 
 

@@ -23,5 +23,6 @@ CREATE TABLE document ( id                 uuid primary key,
                         publication        text,
                         cnx_archive_uri    text,
                         version            text,
-                        contained_in       text[]
+                        contained_in       text[],
+                        print_style    text
                     );

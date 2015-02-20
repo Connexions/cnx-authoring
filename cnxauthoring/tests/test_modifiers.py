@@ -45,6 +45,7 @@ class ModelJSONRendering(unittest.TestCase):
             'created': document.metadata['created'].isoformat(),
             'revised': document.metadata['revised'].isoformat(),
             'mediaType': Document.mediatype,
+            'printStyle': None,
             'language': 'en',
             'version': 'draft',
             'submitter': None,
