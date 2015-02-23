@@ -472,14 +472,23 @@ def declare_roles(model):
     elif response.status_code >= 400 and response.status_code != 404:
         raise PublishingError(response)
 
+    tobe_removed = []
     for role_entity in upstream_role_entities:
         user_id = role_entity['uid']
         has_accepted = role_entity['has_accepted']
         role_attr = PUBLISHING_ROLES_MAPPING[role_entity['role']]
+        found = False
         for role in model.metadata.get(role_attr, []):
             if role['id'] == user_id and 'has_accepted' not in role:
+                found = True
                 role['has_accepted'] = has_accepted
                 break
+        # Note, roles are only removed if they are in a false or unknown
+        #   acceptance state. Roles that have been accepted are kept,
+        #   in case the user is added to the model again.
+        has_not_accepted = not has_accepted
+        if not found and has_not_accepted:
+            tobe_removed.append((user_id, role_entity['role'],))
 
     # Send roles to publishing.
     _roles_mapping = {v: k for k, v in PUBLISHING_ROLES_MAPPING.items()}
@@ -506,6 +515,16 @@ def declare_roles(model):
             _roles.append(reformatted_role)
         payload.extend(_roles)
 
+    # Remove roles
+    if tobe_removed:
+        deletes_payload = [dict(zip(['uid', 'role'], e))
+                           for e in tobe_removed]
+        response = requests.delete(url, data=json.dumps(deletes_payload),
+                                   headers=headers)
+        if response.status_code != 200:
+            raise PublishingError(response)
+
+    # Post roles
     response = requests.post(url, data=json.dumps(payload),
                              headers=headers)
     if response.status_code != 202:
@@ -549,7 +568,7 @@ def declare_licensors(model):
         upstream_license_info = response.json()
     upstream = upstream_license_info.get('licensors', [])
     upstream_user_ids = [x['uid'] for x in upstream]
-    existing_licensor_ids = set([l['id'] for l in model.licensor_acceptance])
+    existing_licensor_ids = [l['id'] for l in model.licensor_acceptance]
 
     # Scan the roles for newly added attribution. In the event that
     #   one or more has been added, add them to the licensor_acceptance.
@@ -557,6 +576,7 @@ def declare_licensors(model):
     local_roles = []
     for role_type in PUBLISHING_ROLES_MAPPING.values():
         local_roles.extend(model.metadata.get(role_type, []))
+    # Note, this list is already unique. We only use the set methods.
     local_role_ids = set([r['id'] for r in local_roles])
     for uid in local_role_ids.difference(existing_licensor_ids):
         has_accepted = None
@@ -567,6 +587,24 @@ def declare_licensors(model):
             has_accepted = upstream[idx]['has_accepted']
         model.licensor_acceptance.append({'id': uid,
                                           'has_accepted': has_accepted})
+
+    # Remove licensors that are no longer part of the document
+    #   and have rejected or have not accepted the license.
+    _removal_list = set(upstream_user_ids).difference(local_role_ids)
+    tobe_removed = []
+    for user_id in _removal_list:
+        if user_id in upstream_user_ids \
+           and not upstream[upstream_user_ids.index(user_id)]['has_accepted']:
+            tobe_removed.append(user_id)
+        if user_id in existing_licensor_ids:
+            idx = existing_licensor_ids.index(user_id)
+            del model.licensor_acceptance[idx]
+    if tobe_removed:
+        deletes_payload = {'licensors': [{'uid': e} for e in tobe_removed]}
+        response = requests.delete(url, data=json.dumps(deletes_payload),
+                                   headers=headers)
+        if response.status_code != 200:
+            raise PublishingError(response)
 
     # Send licensors to publishing.
     payload = {

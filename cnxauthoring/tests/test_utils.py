@@ -24,6 +24,34 @@ from pyramid import testing
 from .. import utils
 
 
+class CaptureRequest:
+    """Used to capture a HTTPretty request.
+
+    Use in the ``register_uri`` method like so::
+
+        captured_request = CaptureRequest()
+        httpretty.register_uri(method, url, body=captured_request)
+
+    Then use the ``request`` attribute on the object after the request
+    has gone through.
+
+    """
+
+    def __init__(self, status=200, body=''):
+        self._resp_status = status
+        self._resp_body = body
+        # Place to put the captured values...
+        self.headers = None
+        self.body = None
+        self.request = None
+
+    def __call__(self, request, uri, headers):
+        self.request = request
+        self.headers = request.headers
+        self.body = request.body
+        return self._resp_status, headers, self._resp_body
+
+
 class UtilsTests(unittest.TestCase):
 
     maxDiff = None
@@ -605,6 +633,103 @@ Thank you from your friends at OpenStax CNX
                     'content-type': 'application/json',
                     })
 
+    @mock.patch('cnxauthoring.utils.get_current_request')
+    @mock.patch('cnxauthoring.utils.notify_role_for_acceptance')
+    def test_declare_roles_raises_exception(self, mock_notify, mock_request):
+        from ..models import create_content
+
+        document = create_content(
+            title='My Document',
+            authors=[{'id': 'me'}],
+            publishers=[{'id': 'me'}],
+            editors=[{'id': 'me'}, {'id': 'you'}],
+            translators=[{'id': 'you'}],
+            )
+        settings = {
+            'publishing.url': 'http://publishing/',
+            'publishing.api_key': 'trusted-publisher',
+            }
+
+        from ..models import PublishingError
+
+        with testing.testConfig(settings=settings), \
+             mock.patch('requests.get') as get, \
+             mock.patch('requests.post') as post, \
+             mock.patch('requests.delete') as delete:
+                mock_request().authenticated_userid = 'user1'
+
+                get.return_value.status_code = 500
+                # The initial GET should fail.
+                with self.assertRaises(PublishingError):
+                    utils.declare_roles(document)
+                get.return_value.status_code = 200
+                get.return_value.json.return_value = [
+                    {'uid': 'you', 'role': 'Author', 'has_accepted': False}]
+                delete.return_value.status_code = 500
+                # Attempt to DELETE should fail.
+                with self.assertRaises(PublishingError):
+                    utils.declare_roles(document)
+                delete.return_value.status_code = 200
+                # Lastly, the POST of roles should fail.
+                with self.assertRaises(PublishingError):
+                    utils.declare_roles(document)
+
+    @httpretty.activate
+    @mock.patch('cnxauthoring.utils.get_current_request')
+    @mock.patch('cnxauthoring.utils.notify_role_for_acceptance')
+    def test_declare_roles_removal(self, mock_notify, mock_request):
+        # Tests removal of roles removes the role from publishing as well.
+        from ..models import create_content
+
+        document = create_content(
+            title='My Document',
+            authors=[{'id': 'me'}],
+            editors=[{'id': 'me'}],
+            )
+        uuid = document.id
+        publishing_url = 'http://publishing/'
+        settings = {
+            'publishing.url': publishing_url,
+            'publishing.api_key': 'trusted-publisher',
+            }
+        records = [
+            ('Author', 'me', uuid, True),
+            ('Author', 'you', uuid, True),  # should remain
+            ('Editor', 'me', uuid, True),
+            ('Editor', 'you', uuid, None),  # should be removed
+            ('Translator', 'me', uuid, False),  # should be removed
+            ]
+        record_keys = ('role', 'uid', 'uuid', 'has_accepted',)
+        get_response_body = [dict(zip(record_keys, r)) for r in records]
+
+        url = urlparse.urljoin(publishing_url,
+                               '/contents/{}/roles'.format(document.id))
+        httpretty.register_uri(httpretty.GET, url,
+                               body=json.dumps(get_response_body), status=200)
+        httpretty.register_uri(httpretty.POST, url, status=202)
+        captured_delete = CaptureRequest()
+        httpretty.register_uri(httpretty.DELETE, url, body=captured_delete, status=200)
+
+        with testing.testConfig(settings=settings):
+            mock_request().authenticated_userid = 'me'
+            utils.declare_roles(document)
+
+        # Check that the correct data was sent.
+        self.assertEqual(
+            json.loads(captured_delete.body),
+            [dict(zip(record_keys[:2], e[:2])) for e in records[3:]])
+        # Check if it was called with the api key.
+        self.assertEqual(
+            captured_delete.request.headers['X-API-Key'],
+            'trusted-publisher')
+
+        # Check the document's roles remained intact
+        self.assertEqual(len(document.metadata['authors']), 1)
+        self.assertEqual(document.metadata['authors'][-1]['id'], 'me')
+        self.assertEqual(len(document.metadata['editors']), 1)
+        self.assertEqual(document.metadata['editors'][-1]['id'], 'me')
+        self.assertEqual(len(document.metadata.get('translators', [])), 0)
+
     @httpretty.activate
     @mock.patch('cnxauthoring.utils.get_current_request')
     @mock.patch('cnxauthoring.utils.notify_role_for_acceptance')
@@ -668,12 +793,6 @@ Thank you from your friends at OpenStax CNX
 
         url = urlparse.urljoin(publishing_url,
                                '/contents/{}/roles'.format(document.id))
-        # get_responses = [
-        #     httpretty.Response(
-        #         body=json.dumps([
-        #             {'uid': 'smoo', 'role': 'Author', 'has_accepted': True},
-        #             {'uid': 'fred', 'role': 'Author', 'has_accepted': True},
-        #             ], status=200),
         get_response = [
             {'uid': 'smoo', 'role': 'Author',
              'has_accepted': True, 'uuid': id},
@@ -762,6 +881,101 @@ Thank you from your friends at OpenStax CNX
         self.assertEqual(data['license_url'], DEFAULT_LICENSE.url)
         self.assertEqual(sorted(data['licensors'], key=lambda v: v['uid']),
                          expected_licensors)
+
+    def test_declare_licensors_raises_exception(self):
+        from ..models import create_content, DEFAULT_LICENSE
+
+        document = create_content(
+            title='My Document',
+            license={'url': DEFAULT_LICENSE.url},
+            authors=[{'id': 'me'}],
+            publishers=[{'id': 'me'}],
+            editors=[{'id': 'me'}, {'id': 'you'}],
+            translators=[{'id': 'you'}],
+            licensor_acceptance=[{'id': 'me', 'has_accepted': True},
+                                 {'id': 'you', 'has_accepted': None}],
+            )
+        publishing_url = 'http://publishing/'
+        settings = {
+            'publishing.url': publishing_url,
+            'publishing.api_key': 'trusted-publisher',
+            }
+
+        publishing_records = {
+            'license_url': DEFAULT_LICENSE.url,
+            'licensors': [{'uid': 'typo', 'has_accepted': False}],
+            }
+
+        from ..models import PublishingError
+
+        with testing.testConfig(settings=settings), \
+             mock.patch('requests.get') as get, \
+             mock.patch('requests.post') as post, \
+             mock.patch('requests.delete') as delete:
+            get.return_value.status_code = 500
+            post.return_value.status_code = 202
+            # No exception raised on a bad GET
+            utils.declare_licensors(document)
+            get.return_value.status_code = 200
+            get.return_value.json.return_value = publishing_records
+            delete.return_value.status_code = 500
+            # Check DELETE fails
+            with self.assertRaises(PublishingError):
+                utils.declare_licensors(document)
+            delete.return_value.status_code = 200
+            post.return_value.status_code = 500
+            # Check POST fails
+            with self.assertRaises(PublishingError):
+                utils.declare_licensors(document)
+
+    @httpretty.activate
+    def test_declare_licensors_removal(self):
+        from ..models import create_content, DEFAULT_LICENSE
+
+        tracted_acceptance = {'id': 'me', 'has_accepted': None}
+        document = create_content(
+            title='My Document',
+            license={'url': DEFAULT_LICENSE.url},
+            authors=[{'id': 'me'}],
+            licensor_acceptance=[tracted_acceptance,
+                                 {'id': 'user2', 'has_accepted': True}],
+            )
+        uuid = document.id
+        publishing_url = 'http://publishing/'
+        settings = {
+            'publishing.url': publishing_url,
+            'publishing.api_key': 'trusted-publisher',
+            }
+
+        records = [
+            ('me', None, uuid,),
+            ('user2', True, uuid,),  # should remain
+            ('you', None, uuid,),  # should be removed
+            ('user1', False, uuid,),  # should be removed
+            ]
+        record_keys = ('uid', 'has_accepted', 'uuid',)
+        get_response_body = {
+            'license_url': DEFAULT_LICENSE.url,
+            'licensors': [dict(zip(record_keys, e)) for e in records],
+            }
+        url = urlparse.urljoin(publishing_url,
+                               '/contents/{}/licensors'.format(document.id))
+        httpretty.register_uri(httpretty.GET, url,
+                               body=json.dumps(get_response_body), status=200)
+        httpretty.register_uri(httpretty.POST, url, status=202)
+        captured_delete = CaptureRequest()
+        httpretty.register_uri(httpretty.DELETE, url, body=captured_delete)
+
+        with testing.testConfig(settings=settings):
+            utils.declare_licensors(document)
+
+        expected = {'licensors': [{'uid': e[0]} for e in records[2:]]}
+        self.assertEqual(
+            json.loads(captured_delete.body),
+            expected)
+
+        # Check the document's acceptor list remains intact
+        self.assertEqual(document.licensor_acceptance, [tracted_acceptance])
 
     def test_validate_for_publish_on_document(self):
         from ..models import create_content, DEFAULT_LICENSE
