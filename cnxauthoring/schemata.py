@@ -228,6 +228,10 @@ class DocumentSchema(colander.MappingSchema):
         colander.List(),
         missing=colander.drop,
         )
+    print_style = colander.SchemaNode(
+        colander.String(),
+        missing=colander.drop,
+        )
 
 document_schema = DocumentSchema()
 

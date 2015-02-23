@@ -381,7 +381,6 @@ def post_content(request):
         cstruct = request.json_body
     except (TypeError, ValueError):
         raise httpexceptions.HTTPBadRequest('Invalid JSON')
-
     contents = []
     content = None
     try:

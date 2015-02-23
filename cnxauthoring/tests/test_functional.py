@@ -278,6 +278,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'translators': [],
             u'editors': [],
             u'illustrators': [],
+            u'printStyle': None,
             })
         self.assertEqual(put_result, get_result)
         self.assert_cors_headers(response)
@@ -353,6 +354,23 @@ class FunctionalTests(BaseFunctionalTestCase):
             result['id']), status=200)
         self.assert_cors_headers(response)
 
+    def test_post_content_document_printStyle(self):
+        response = self.testapp.post_json(
+            '/users/contents',
+            {
+                'title': u'My document タイトル',
+                'printStyle': u'pdf print style string'
+            }, status=201)
+        result = response.json
+        self.assertEqual(result['title'], u'My document タイトル')
+        self.assertEqual(result['language'], u'en')
+        self.assertEqual(result['printStyle'], 'pdf print style string')
+        self.assert_cors_headers(response)
+
+        response = self.testapp.get('/contents/{}@draft.json'.format(
+            result['id']), status=200)
+        self.assert_cors_headers(response)
+
     def test_post_content_minimal_binder(self):
         response = self.testapp.post_json('/users/contents', {
                     'title': u'My book タイトル',
@@ -386,6 +404,45 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'publishBlockers': [u'no_content'],
             u'title': result['title'],
             })
+        self.assert_cors_headers(response)
+
+    def test_post_content_minimal_binder_with_printStyle(self):
+        response = self.testapp.post_json('/users/contents', {
+            'title': u'My book タイトル',
+            'mediaType': 'application/vnd.org.cnx.collection',
+            'tree': {
+                'contents': [],
+            },
+            'printStyle': "*PDF print style*"
+        }, status=201)
+        result = response.json
+
+        self.assertEqual(result['title'], u'My book タイトル')
+        self.assertEqual(result['language'], u'en')
+        self.assertEqual(result['tree'], {
+            u'contents': [],
+            u'id': '{}@draft'.format(result['id']),
+            u'title': result['title'],
+            u'isPublishable': False,
+            u'publishBlockers': [u'no_content'],
+        })
+        self.assertEqual(result['printStyle'], '*PDF print style*')
+
+        self.assert_cors_headers(response)
+
+        response = self.testapp.get(
+            '/contents/{}@draft.json'.format(result['id']), status=200)
+        result = response.json
+        self.assertEqual(result['title'], u'My book タイトル')
+        self.assertEqual(result['language'], u'en')
+        self.assertEqual(result['tree'], {
+            u'contents': [],
+            u'id': '{}@draft'.format(result['id']),
+            u'isPublishable': False,
+            u'publishBlockers': [u'no_content'],
+            u'title': result['title'],
+        })
+        self.assertEqual(result['printStyle'], '*PDF print style*')
         self.assert_cors_headers(response)
 
     def test_post_content_binder_document_not_found(self):
@@ -486,6 +543,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [submitter_w_assign_date],
             u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
+            u'printStyle': None,
             })
         self.assert_cors_headers(response)
 
@@ -530,6 +588,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [submitter_w_assign_date],
             u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
+            u'printStyle': None,
             })
         self.assert_cors_headers(response)
 
@@ -593,6 +652,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [submitter_w_assign_date],
             u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
+            u'printStyle': None,
             })
         self.assert_cors_headers(response)
 
@@ -637,6 +697,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [submitter_w_assign_date],
             u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
+            u'printStyle': None,
             })
         self.assert_cors_headers(response)
 
@@ -698,6 +759,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [submitter_w_assign_date],
             u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
+            u'printStyle': None,
             })
         self.assert_cors_headers(response)
 
@@ -742,6 +804,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [submitter_w_assign_date],
             u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
+            u'printStyle': None,
             })
         self.assert_cors_headers(response)
 
@@ -793,6 +856,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'editors': [],
             u'translators': [],
             u'licensors': [submitter_w_assign_date],
+            u'printStyle': None,
             u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
             u'subjects': [],
@@ -951,7 +1015,9 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'submitter': rasmus_user_info,
             u'title': u'Turning DNA through resonance',
             u'translators': [],
-            u'version': u'draft'})
+            u'version': u'draft',
+            u'printStyle': None,
+        })
         self.assert_cors_headers(response)
 
         response = self.testapp.get(
@@ -996,6 +1062,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [rasmus_role],
             u'copyrightHolders': [rasmus_role],
             u'illustrators': [],
+            u'printStyle': None,
             })
         self.assert_cors_headers(response)
 
@@ -1116,6 +1183,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'title': u'College Physics',
             u'translators': [],
             u'version': u'draft',
+            u'printStyle': None,
             }
         self.assertEqual(result, expected)
         self.assert_cors_headers(response)
@@ -1201,6 +1269,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [submitter_w_assign_date],
             u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
+            u'printStyle': None,
             })
         self.assert_cors_headers(response)
 
@@ -1317,6 +1386,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [submitter_w_assign_date],
             u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
+            u'printStyle': None,
             })
         self.assert_cors_headers(response)
 
@@ -1508,6 +1578,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [submitter_w_assign_date],
             u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
+            u'printStyle': None,
             })
         self.assert_cors_headers(response)
 
@@ -1561,6 +1632,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'licensors': [submitter_w_assign_date],
             u'copyrightHolders': [submitter_w_assign_date],
             u'illustrators': [],
+            u'printStyle': None,
             })
         self.assert_cors_headers(response)
 
@@ -3098,6 +3170,83 @@ class PublicationTests(BaseFunctionalTestCase):
                             ],
                         },
                     }, status=201)
+        self.assert_cors_headers(response)
+        binder = response.json
+
+        post_data = {
+            'submitlog': 'Publishing a book is working?',
+            'items': (binder['id'], page1['id'], page2['id'],),
+            }
+        response = self.testapp.post_json('/publish', post_data, status=200)
+        self.assertEqual(response.json[u'state'], u'Done/Success')
+        expected_mapping = {
+            binder['id']: '{}@1.1'.format(binder['id']),
+            page1['id']: '{}@1'.format(page1['id']),
+            page2['id']: '{}@1'.format(page2['id']),
+            }
+        self.assertEqual(response.json[u'mapping'], expected_mapping)
+        self.assert_cors_headers(response)
+
+        # Grab the publication id for followup assertions.
+        publication_id = response.json['publication']
+
+        for page in (binder, page1, page2,):
+            url = '/contents/{}@draft.json'.format(page['id'])
+            response = self.testapp.get(url)
+            self.assertEqual(response.json['state'], 'Done/Success')
+            self.assertEqual(response.json['publication'],
+                             str(publication_id))
+
+    def test_publish_binder_w_printStyle(self):
+        #################################################################
+        # FIXME: this test will probably need to be modified once the   #
+        # print style has be added to publishing                        #
+        #################################################################
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'Page one',
+            'content': '<html><body><p>Content of page one</p></body></html>',
+            'abstract': 'Learn how to etc etc',
+            'printStyle': '*PDF Print Style*',
+            }, status=201)
+        page1 = response.json
+        self.assert_cors_headers(response)
+
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'Page two',
+            'content': '<html><body><p>Content of page two</p></body></html>',
+            'printStyle': '[PDF Print Style]'
+            }, status=201)
+        page2 = response.json
+        self.assert_cors_headers(response)
+        page1_str = '{}@draft'.format(page1['id'])
+        page2_str = '{}@draft'.format(page2['id'])
+        response = self.testapp.post_json(
+            '/users/contents',
+            {
+                'title': 'Book',
+                'abstract': 'Book abstract',
+                'language': 'de',
+                'mediaType': 'application/vnd.org.cnx.collection',
+                'tree': {
+                            'contents': [
+                                {
+                                    'id': page1_str,
+                                    'title': 'Page one',
+                                },
+                                {
+                                    'id': 'subcol',
+                                    'title': 'New section',
+                                    'contents': [
+                                        {
+                                            'id': page2_str,
+                                            'title': 'Page two',
+                                        },
+                                    ],
+                                },
+                            ],
+                },
+            }, status=201)
+
         self.assert_cors_headers(response)
         binder = response.json
 
