@@ -105,7 +105,7 @@ INSTALL
 **Known bugs**: pickle storage is currently broken.
 
 
-INSTALL (MAC OSX)
+INSTALL (Mac OSX)
 -----------------
 
 1. Install Python
