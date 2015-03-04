@@ -130,33 +130,38 @@ INSTALL (MAC OSX)
 
    STATIC_DEPS=true pip install lxml
 
-4. Install cnx-query-grammar
+4. ``cd`` into your development folder
+
+5. Install cnx-query-grammar
 
 .. code:: bash
 
    git clone https://github.com/Connexions/cnx-query-grammar.git
    cd cnx-query-grammar && python setup.py install && cd ..
 
-5. Install cnx-epub
+6. Install cnx-epub
 
 .. code:: bash
 
    git clone https://github.com/Connexions/cnx-epub.git
    cd cnx-epub && python setup.py install && cd ..
 
-6. Install cnx-authoring
+7. Install cnx-authoring
    
+   Clone this repository and ``cd`` into cnx-authoring if you haven't already.
+   Then, install.
+
 .. code:: bash
 
    python setup.py install
 
-7. Make a copy of ``development.ini.example`` and call it ``development.ini``.
+8. Make a copy of ``development.ini.example`` and call it ``development.ini``.
 
 .. code:: bash
 
    cp development.ini.example development.ini
 
-8. Edit settings in ``development.ini`` as necessary.
+9. Edit settings in ``development.ini`` as necessary.
 
    cnx-authoring can use stub users defined in ``development.ini`` or `openstax accounts <https://github.com/openstax/accounts>`_.
 
@@ -172,7 +177,7 @@ INSTALL (MAC OSX)
    a `fabric script <https://github.com/Connexions/openstax-setup>`_
    has been written to help set up a dev environment for openstax/accounts.
 
-9. If you are using the postgresql storage option:
+10. If you are using the postgresql storage option:
 
    Install postgresql:
    
@@ -188,7 +193,7 @@ INSTALL (MAC OSX)
       createdb -O cnxauthoring authoring
       cnx-authoring-initialize_db  development.ini
 
-10. Start the server:
+11. Start the server:
 
 .. code:: bash
 
