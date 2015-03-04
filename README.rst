@@ -105,6 +105,99 @@ INSTALL
 **Known bugs**: pickle storage is currently broken.
 
 
+INSTALL (MAC OSX)
+-----------------
+
+1. Install Python
+
+.. code:: bash
+
+   brew install python
+
+** Python comes installed on Macs, but this will install Python with pip, a Python package manager. **
+
+2. Install and create virtualenv:
+
+.. code:: bash
+
+   pip install virtualenv
+   mkdir ~/Virtualenvs && cd Virtualenvs/ && virtualenv cnx-authoring
+   cd cnx-authoring/ && source bin/activate
+
+3. Install development libraries
+
+.. code :: bash
+
+   STATIC_DEPS=true pip install lxml
+
+4. Install cnx-query-grammar
+
+.. code:: bash
+
+   git clone https://github.com/Connexions/cnx-query-grammar.git
+   cd cnx-query-grammar && python setup.py install && cd ..
+
+5. Install cnx-epub
+
+.. code:: bash
+
+   git clone https://github.com/Connexions/cnx-epub.git
+   cd cnx-epub && python setup.py install && cd ..
+
+6. Install cnx-authoring
+   
+.. code:: bash
+
+   python setup.py install
+
+7. Make a copy of ``development.ini.example`` and call it ``development.ini``.
+
+.. code:: bash
+
+   cp development.ini.example development.ini
+
+8. Edit settings in ``development.ini`` as necessary.
+
+   cnx-authoring can use stub users defined in ``development.ini`` or `openstax accounts <https://github.com/openstax/accounts>`_.
+
+   If you are using stub users, you need to set ``openstax_accounts.stub = true``
+   and if you're using `webview <https://github.com/Connexions/webview>`_,
+   you need to make sure you have the following set up in the nginx config file::
+
+        location /stub-login-form {
+            proxy_pass http://localhost:8080;
+        }
+
+   If you are setting up openstax accounts locally,
+   a `fabric script <https://github.com/Connexions/openstax-setup>`_
+   has been written to help set up a dev environment for openstax/accounts.
+
+9. If you are using the postgresql storage option:
+
+   Install postgresql:
+   
+   .. code:: bash
+
+      brew install postgres
+      
+   Set up with database
+
+   .. code:: bash
+
+      psql -d postgres -c "CREATE USER cnxauthoring WITH SUPERUSER PASSWORD 'cnxauthoring';"
+      createdb -O cnxauthoring authoring
+      cnx-authoring-initialize_db  development.ini
+
+10. Start the server:
+
+.. code:: bash
+
+  pserve development.ini
+
+
+** To turn off your cnx-authoring virtualenv, ``deactivate``.
+
+
 API Documentation
 -----------------
 
