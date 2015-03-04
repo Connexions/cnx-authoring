@@ -195,7 +195,7 @@ INSTALL (MAC OSX)
   pserve development.ini
 
 
-**To turn off your cnx-authoring virtualenv, ``deactivate``.**
+**To turn off your cnx-authoring virtualenv,** ``deactivate``.
 
 
 API Documentation
