@@ -114,7 +114,7 @@ INSTALL (MAC OSX)
 
    brew install python
 
-** Python comes installed on Macs, but this will install Python with pip, a Python package manager. **
+**Python comes installed on Macs, but this will install Python with pip, a Python package manager.**
 
 2. Install and create virtualenv:
 
@@ -195,7 +195,7 @@ INSTALL (MAC OSX)
   pserve development.ini
 
 
-** To turn off your cnx-authoring virtualenv, ``deactivate``.
+**To turn off your cnx-authoring virtualenv, ``deactivate``.**
 
 
 API Documentation
