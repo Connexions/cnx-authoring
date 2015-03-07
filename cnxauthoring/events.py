@@ -18,9 +18,9 @@ def add_cors_headers(request, response):
         response.headerlist.append(
                 ('Access-Control-Allow-Credentials', acac))
     if acao:
-        if request.host in acao:
+        if request.headers.get('Origin') in acao:
             response.headerlist.append(
-                ('Access-Control-Allow-Origin', request.host))
+                ('Access-Control-Allow-Origin', request.headers.get('Origin')))
         else:   
             response.headerlist.append(
                 ('Access-Control-Allow-Origin', acao[0]))
