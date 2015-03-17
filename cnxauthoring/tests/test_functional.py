@@ -23,11 +23,13 @@ except ImportError:
     import urllib.request as urllib2  # renamed in python3
 
 import cnxepub
+import psycopg2
 import pytz
 from webtest import Upload
 from wsgi_intercept import requests_intercept
 
-from .intercept import install_intercept, uninstall_intercept
+from .intercept import (install_intercept, uninstall_intercept,
+                        publishing_settings)
 from .testing import integration_test_settings, test_data
 from ..models import DEFAULT_LICENSE, TZINFO
 
@@ -75,6 +77,15 @@ class BaseFunctionalTestCase(unittest.TestCase):
         # Install the intercept for archive and publishing.
         install_intercept()
         requests_intercept.install()
+
+        # Allow user1 to publish without moderation
+        with psycopg2.connect(
+                publishing_settings()['db-connection-string']) as db_conn:
+            with db_conn.cursor() as cursor:
+                cursor.execute("""\
+                    INSERT INTO users
+                    (username, first_name, last_name, is_moderated)
+                    VALUES ('user1', 'User', 'One', true)""")
 
     @classmethod
     def tearDownClass(cls):
@@ -3300,14 +3311,14 @@ class PublicationTests(BaseFunctionalTestCase):
 
         publication_info = response.json
         publication_id = publication_info['publication']
-        self.assertEqual(publication_info['state'], 'Done/Success')
+        self.assertEqual(publication_info['state'], 'Waiting for moderation')
         self.assertEqual(publication_info['mapping'][binder['id']],
                          '{}@1.1'.format(binder['id']))
 
         response = self.testapp.get(
             '/contents/{}@draft.json'.format(binder['id']))
         result = response.json
-        self.assertEqual(result['state'], 'Done/Success')
+        self.assertEqual(result['state'], 'Waiting for moderation')
         self.assertEqual(result['publication'], unicode(publication_id))
 
     def test_publish_revision_single_page(self):
