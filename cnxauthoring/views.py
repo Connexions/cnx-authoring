@@ -36,6 +36,10 @@ from .schemata import AcceptanceSchema, DocumentSchema, BinderSchema, UserSchema
 from .storage import storage
 from . import utils
 
+NO_CACHE = (0, {'public': True})
+TIMED_CACHE = (datetime.timedelta(
+    weeks=1, days=0, hours=0, minutes=0, seconds=0), {'public': True})
+DEFAULT_CACHE = (None, {'public': True})
 
 logger = logging.getLogger('cnxauthoring')
 
@@ -71,7 +75,7 @@ def storage_management(function):
     return wrapper
 
 
-@view_config(route_name='login')
+@view_config(route_name='login', http_cache=DEFAULT_CACHE)
 def login(request):
     # store where we should redirect to before login
     referer = request.referer or '/'
@@ -81,10 +85,10 @@ def login(request):
     if request.unauthenticated_userid:
         return httpexceptions.HTTPFound(location=redirect_to)
     request.session.update({'redirect_to': redirect_to})
-    request.authenticated_userid # triggers login
+    request.authenticated_userid  # triggers login
 
 
-@view_config(route_name='callback')
+@view_config(route_name='callback', http_cache=NO_CACHE)
 @authenticated_only
 def callback(request):
     # callback must be protected so that effective_principals is called
@@ -96,7 +100,7 @@ def callback(request):
     raise httpexceptions.HTTPFound(location=redirect_to)
 
 
-@view_config(route_name='logout')
+@view_config(route_name='logout', http_cache=DEFAULT_CACHE)
 def logout(request):
     forget(request)
     referer = request.referer or '/'
@@ -106,12 +110,14 @@ def logout(request):
     raise httpexceptions.HTTPFound(location=redirect_to)
 
 
-@view_config(route_name='options', request_method='OPTIONS', renderer='string')
+@view_config(route_name='options', request_method='OPTIONS',
+             renderer='string', http_cache=DEFAULT_CACHE)
 def options(request):
     return ''
 
 
-@view_config(route_name='user-search', request_method='GET', renderer='json')
+@view_config(route_name='user-search', request_method='GET',
+             renderer='json', http_cache=NO_CACHE)
 @authenticated_only
 def user_search(request):
     """Search for openstax accounts users"""
@@ -134,7 +140,8 @@ def user_search(request):
     return result
 
 
-@view_config(route_name='profile', request_method='GET', renderer='json')
+@view_config(route_name='profile', request_method='GET',
+             renderer='json', http_cache=NO_CACHE)
 @authenticated_only
 def profile(request):
     return UserSchema().bind().deserialize(
@@ -161,7 +168,8 @@ def update_content_state(request, content):
                 pass
 
 
-@view_config(route_name='user-contents', request_method='GET', renderer='json')
+@view_config(route_name='user-contents', request_method='GET',
+             renderer='json', http_cache=NO_CACHE)
 @authenticated_only
 @storage_management
 def user_contents(request):
@@ -222,7 +230,8 @@ def user_contents(request):
             }
 
 
-@view_config(route_name='get-content-json', request_method='GET', renderer='json')
+@view_config(route_name='get-content-json', request_method='GET',
+             renderer='json', http_cache=NO_CACHE)
 @authenticated_only
 @storage_management
 def get_content(request):
@@ -239,7 +248,8 @@ def get_content(request):
     return content
 
 
-@view_config(route_name='get-resource', request_method='GET')
+@view_config(route_name='get-resource', request_method='GET',
+             http_cache=NO_CACHE)
 @authenticated_only
 @storage_management
 def get_resource(request):
@@ -370,7 +380,9 @@ def post_content_single(request, cstruct):
 
     return content
 
-@view_config(route_name='post-content', request_method='POST', renderer='json')
+
+@view_config(route_name='post-content', request_method='POST',
+             renderer='json', http_cache=NO_CACHE)
 @authenticated_only
 @storage_management
 def post_content(request):
@@ -407,7 +419,8 @@ def post_content(request):
     return contents
 
 
-@view_config(route_name='post-resource', request_method='POST', renderer='string')
+@view_config(route_name='post-resource', request_method='POST',
+             renderer='string', http_cache=NO_CACHE)
 @authenticated_only
 @storage_management
 def post_resource(request):
@@ -482,13 +495,12 @@ def delete_content_single(request, id, user_id=None, raise_error=True):
     return True
 
 
-
 @view_config(route_name='delete-user-content', request_method='DELETE',
-             renderer='json')
+             renderer='json', http_cache=NO_CACHE)
 @view_config(route_name='delete-content', request_method='DELETE',
-             renderer='json')
+             renderer='json', http_cache=NO_CACHE)
 @view_config(route_name='delete-content-multiple', request_method='PUT',
-             renderer='json')
+             renderer='json', http_cache=NO_CACHE)
 @authenticated_only
 @storage_management
 def delete_content(request):
@@ -515,7 +527,9 @@ def delete_content(request):
         user_id = request.authenticated_userid
     delete_content_single(request, id, user_id=user_id)
 
-@view_config(route_name='put-content', request_method='PUT', renderer='json')
+
+@view_config(route_name='put-content', request_method='PUT',
+             renderer='json', http_cache=NO_CACHE)
 @authenticated_only
 @storage_management
 def put_content(request):
@@ -572,7 +586,8 @@ def put_content(request):
     return content
 
 
-@view_config(route_name='search-content', request_method='GET', renderer='json')
+@view_config(route_name='search-content', request_method='GET',
+             renderer='json', http_cache=NO_CACHE)
 @authenticated_only
 @storage_management
 def search_content(request):
@@ -661,7 +676,8 @@ def post_to_publishing(request, userid, submitlog, content_ids):
     return contents, requests.post(url, files=files, headers=headers)
 
 
-@view_config(route_name='publish', request_method='POST', renderer='json')
+@view_config(route_name='publish', request_method='POST',
+             renderer='json', http_cache=NO_CACHE)
 @authenticated_only
 @storage_management
 def publish(request):
@@ -698,7 +714,7 @@ def publish(request):
 
 
 @view_config(route_name='acceptance-info', request_method='GET',
-             renderer='json')
+             renderer='json', http_cache=NO_CACHE)
 @authenticated_only
 @storage_management
 def get_acceptance_info(request):
@@ -747,7 +763,8 @@ def get_acceptance_info(request):
     return info
 
 
-@view_config(route_name='acceptance-info', request_method=('POST', 'PUT'))
+@view_config(route_name='acceptance-info',
+             request_method=('POST', 'PUT'), http_cache=NO_CACHE)
 @authenticated_only
 @storage_management
 def post_acceptance_info(request):
