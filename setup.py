@@ -5,7 +5,7 @@ install_requires = (
         'cnx-epub',
         'cnx-query-grammar',
         'colander',
-        'openstax-accounts>=0.13.0',
+        'openstax-accounts>=1.0.0',
         'PasteDeploy',
         'pyramid',
         'pyramid_translogger',
