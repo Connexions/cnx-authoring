@@ -114,7 +114,7 @@ class BaseFunctionalTestCase(unittest.TestCase):
     def logout(self):
         self.testapp.get('/logout', status=302)
 
-    def assert_cors_headers(self, response):
+    def assert_cors_headers(self, response, cache_message_special_case=None):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
                 'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
@@ -123,6 +123,30 @@ class BaseFunctionalTestCase(unittest.TestCase):
                 'Origin, Content-Type')
         self.assertEqual(response.headers['Access-Control-Allow-Methods'],
                 'GET, OPTIONS, PUT, POST')
+
+        cache_header_dictionary = {
+            '201 Created':
+                ['max-age=0, must-revalidate, no-cache, no-store, public'],
+            '200 OK':
+                ['max-age=0, must-revalidate, no-cache, no-store, public'],
+            '400 Bad Request': [],
+            '302 Found': [],
+            '401 Unauthorized': [],
+            '403 Forbidden': [],
+            '404 Not Found': [],
+        }
+
+        try:
+            expected_cache_header = cache_header_dictionary[response.status]
+        except KeyError:
+            expected_cache_header = "NO EXPECTED CACHE HEADER"
+
+        actual_cache_header = response.headers.getall('Cache-Control')
+
+        if cache_message_special_case:
+            self.assertEqual(actual_cache_header, cache_message_special_case)
+        else:
+            self.assertEqual(actual_cache_header, expected_cache_header)
 
 
 class FunctionalTests(BaseFunctionalTestCase):
@@ -137,7 +161,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             '/login?redirect=http://example.com/logged_in', status=302)
         self.assertEqual(response.headers['Location'],
                 'http://example.com/logged_in')
-        self.assert_cors_headers(response)
+        self.assert_cors_headers(
+            response, cache_message_special_case=['public'])
 
     def test_login_redirect_loop(self):
         self.logout()
@@ -197,7 +222,8 @@ class FunctionalTests(BaseFunctionalTestCase):
 
         for url in urls:
             response = self.testapp.options(url, status=200)
-            self.assert_cors_headers(response)
+            self.assert_cors_headers(
+                response, cache_message_special_case=['public'])
             self.assertEqual(response.headers['Content-Length'], '0')
 
     def test_get_content_401(self):
