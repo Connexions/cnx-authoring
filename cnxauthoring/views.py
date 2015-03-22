@@ -75,41 +75,6 @@ def storage_management(function):
     return wrapper
 
 
-@view_config(route_name='login', http_cache=DEFAULT_CACHE)
-def login(request):
-    # store where we should redirect to before login
-    referer = request.referer or '/'
-    redirect_to = request.params.get('redirect', referer)
-    if redirect_to == request.route_url('login'):
-        redirect_to = '/'
-    if request.unauthenticated_userid:
-        return httpexceptions.HTTPFound(location=redirect_to)
-    request.session.update({'redirect_to': redirect_to})
-    request.authenticated_userid  # triggers login
-
-
-@view_config(route_name='callback', http_cache=NO_CACHE)
-@authenticated_only
-def callback(request):
-    # callback must be protected so that effective_principals is called
-    # callback must redirect
-    redirect_to = '/'
-    if request.session.get('redirect_to'):
-        # redirect_to in session is from login
-        redirect_to = request.session.pop('redirect_to')
-    raise httpexceptions.HTTPFound(location=redirect_to)
-
-
-@view_config(route_name='logout', http_cache=DEFAULT_CACHE)
-def logout(request):
-    forget(request)
-    referer = request.referer or '/'
-    redirect_to = request.params.get('redirect', referer)
-    if redirect_to == request.route_url('logout'):
-        redirect_to = '/'
-    raise httpexceptions.HTTPFound(location=redirect_to)
-
-
 @view_config(route_name='options', request_method='OPTIONS',
              renderer='string', http_cache=DEFAULT_CACHE)
 def options(request):

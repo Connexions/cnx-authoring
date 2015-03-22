@@ -38,13 +38,6 @@ def declare_routes(config):
     add_route('publish', '/publish', request_method='POST')
     add_route('acceptance-info', '/contents/{id}@draft/acceptance')
 
-def declare_oauth_routes(config):
-    """Declaration of routing for oauth"""
-    add_route = config.add_route
-    add_route('login', '/login', request_method='GET')
-    add_route('callback', '/callback', request_method='GET')
-    add_route('logout', '/logout', request_method='GET')
-
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
@@ -56,7 +49,6 @@ def main(global_config, **settings):
     config = Configurator(settings=settings,
                           session_factory=session_factory)
     declare_routes(config)
-    declare_oauth_routes(config)
 
     # storage is configurable. module and class for a given storage name are
     # configured in storage __init__, settings for that storage are then
@@ -78,7 +70,7 @@ def main(global_config, **settings):
     config.scan(ignore='cnxauthoring.tests')
     config.include('cnxauthoring.events.main')
 
-    config.include('openstax_accounts.main')
+    config.include('openstax_accounts')
     # authorization policy must be set if an authentication policy is set
     config.set_authentication_policy(
             config.registry.getUtility(IOpenstaxAccountsAuthenticationPolicy))
