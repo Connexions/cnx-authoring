@@ -150,66 +150,6 @@ class BaseFunctionalTestCase(unittest.TestCase):
 
 
 class FunctionalTests(BaseFunctionalTestCase):
-    def test_login(self):
-        self.logout()
-        response = self.login()
-        self.assertEqual(response.headers['Location'], 'http://localhost/')
-        self.assert_cors_headers(response)
-
-    def test_login_redirect_already_logged_in(self):
-        response = self.testapp.get(
-            '/login?redirect=http://example.com/logged_in', status=302)
-        self.assertEqual(response.headers['Location'],
-                'http://example.com/logged_in')
-        self.assert_cors_headers(
-            response, cache_message_special_case=['public'])
-
-    def test_login_redirect_loop(self):
-        self.logout()
-        response = self.login(headers={'REFERER': 'http://localhost/login'})
-        self.assertEqual(response.headers['Location'], 'http://localhost/')
-        self.assert_cors_headers(response)
-
-    def test_login_redirect_referer(self):
-        self.logout()
-        response = self.login(headers={'REFERER': 'http://example.com/'})
-        self.assertEqual(response.headers['Location'], 'http://example.com/')
-        self.assert_cors_headers(response)
-
-    def test_login_redirect(self):
-        self.logout()
-        response = self.login(
-            login_url='/login?redirect=http://example.com/logged_in')
-        self.assertEqual(response.headers['Location'],
-                         'http://example.com/logged_in')
-        self.assert_cors_headers(response)
-
-    def test_logout_redirect_loop(self):
-        response = self.testapp.get('/logout',
-                headers={'REFERER': 'http://localhost/logout'},
-                status=302)
-        self.assertEqual(response.headers['Location'], 'http://localhost/')
-        self.testapp.get('/users/profile', status=401)
-        self.assert_cors_headers(response)
-
-    def test_logout_redirect_referer(self):
-        response = self.testapp.get('/logout',
-                headers={'REFERER': 'http://example.com/logged_out'},
-                status=302)
-        self.assertEqual(response.headers['Location'],
-                'http://example.com/logged_out')
-        self.testapp.get('/users/profile', status=401)
-        self.assert_cors_headers(response)
-
-    def test_logout_redirect(self):
-        response = self.testapp.get(
-                '/logout?redirect=http://example.com/logged_out',
-                headers={'REFERER': 'http://example.com/'},
-                status=302)
-        self.assertEqual(response.headers['Location'],
-                'http://example.com/logged_out')
-        self.testapp.get('/users/profile', status=401)
-        self.assert_cors_headers(response)
 
     def test_options(self):
         self.testapp.options('/', status=404)
