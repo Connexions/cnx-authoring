@@ -9,7 +9,7 @@ from openstax_accounts.interfaces import IOpenstaxAccountsAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.config import Configurator
 from pyramid.security import Allow, Everyone, Authenticated
-from pyramid.session import UnencryptedCookieSessionFactoryConfig
+from pyramid.session import SignedCookieSessionFactory
 
 
 def declare_routes(config):
@@ -43,8 +43,8 @@ def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
     # use a uuid4 string as the secret for the session factory
-    session_factory = UnencryptedCookieSessionFactoryConfig(
-            '311978f8-7af1-4b16-92fe-4c480cdda657')
+    session_factory = SignedCookieSessionFactory(
+        settings.get('session_key', 'itsaseekret'))
 
     config = Configurator(settings=settings,
                           session_factory=session_factory)
@@ -60,11 +60,14 @@ def main(global_config, **settings):
 
     
     storages = storage.storages
-    storage_name = settings.get('storage',storage.default_storage)
+    storage_name = settings.get('storage', storage.default_storage)
     storage_modname, storage_class = storages[storage_name]
-    storage_settings = {k.split('.')[1].replace('-','_'):settings[k] for k in settings if k.split('.')[0] == storage_name}
-    storage_mod = __import__('.'.join((storage.__name__,storage_modname)), fromlist = [storage.__name__])
-    storage_instance = getattr(storage_mod,storage_class)(**storage_settings)
+    storage_settings = {k.split('.')[1].replace('-', '_'): settings[k]
+                        for k in settings
+                        if k.split('.')[0] == storage_name}
+    storage_mod = __import__('.'.join([storage.__name__, storage_modname]),
+                             fromlist=[storage.__name__])
+    storage_instance = getattr(storage_mod, storage_class)(**storage_settings)
     setattr(storage, 'storage', storage_instance)
 
     config.scan(ignore='cnxauthoring.tests')

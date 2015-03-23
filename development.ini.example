@@ -1,6 +1,7 @@
 [app:main]
 use = egg:cnx-authoring
 
+session_key = 'seekret'
 webview.url = http://cnx.org/
 archive.url = http://archive.cnx.org/
 publishing.url = http://localhost:6543/
