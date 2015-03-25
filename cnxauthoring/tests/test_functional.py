@@ -1705,6 +1705,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             })
 
     def test_put_content(self):
+        from ..utils import manage_namespace
         created = datetime.datetime.now(TZINFO)
         with mock.patch('datetime.datetime') as mock_datetime:
             mock_datetime.now.return_value = created
@@ -1734,7 +1735,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result['title'], update_data['title'])
         self.assertEqual(result['abstract'], update_data['abstract'])
         self.assertEqual(result['language'], document['language'])
-        self.assertEqual(result['content'], update_data['content'])
+        self.assertEqual(
+            result['content'], manage_namespace(update_data['content']))
         self.assertEqual(result['keywords'], update_data['keywords'])
         self.assertEqual(result['subjects'], update_data['subjects'])
         self.assertEqual(result['created'],
@@ -1749,7 +1751,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(result['title'], update_data['title'])
         self.assertEqual(result['abstract'], update_data['abstract'])
         self.assertEqual(result['language'], document['language'])
-        self.assertEqual(result['content'], update_data['content'])
+        self.assertEqual(
+            result['content'], manage_namespace(update_data['content']))
         self.assertEqual(result['keywords'], update_data['keywords'])
         self.assertEqual(result['subjects'], update_data['subjects'])
         self.assertEqual(result['created'],

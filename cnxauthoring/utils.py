@@ -43,6 +43,31 @@ PUBLISHING_ROLES_MAPPING = {
     'Translator': 'translators',
     }
 
+NAMESPACES = ('<body xmlns="http://www.w3.org/1999/xhtml" '
+              'xmlns:bib="http://bibtexml.sf.net/" '
+              'xmlns:data="http://dev.w3.org/html5/spec/#custom" '
+              'xmlns:epub="http://www.idpf.org/2007/ops" '
+              'xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" '
+              'xmlns:dc="http://purl.org/dc/elements/1.1/" '
+              'xmlns:lrmi="http://lrmi.net/the-specification">'
+              '{}'
+              '</body>')
+
+
+def manage_namespace(content):
+    try:
+        e = etree.fromstring(content)
+    except etree.XMLSyntaxError:
+        ##################################################
+        # trying to catch error by wrapping content in a #
+        # namespaced body tag                            #
+        ##################################################
+        xp = etree.XMLParser(ns_clean=True, recover=True)
+        e = etree.fromstring(NAMESPACES.format(content), xp)
+
+    content_string = etree.tostring(e)
+    return content_string
+
 
 def utf8(item):
     if isinstance(item, list):
