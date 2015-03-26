@@ -72,6 +72,54 @@ class ViewsTests(unittest.TestCase):
         from ..storage.main import BaseStorage
         return BaseStorage
 
+    def test_update_content_state_with_parsing(self):
+        from ..models import create_content
+        from ..utils import TZINFO, manage_namespace
+        import json
+        with open('./cnxauthoring/tests/data/m.json', 'r') as f:
+                sample_json = json.load(f)
+        # Create some new content
+        created = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = created
+            document = create_content(title=sample_json['title'])
+        self.assertEqual(document.metadata['created'], created)
+        self.assertEqual(document.metadata['revised'], created)
+
+        # Update some fields, set state to Failed/Error
+        revised = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = revised
+            document.update(abstract=sample_json['abstract'],
+                            state=sample_json['state'],
+                            publication=sample_json['publication'],
+                            content=sample_json['content'],
+                            )
+        self.assertEqual(document.metadata['created'], created)
+        self.assertEqual(document.metadata['revised'], revised)
+        self.assertNotEqual(
+            document.metadata['content'], sample_json['content'])
+        self.assertEqual(
+            document.metadata['content'],
+            manage_namespace(sample_json['content']))
+
+        # Update some fields, set state to Failed/Error
+        revised = datetime.datetime.now(TZINFO)
+        with mock.patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = revised
+            document.update(abstract=sample_json['abstract'],
+                            state=sample_json['state'],
+                            publication=sample_json['publication'],
+                            content="<p> HI </p><p> THERE!!! </p>",
+                            )
+        self.assertEqual(document.metadata['created'], created)
+        self.assertEqual(document.metadata['revised'], revised)
+        self.assertNotEqual(
+            document.metadata['content'], "<p> HI </p><p> THERE!!! </p>")
+        self.assertEqual(
+            document.metadata['content'],
+            manage_namespace("<p> HI </p><p> THERE!!! </p>"))
+
     def test_update_content_state(self):
         from ..models import create_content
         from ..utils import TZINFO
