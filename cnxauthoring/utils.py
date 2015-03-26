@@ -384,9 +384,10 @@ def declare_acl(model):
 
     # Push out the current set of publishers.
     payload = []
-    for user in model.metadata['publishers']:
-        if user.get('has_accepted'):
-            payload.append({'uid': user['id'], 'permission': 'publish'})
+    for role_type in ('publishers', 'authors',):
+        for user in model.metadata.get(role_type, []):
+            if user.get('has_accepted'):
+                payload.append({'uid': user['id'], 'permission': 'publish'})
     response = requests.post(url, data=json.dumps(payload), headers=headers)
     if response.status_code != 202:
         raise PublishingError(response)

@@ -3174,11 +3174,50 @@ class PublicationTests(BaseFunctionalTestCase):
             self.assertEqual(response.json['publication'],
                              str(publication_id))
 
+    def test_publish_as_author(self):
+        author_id = 'cnxcap'
+        # Post a page.
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'Page one',
+            'content': '<html><body><p>Content of page one</p></body></html>',
+            'abstract': 'Learn how to etc etc',
+            }, status=201)
+        page1 = response.json
+        self.assert_cors_headers(response)
+        # Put an author on.
+        page1['authors'].append({'id': author_id, 'type': 'cnx-id'})
+        response = self.testapp.put_json('/contents/{}@draft.json' \
+                                         .format(page1['id']), page1)
+        page1 = response.json
+        self.logout()
+
+        # Login as the author to accept the role and publish.
+        self.login(author_id)
+        self.testapp.post_json('/contents/{}@draft/acceptance' \
+                               .format(page1['id']),
+                               {'license': True,
+                                'roles': [{'role': 'authors',
+                                           'hasAccepted': True}]})
+        post_data = {
+            'submitlog': 'Publishing a page as an author is working?',
+            'items': (page1['id'],),
+            }
+        response = self.testapp.post_json('/publish', post_data, status=200)
+        self.assertEqual(response.json[u'state'], u'Done/Success')
+        expected_mapping = {page1['id']: '{}@1'.format(page1['id'])}
+        self.assertEqual(response.json[u'mapping'], expected_mapping)
+        self.assert_cors_headers(response)
+
+        # Grab the publication id for followup assertions.
+        publication_id = response.json['publication']
+
+        url = '/contents/{}@draft.json'.format(page1['id'])
+        response = self.testapp.get(url)
+        self.assertEqual(response.json['state'], 'Done/Success')
+        self.assertEqual(response.json['publication'],
+                         str(publication_id))
+
     def test_publish_binder_w_printStyle(self):
-        #################################################################
-        # FIXME: this test will probably need to be modified once the   #
-        # print style has be added to publishing                        #
-        #################################################################
         response = self.testapp.post_json('/users/contents', {
             'title': 'Page one',
             'content': '<html><body><p>Content of page one</p></body></html>',
