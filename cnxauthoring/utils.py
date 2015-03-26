@@ -43,7 +43,7 @@ PUBLISHING_ROLES_MAPPING = {
     'Translator': 'translators',
     }
 
-NAMESPACES = ('<body xmlns="http://www.w3.org/1999/xhtml" '
+NAMESPACES = (u'<body xmlns="http://www.w3.org/1999/xhtml" '
               'xmlns:bib="http://bibtexml.sf.net/" '
               'xmlns:data="http://dev.w3.org/html5/spec/#custom" '
               'xmlns:epub="http://www.idpf.org/2007/ops" '
