@@ -1860,6 +1860,135 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.testapp.get('/contents/{}@draft.json'.format(page_two['id']),
                          status=404)
 
+    @mock.patch('cnxauthoring.views.logger')
+    def test_delete_content_w_publish_error(self, logger):
+            # Start test similar to test for multiple users
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'Multiple users test',
+            'editors': [{'id': 'you'}],
+        }, status=201)
+        page = response.json
+        self.assert_cors_headers(response)
+
+        self.testapp.get('/contents/{}@draft.json'.format(page['id']),
+                         status=200)
+
+        self.logout()
+        self.login('you')
+
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = response.json
+        items = [i['id'] for i in workspace['results']['items']]
+        self.assertIn('{}@draft'.format(page['id']), items)
+
+        self.testapp.get(
+            '/contents/{}@draft.json'.format(page['id']), status=200)
+
+        self.testapp.put_json(
+            '/contents/{}@draft/acceptance'.format(page['id']),
+            {'license': True,
+             'roles': [{'role': 'editors', 'hasAccepted': True}]},
+            status=200)
+        response = self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']),
+            {'title': 'Multiple users test edited by you'}, status=200)
+
+        self.logout()
+        self.login('user2')
+
+        self.testapp.get(
+            '/contents/{}@draft.json'.format(page['id']), status=403)
+        self.logout()
+
+        self.login('user1')
+        response = self.testapp.get(
+            '/contents/{}@draft.json'.format(page['id']), status=200)
+        self.assertEqual(response.json['title'],
+                         'Multiple users test edited by you')
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = response.json
+        items = [i['id'] for i in workspace['results']['items']]
+        self.assertIn('{}@draft'.format(page['id']), items)
+
+        self.testapp.delete('/contents/{}@draft'.format(page['id']),
+                            status=403)
+        self.testapp.get(
+            '/contents/{}@draft.json'.format(page['id']), status=200)
+
+        #  Delete the contents of the page completely from archive's database
+        with psycopg2.connect(
+                publishing_settings()['db-connection-string']) as db_conn:
+            with db_conn.cursor() as cursor:
+                cursor.execute(
+                    """DELETE FROM document_acl \
+                              WHERE uuid = %s""", (page['id'],))
+                cursor.execute(
+                    """DELETE FROM license_acceptances \
+                              WHERE uuid = %s""", (page['id'],))
+                cursor.execute(
+                    """DELETE FROM modules \
+                              WHERE uuid = %s""", (page['id'],))
+                cursor.execute(
+                    """DELETE FROM role_acceptances \
+                              WHERE uuid = %s""", (page['id'],))
+                cursor.execute(
+                    """DELETE FROM document_controls \
+                              WHERE uuid = %s""", (page['id'],))
+
+        # Send a delete request to authoring to remove the page from its
+        # database
+        self.testapp.delete(
+            '/contents/{}@draft/users/me'.format(page['id']), status=200)
+
+        # Check to see that authoring created a warning message when publishing
+        # failed to find the page.
+        self.assertEqual(logger.exception.call_count, 1)
+        args1, = logger.exception.call_args_list
+        self.assertEqual(
+            args1[0], ('Warning: '
+                       'publishing error on '
+                       'content id {} '.format(page['id']),))
+
+        # Make sure user can no longer access the page
+        self.testapp.get(
+            '/contents/{}@draft.json'.format(page['id']), status=403)
+
+        # Finish the test by making sure the requests sent by
+        # uses are uneffected by the publishing warning.
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = response.json
+        items = [i['id'] for i in workspace['results']['items']]
+        self.assertNotIn('{}@draft'.format(page['id']), items)
+        self.logout()
+
+        self.login('you')
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = response.json
+        items = [i['id'] for i in workspace['results']['items']]
+        self.assertIn('{}@draft'.format(page['id']), items)
+        self.testapp.get(
+            '/contents/{}@draft.json'.format(page['id']), status=200)
+        response = self.testapp.put_json(
+            '/contents/{}@draft.json'.format(page['id']),
+            {'title': 'Multiple users test edited again by you'}, status=200)
+        self.logout()
+
+        self.login('user1')
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = response.json
+        items = [i['id'] for i in workspace['results']['items']]
+        self.assertNotIn('{}@draft'.format(page['id']), items)
+
+        post_data = {
+            'id': '{}@draft'.format(page['id']),
+        }
+        response = self.testapp.post_json(
+            '/users/contents', post_data, status=201)
+        response = self.testapp.get('/users/contents', status=200)
+        workspace = response.json
+        items = [i['id'] for i in workspace['results']['items']]
+        self.assertIn('{}@draft'.format(page['id']), items)
+
     def test_delete_content_binder(self):
         # Create a page first
         response = self.testapp.post_json('/users/contents', {
