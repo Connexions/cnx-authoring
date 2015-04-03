@@ -35,6 +35,7 @@ from .models import (
 from .schemata import AcceptanceSchema, DocumentSchema, BinderSchema, UserSchema
 from .storage import storage
 from . import utils
+from .models import PublishingError
 
 NO_CACHE = (0, {'public': True})
 TIMED_CACHE = (datetime.timedelta(
@@ -451,8 +452,15 @@ def delete_content_single(request, id, user_id=None, raise_error=True):
                 permissions = list(permissions)
                 permissions.remove('view')
                 content.acls[uid] = permissions
-        utils.declare_acl(content)
-        storage.update(content)
+        try:
+            utils.declare_acl(content)
+        except PublishingError:
+            logger.exception(
+                'Warning: '
+                'publishing error on '
+                'content id {} '.format(content.id))
+        finally:
+            storage.update(content)
     else:
         resource = storage.remove(content)
         if content.metadata['media_type'] == BINDER_MEDIATYPE:
