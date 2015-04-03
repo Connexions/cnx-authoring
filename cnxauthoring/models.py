@@ -204,6 +204,8 @@ class Document(cnxepub.Document, BaseContent):
         self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
         self.metadata['summary'] = self.metadata['abstract']
         self.set_uri('cnx-archive', self.id)
+        if self.metadata['print_style'] == 'default':
+            self.metadata['print_style'] = None
         self.add_resources()
 
     def add_resources(self):
@@ -385,6 +387,9 @@ class Binder(cnxepub.Binder, BaseContent):
         self.metadata['license_url'] = license.url
         self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
         self.metadata['summary'] = self.metadata['abstract']
+        if self.metadata['print_style'] == 'default':
+            self.metadata['print_style'] = None
+
         self.set_uri('cnx-archive', self.id)
         documents = []
         for document in cnxepub.flatten_to_documents(self):
