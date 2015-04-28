@@ -98,11 +98,14 @@ _LICENSE_VALUES = (
    'http://creativecommons.org/licenses/by/3.0/'),
   ('Attribution', 'by', '4.0',
    'http://creativecommons.org/licenses/by/4.0/'),
+  ('Attribution-NonCommercial-ShareAlike', 'by-nc-sa', '4.0',
+   'http://creativecommons.org/licenses/by-nc-sa/4.0/'),
   )
 _LICENSE_KEYS = ('name', 'abbr', 'version', 'url',)
 LICENSES = [License(**dict(args))
             for args in [zip(_LICENSE_KEYS, v) for v in _LICENSE_VALUES]]
-DEFAULT_LICENSE = LICENSES[-1]
+DEFAULT_LICENSE = LICENSES[-2]
+assert DEFAULT_LICENSE.abbr == 'by'
 
 
 class Resource(cnxepub.Resource):
