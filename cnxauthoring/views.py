@@ -27,7 +27,7 @@ from openstax_accounts.interfaces import *
 
 from cnxepub.models import ATTRIBUTED_ROLE_KEYS
 from .models import (
-    BINDER_MEDIATYPE, DOCUMENT_MEDIATYPE,
+    BINDER_MEDIATYPE, DOCUMENT_MEDIATYPE, LICENSES,
     ArchiveConnectionError, DocumentNotFoundError,
     create_content, derive_content, revise_content,
     Document, Binder, Resource,
@@ -598,7 +598,8 @@ def search_content(request):
             }
 
 
-def post_to_publishing(request, userid, submitlog, content_ids):
+def post_to_publishing(request, userid, submitlog, content_ids,
+                       license=None):
     """all params come from publish post. Content_ids is a json list of lists,
     containing ids of binders and the pages in them to be published.  Each binder
     is a list, starting with the binderid, and following with documentid of each
@@ -637,6 +638,16 @@ def post_to_publishing(request, userid, submitlog, content_ids):
 
         contents.append(content)
 
+    # FIXME This is a quick and dirty solution for changing the license
+    #       on publish. The ideal solution is to use the model structure
+    #       to enforce inheritance of the license from the top down.
+    if license is not None:
+        for content in contents:
+            existing_license = content.metadata['license']
+            if existing_license != license:
+                content.metadata['license'] = license
+            storage.update(content)
+
     # Post an epub to publishing.
     upload_data = utils.build_epub(contents, userid, submitlog)
     files = {
@@ -657,9 +668,19 @@ def publish(request):
     """Publish documents to archive
     """
     request_body = request.json_body
-    contents, response = post_to_publishing(request,
-            request.unauthenticated_userid,
-            request_body['submitlog'], request_body['items'])
+    try:
+        # Raises TypeError when the url is not available
+        license_url = request_body.get('license', None)['url']
+        license = [l for l in LICENSES if l.url == license_url][0]
+    except KeyError:  # missing 'url' value.
+        raise httpexceptions.HTTPBadRequest('Missing license url')
+    except IndexError:  # Can't find the license for the given url.
+        raise httpexceptions.HTTPBadRequest('Invalid license url')
+    except TypeError:  # NoneType
+        license = None
+    contents, response = post_to_publishing(
+        request, request.unauthenticated_userid,
+        request_body['submitlog'], request_body['items'], license)
     if response.status_code != 200:
         raise httpexceptions.HTTPBadRequest('Unable to publish: '
                 'response status code: {}'.format(response.status_code))

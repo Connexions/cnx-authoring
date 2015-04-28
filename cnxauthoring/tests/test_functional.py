@@ -13,14 +13,19 @@ import os
 import sys
 import re
 import unittest
+from copy import deepcopy
 try:
     from unittest import mock  # python 3
 except ImportError:
     import mock  # python 2
 try:
-    import urllib2  # python2
-except ImportError:
     import urllib.request as urllib2  # renamed in python3
+except ImportError:
+    import urllib2  # python2
+try:
+    from urllib.parse import urljoin
+except:
+    from urlparse import urljoin
 
 import cnxepub
 import psycopg2
@@ -4061,3 +4066,77 @@ class PublicationTests(BaseFunctionalTestCase):
                         u'requester': u'user1',
                         u'hasAccepted': None}],
             })
+
+    def test_publish_w_changed_license(self):
+        author_id = 'cnxcap'
+        # Post a page.
+        response = self.testapp.post_json('/users/contents', {
+            'title': 'Page one',
+            'content': '<html><body><p>Content of page one</p></body></html>',
+            'abstract': 'Learn how to etc etc',
+            }, status=201)
+        page1 = response.json
+        self.assert_cors_headers(response)
+        # Put an author on.
+        page1['authors'].append({'id': author_id, 'type': 'cnx-id'})
+        response = self.testapp.put_json('/contents/{}@draft.json' \
+                                         .format(page1['id']), page1)
+        page1 = response.json
+        self.logout()
+
+        # Login as the author to accept the role and publish.
+        self.login(author_id)
+        self.testapp.post_json('/contents/{}@draft/acceptance' \
+                               .format(page1['id']),
+                               {'license': True,
+                                'roles': [{'role': 'authors',
+                                           'hasAccepted': True}]})
+
+        # Prepare the post data
+        from ..models import LICENSES
+        license = [l for l in LICENSES if l.abbr == 'by-nc-sa'][0]
+        post_data = {
+            'submitlog': 'Publishing a page as an author is working?',
+            'items': (page1['id'],),
+            'license': license.__json__(),
+            }
+
+        # Try to publish with a missing license url.
+        missing_info_post_data = deepcopy(post_data)
+        del missing_info_post_data['license']['url']
+        response = self.testapp.post_json('/publish', missing_info_post_data,
+                                          status=400)
+        self.assertIn("Missing license url", response.body)
+
+        # Try to publish with an invalid license.
+        invalid_post_data = deepcopy(post_data)
+        agpl_license_url = 'https://www.gnu.org/licenses/agpl-3.0'
+        invalid_post_data['license']['url'] = agpl_license_url
+        response = self.testapp.post_json('/publish', invalid_post_data,
+                                          status=400)
+        self.assertIn("Invalid license url", response.body)
+
+        # Publish under license by-nc-sa.
+        response = self.testapp.post_json('/publish', post_data, status=200)
+        self.assertEqual(response.json[u'state'], u'Done/Success')
+        expected_mapping = {page1['id']: '{}@1'.format(page1['id'])}
+        self.assertEqual(response.json[u'mapping'], expected_mapping)
+        self.assert_cors_headers(response)
+
+        # Grab the publication id for followup assertions.
+        publication_id = response.json['publication']
+
+        url = '/contents/{}@draft.json'.format(page1['id'])
+        response = self.testapp.get(url)
+        self.assertEqual(response.json['state'], 'Done/Success')
+        self.assertEqual(response.json['publication'],
+                         str(publication_id))
+        self.assertEqual(response.json['license']['url'], license.url)
+
+        # Check archive for the correct license
+        import requests
+        archive_host = integration_test_settings()['archive.url']
+        url = '/contents/{}@1.json'.format(page1['id'])
+        url = urljoin(archive_host, url)
+        response = requests.get(url)
+        self.assertEqual(response.json()['license']['url'], license.url)
