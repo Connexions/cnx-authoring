@@ -30,6 +30,7 @@ except:
 import cnxepub
 import psycopg2
 import pytz
+import requests
 from webtest import Upload
 from wsgi_intercept import requests_intercept
 
@@ -4133,8 +4134,18 @@ class PublicationTests(BaseFunctionalTestCase):
                          str(publication_id))
         self.assertEqual(response.json['license']['url'], license.url)
 
+        # Check publishing for the correct license and acceptance.
+        publishing_host = integration_test_settings()['publishing.url']
+        url = '/contents/{}/licensors'.format(page1['id'])
+        url = urljoin(publishing_host, url)
+        response = requests.get(url)
+        self.assertEqual(response.json()['license_url'], license.url)
+        self.assertEqual(
+            [l['has_accepted'] for l in response.json()['licensors']],
+            [True, True]
+            )
+
         # Check archive for the correct license
-        import requests
         archive_host = integration_test_settings()['archive.url']
         url = '/contents/{}@1.json'.format(page1['id'])
         url = urljoin(archive_host, url)
