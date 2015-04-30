@@ -8,8 +8,14 @@
 import datetime
 import io
 import uuid
+try:
+    import urllib.parse as urlparse
+except ImportError:
+    import urlparse
 
 import cnxepub.models as cnxepub
+import requests
+from pyramid.events import subscriber, ApplicationCreated
 from pyramid.security import Allow, Authenticated
 
 from . import utils
@@ -24,6 +30,10 @@ MEDIATYPES = { 'document' : DOCUMENT_MEDIATYPE,
 
 LICENSE_PARAMETER_MARKER = object()
 DEFAULT_LANGUAGE = 'en'
+
+# Initialized via the setup_licenses function.
+LICENSES = []
+DEFAULT_LICENSE = None
 
 
 class DocumentNotFoundError(Exception):
@@ -54,58 +64,54 @@ class PublishingError(Exception):
         return self.message
 
 
+@subscriber(ApplicationCreated)
+def initialize_licenses(event):
+    """Initializes a fixed set of license objects
+    based on the authoritative list stored in archive.
+    """
+    global DEFAULT_LICENSE
+    global LICENSES
+    settings = event.app.registry.settings
+    archive_url = settings['archive.url']
+
+    # Contact archive for an authoritative list of licenses.
+    url = urlparse.urljoin(archive_url, '/extras')
+    response = requests.get(url)
+    licenses = response.json()['licenses']
+
+    LICENSES = []
+    for license in licenses:
+        kwargs = {k:v for k, v in license.items()
+                  if k in ('name', 'url', 'code', 'version',)}
+        LICENSES.append(License(**kwargs))
+
+    try:
+        default_license_url = settings['default-license-url']
+    except IndexError:
+        raise RuntimeError("Default license is not configured. "
+                           "Please set the 'default-license-url' in "
+                           "the application configuration.")
+    # Assign the default license.
+    DEFAULT_LICENSE = [l for l in LICENSES if l.url == default_license_url][0]
+
+
 class License(object):
     """A declaration of authority typically assigned to things."""
 
-    def __init__(self, name, url, abbr=None, version=None):
+    def __init__(self, name, url, code=None, version=None):
         self.name = name
         self.url = url
-        self.abbr = abbr
+        self.code = code
         self.version = version
 
     def __json__(self, request=None):
         obj_as_dict = {
             'name': self.name,
             'url': self.url,
-            'abbr': self.abbr,
+            'code': self.code,
             'version': self.version,
             }
         return obj_as_dict
-
-
-_LICENSE_VALUES = (
-  ('Attribution', 'by', '1.0',
-   'http://creativecommons.org/licenses/by/1.0'),
-  ('Attribution-NoDerivs', 'by-nd', '1.0',
-   'http://creativecommons.org/licenses/by-nd/1.0'),
-  ('Attribution-NoDerivs-NonCommercial', 'by-nd-nc', '1.0',
-   'http://creativecommons.org/licenses/by-nd-nc/1.0'),
-  ('Attribution-NonCommercial', 'by-nc', '1.0',
-   'http://creativecommons.org/licenses/by-nc/1.0'),
-  ('Attribution-ShareAlike', 'by-sa', '1.0',
-   'http://creativecommons.org/licenses/by-sa/1.0'),
-  ('Attribution', 'by', '2.0',
-   'http://creativecommons.org/licenses/by/2.0/'),
-  ('Attribution-NoDerivs', 'by-nd', '2.0',
-   'http://creativecommons.org/licenses/by-nd/2.0'),
-  ('Attribution-NoDerivs-NonCommercial', 'by-nd-nc', '2.0',
-   'http://creativecommons.org/licenses/by-nd-nc/2.0'),
-  ('Attribution-NonCommercial', 'by-nc', '2.0',
-   'http://creativecommons.org/licenses/by-nc/2.0'),
-  ('Attribution-ShareAlike', 'by-sa', '2.0',
-   'http://creativecommons.org/licenses/by-sa/2.0'),
-  ('Attribution', 'by', '3.0',
-   'http://creativecommons.org/licenses/by/3.0/'),
-  ('Attribution', 'by', '4.0',
-   'http://creativecommons.org/licenses/by/4.0/'),
-  ('Attribution-NonCommercial-ShareAlike', 'by-nc-sa', '4.0',
-   'http://creativecommons.org/licenses/by-nc-sa/4.0/'),
-  )
-_LICENSE_KEYS = ('name', 'abbr', 'version', 'url',)
-LICENSES = [License(**dict(args))
-            for args in [zip(_LICENSE_KEYS, v) for v in _LICENSE_VALUES]]
-DEFAULT_LICENSE = LICENSES[-2]
-assert DEFAULT_LICENSE.abbr == 'by'
 
 
 class Resource(cnxepub.Resource):
@@ -204,7 +210,7 @@ class Document(cnxepub.Document, BaseContent):
     def publish_prep(self):
         license = self.metadata['license']
         self.metadata['license_url'] = license.url
-        self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
+        self.metadata['license_text'] = ' '.join([license.name, license.code, license.version])
         self.metadata['summary'] = self.metadata['abstract']
         self.set_uri('cnx-archive', self.id)
         if self.metadata['print_style'] == 'default':
@@ -388,7 +394,7 @@ class Binder(cnxepub.Binder, BaseContent):
     def publish_prep(self):
         license = self.metadata['license']
         self.metadata['license_url'] = license.url
-        self.metadata['license_text'] = ' '.join([license.name, license.abbr, license.version])
+        self.metadata['license_text'] = ' '.join([license.name, license.code, license.version])
         self.metadata['summary'] = self.metadata['abstract']
         if self.metadata['print_style'] == 'default':
             self.metadata['print_style'] = None

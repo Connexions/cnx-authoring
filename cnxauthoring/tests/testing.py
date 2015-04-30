@@ -37,3 +37,32 @@ def integration_test_settings():
         config_uri = os.path.join(here, 'testing.ini')
     settings = get_appsettings(config_uri)
     return settings
+
+
+_LICENSE_VALUES = (
+  ('Creative Commons Attribution License',
+   'by', '4.0',
+   'http://creativecommons.org/licenses/by/4.0/'),
+  ('Creative Commons Attribution-NonCommercial-ShareAlike License',
+   'by-nc-sa', '4.0',
+   'http://creativecommons.org/licenses/by-nc-sa/4.0/'),
+  )
+_LICENSE_KEYS = ('name', 'code', 'version', 'url',)
+
+
+def _setup_licenses():
+    """This sets up a limited set of licenses for tests.
+    This is necessary because licenses are normally initiallized from
+    a request made to an archive instance. Since, unittests won't
+    have access to an archive instance.
+    """
+    from .. import models
+    models.LICENSES = [
+        models.License(**dict(args))
+        for args in [zip(_LICENSE_KEYS, v) for v in _LICENSE_VALUES]
+        ]
+    models.DEFAULT_LICENSE = models.LICENSES[0]
+    assert models.DEFAULT_LICENSE.code == 'by'
+
+
+_setup_licenses()
