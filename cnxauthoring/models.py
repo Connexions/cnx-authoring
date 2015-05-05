@@ -104,6 +104,17 @@ class License(object):
         self.code = code
         self.version = version
 
+    @classmethod
+    def from_url(cls, url):
+        """This assumes an initialized application and set of
+        initialized License objects.
+        """
+        try:
+            return [l for l in LICENSES if l.url == url][0]
+        except IndexError:
+            raise ValueError("Invalid url '{}' used to initialize class."
+                             .format(url))
+
     def __json__(self, request=None):
         obj_as_dict = {
             'name': self.name,
@@ -145,8 +156,6 @@ class BaseContent(object):
         return acls
 
     def update(self, **kwargs):
-        if 'license' in kwargs:
-            del kwargs['license']
         if 'created' in kwargs:
             del kwargs['created']
         for key, value in kwargs.items():
@@ -159,6 +168,11 @@ class BaseContent(object):
                 elif key == 'copyright_holders':
                     self.metadata['licensors'] = value
                 # /BBB
+        # FIXME if license is in kwargs, ensure the user changing it
+        #       has permission to do so.
+        if 'license' in kwargs:
+            license_url = kwargs['license']['url']
+            self.metadata['license'] = License.from_url(license_url)
         self.metadata['revised'] = datetime.datetime.now(TZINFO)
 
     def to_dict(self):
@@ -431,9 +445,10 @@ def create_content(**appstruct):
     """Given a Colander *appstruct*, create a content object."""
     kwargs = appstruct.copy()
     # TODO Lookup via storage.
-    if 'license' in appstruct:
-        license = [l for l in LICENSES
-                   if l.url == appstruct['license']['url']][0]
+    license = appstruct.get('license')
+    if license is not None:
+        if not isinstance(license, License):
+            license = License.from_url(license['url'])
         kwargs['license'] = license
     media_type = 'media_type' in kwargs and kwargs.pop('media_type')
     if media_type == BINDER_MEDIATYPE:
@@ -451,7 +466,6 @@ def revise_content(request, **kwargs):
             role['has_accepted'] = True
     document.update(kwargs)
     document['revised'] = None
-    document['license'] = {'url': DEFAULT_LICENSE.url}
     document['maintainers'] = document['publishers']
     return document
 
@@ -465,7 +479,6 @@ def derive_content(request, **kwargs):
     document['title'] = u'Copy of {}'.format(document['title'])
     document['created'] = None
     document['revised'] = None
-    document['license'] = {'url': DEFAULT_LICENSE.url}
     document['authors'] = []
     document['maintainers'] = []
     document['publishers'] = []

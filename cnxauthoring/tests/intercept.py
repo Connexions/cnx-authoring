@@ -88,7 +88,7 @@ INSERT INTO modules
    authors)
   VALUES
   (9000, 'Module', 'a3f7c934-2a89-4baf-a9a9-a89d957586d2',
-   'missing resource', 9000, 11, '', null,
+   'missing resource', 9000, 12, '', null,
    'cnxcap', 'tests derive-from with missing resource',
    '{cnxcap}');
 INSERT INTO files
