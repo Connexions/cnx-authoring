@@ -74,6 +74,13 @@ def initialize_licenses(event):
     settings = event.app.registry.settings
     archive_url = settings['archive.url']
 
+    try:
+        default_license_url = settings['default-license-url']
+    except KeyError:
+        raise RuntimeError("Default license is not configured. "
+                           "Please set the 'default-license-url' in "
+                           "the application configuration.")
+
     # Contact archive for an authoritative list of licenses.
     url = urlparse.urljoin(archive_url, '/extras')
     response = requests.get(url)
@@ -85,12 +92,6 @@ def initialize_licenses(event):
                   if k in ('name', 'url', 'code', 'version',)}
         LICENSES.append(License(**kwargs))
 
-    try:
-        default_license_url = settings['default-license-url']
-    except IndexError:
-        raise RuntimeError("Default license is not configured. "
-                           "Please set the 'default-license-url' in "
-                           "the application configuration.")
     # Assign the default license.
     DEFAULT_LICENSE = [l for l in LICENSES if l.url == default_license_url][0]
 
