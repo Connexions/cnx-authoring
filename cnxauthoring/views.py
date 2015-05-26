@@ -646,6 +646,7 @@ def post_to_publishing(request, userid, submitlog, content_ids,
             existing_license = content.metadata['license']
             if existing_license != license:
                 content.metadata['license'] = license
+            utils.declare_licensors(content)
             storage.update(content)
 
     # Post an epub to publishing.

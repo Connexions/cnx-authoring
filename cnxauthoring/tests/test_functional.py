@@ -30,6 +30,7 @@ except:
 import cnxepub
 import psycopg2
 import pytz
+import requests
 from webtest import Upload
 from wsgi_intercept import requests_intercept
 
@@ -68,6 +69,10 @@ class BaseFunctionalTestCase(unittest.TestCase):
         cls.settings = settings = integration_test_settings()
         # only run once for all the tests
 
+        # Install the intercept for archive and publishing.
+        install_intercept()
+        requests_intercept.install()
+
         # make sure storage is set correctly in cnxauthoring.views by reloading
         # cnxauthoring.views
         if 'cnxauthoring.views' in sys.modules:
@@ -78,10 +83,6 @@ class BaseFunctionalTestCase(unittest.TestCase):
 
         from webtest import TestApp
         cls.testapp = TestApp(app)
-
-        # Install the intercept for archive and publishing.
-        install_intercept()
-        requests_intercept.install()
 
         # Allow user1 to publish without moderation
         with psycopg2.connect(
@@ -235,8 +236,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'derivedFromTitle': None,
             u'derivedFromUri': None,
             u'license': {
-                u'abbr': u'by',
-                u'name': u'Attribution',
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0',
                 },
@@ -508,8 +509,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
             u'license': {
-                u'abbr': u'by',
-                u'name': u'Attribution',
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'subjects': [],
@@ -553,8 +554,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
             u'license': {
-                u'abbr': u'by',
-                u'name': u'Attribution',
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'subjects': [],
@@ -617,8 +618,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
             u'license': {
-                u'abbr': u'by',
-                u'name': u'Attribution',
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'subjects': [],
@@ -662,8 +663,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
             u'license': {
-                u'abbr': u'by',
-                u'name': u'Attribution',
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'subjects': [],
@@ -724,8 +725,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
             u'license': {
-                u'abbr': u'by',
-                u'name': u'Attribution',
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'subjects': [],
@@ -769,8 +770,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
             u'license': {
-                u'abbr': u'by',
-                u'name': u'Attribution',
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'subjects': [],
@@ -824,8 +825,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.collection',
             u'version': u'draft',
             u'license': {
-                u'abbr': u'by',
-                u'name': u'Attribution',
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'isPublishable': True,
@@ -1025,8 +1026,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
             u'license': {
-                u'abbr': u'by',
-                u'name': u'Attribution',
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0',
                 },
@@ -1326,8 +1327,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'permissions': [u'edit', u'publish', u'view'],
             u'publishers': [submitter_w_assign_date],
             u'license': {
-                u'abbr': u'by',
-                u'name': u'Attribution',
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'tree': {
@@ -1533,8 +1534,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.collection',
             u'version': u'draft',
             u'license': {
-                u'abbr': u'by',
-                u'name': u'Attribution',
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'title': u'...',
@@ -1587,8 +1588,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.collection',
             u'version': u'draft',
             u'license': {
-                u'abbr': u'by',
-                u'name': u'Attribution',
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
             u'title': u'...',
@@ -1650,7 +1651,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     'license': {
                         'url': 'http://creativecommons.org/licenses/by/4.0/',
                         'version': '4.0',
-                        'name': 'Attribution',
+                        'name': 'Creative Commons Attribution License',
                         'abbr': 'by'
                         },
                     'language': 'en',
@@ -3755,8 +3756,8 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
-                u'name': u'Attribution',
-                u'abbr': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'code': u'by',
                 u'version': u'4.0',
                 },
             u'url': u'http://localhost/contents/{}%40draft.json'.format(
@@ -3804,8 +3805,8 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
-                u'name': u'Attribution',
-                u'abbr': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'code': u'by',
                 u'version': u'4.0',
                 },
             u'url': u'http://localhost/contents/{}%40draft.json'.format(
@@ -3842,8 +3843,8 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
-                u'name': u'Attribution',
-                u'abbr': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'code': u'by',
                 u'version': u'4.0',
                 },
             u'url': u'http://localhost/contents/{}%40draft.json'.format(
@@ -3878,8 +3879,8 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
-                u'name': u'Attribution',
-                u'abbr': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'code': u'by',
                 u'version': u'4.0',
                 },
             u'url': u'http://localhost/contents/{}%40draft.json'.format(
@@ -3909,8 +3910,8 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
-                u'name': u'Attribution',
-                u'abbr': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'code': u'by',
                 u'version': u'4.0',
                 },
             u'url': u'http://localhost/contents/{}%40draft.json'.format(
@@ -4021,8 +4022,8 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
-                u'name': u'Attribution',
-                u'abbr': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'code': u'by',
                 u'version': u'4.0',
                 },
             u'url': u'http://localhost/contents/{}%40draft.json'.format(
@@ -4052,8 +4053,8 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assertEqual(acceptance, {
             u'license': {
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
-                u'name': u'Attribution',
-                u'abbr': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'code': u'by',
                 u'version': u'4.0',
                 },
             u'url': u'http://localhost/contents/{}%40draft.json'.format(
@@ -4094,7 +4095,7 @@ class PublicationTests(BaseFunctionalTestCase):
 
         # Prepare the post data
         from ..models import LICENSES
-        license = [l for l in LICENSES if l.abbr == 'by-nc-sa'][0]
+        license = [l for l in LICENSES if l.code == 'by-nc-sa'][0]
         post_data = {
             'submitlog': 'Publishing a page as an author is working?',
             'items': (page1['id'],),
@@ -4133,8 +4134,18 @@ class PublicationTests(BaseFunctionalTestCase):
                          str(publication_id))
         self.assertEqual(response.json['license']['url'], license.url)
 
+        # Check publishing for the correct license and acceptance.
+        publishing_host = integration_test_settings()['publishing.url']
+        url = '/contents/{}/licensors'.format(page1['id'])
+        url = urljoin(publishing_host, url)
+        response = requests.get(url)
+        self.assertEqual(response.json()['license_url'], license.url)
+        self.assertEqual(
+            [l['has_accepted'] for l in response.json()['licensors']],
+            [True, True]
+            )
+
         # Check archive for the correct license
-        import requests
         archive_host = integration_test_settings()['archive.url']
         url = '/contents/{}@1.json'.format(page1['id'])
         url = urljoin(archive_host, url)

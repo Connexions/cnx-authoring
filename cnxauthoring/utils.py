@@ -176,7 +176,7 @@ def build_epub(contents, submitter, submitlog):
         
 
     if documents:
-        license_text = ' '.join([DEFAULT_LICENSE.name, DEFAULT_LICENSE.abbr,
+        license_text = ' '.join([DEFAULT_LICENSE.name, DEFAULT_LICENSE.code,
             DEFAULT_LICENSE.version])
         binders.append(TranslucentBinder(
                 metadata={

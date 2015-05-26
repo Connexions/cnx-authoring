@@ -12,6 +12,8 @@ import uuid
 from pyramid import testing
 from pyramid.renderers import JSON
 
+from . import testing as _  # imported to initialize dummy license objects.
+
 
 class ModelJSONRendering(unittest.TestCase):
     """Ensure the models render to JSON.
@@ -64,8 +66,8 @@ class ModelJSONRendering(unittest.TestCase):
             'containedIn': [],
             'license': {
                 'url': 'http://creativecommons.org/licenses/by/4.0/',
-                'abbr': 'by',
-                'name': 'Attribution',
+                'code': 'by',
+                'name': 'Creative Commons Attribution License',
                 'version': '4.0',
                 },
             'subjects': [],

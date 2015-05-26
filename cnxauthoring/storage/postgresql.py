@@ -15,7 +15,10 @@ from psycopg2 import Binary
 from psycopg2.extensions import STATUS_READY
 
 from .main import BaseStorage
-from ..models import Document, Resource, create_content, MEDIATYPES
+from ..models import (
+    create_content, MEDIATYPES,
+    Document, License, Resource,
+    )
 from .database import SQL
 
 
@@ -90,7 +93,7 @@ class PostgresqlStorage(BaseStorage):
             model = Resource(row['mediatype'], io.BytesIO(row['data'][:]),
                              filename=row['hash'])
         else:  # It's a Document/Binder...
-            row['license'] = eval(row['license'])
+            row['license'] = License.from_url(json.loads(row['license'])['url'])
             for field in ('user_id', 'permission', 'uuid'):
                 if field in row:
                     row.pop(field)
@@ -214,7 +217,7 @@ class PostgresqlStorage(BaseStorage):
                             {'hash':item._hash,'mediatype':item.media_type,'data':data})
         elif type_name in ['document','binder']:
             args = item.to_dict()
-            args['license'] = repr(args['license'])
+            args['license'] = json.dumps(args['license'])
             args['media_type'] = MEDIATYPES[type_name]
             if 'summary' in args:
                 args.pop('summary')
@@ -285,7 +288,7 @@ class PostgresqlStorage(BaseStorage):
                         {'hash':item._hash,'mediatype':item.mediatype,'data':Binary(item.data)})
         elif type_name in ['document', 'binder']:
             args = item.to_dict()
-            args['license'] = repr(args['license'])
+            args['license'] = json.dumps(args['license'])
             if 'license_url' in args:
                 args.pop('license_url')
             if 'license_text' in args:
