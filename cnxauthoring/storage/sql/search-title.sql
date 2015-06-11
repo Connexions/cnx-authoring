@@ -5,4 +5,8 @@
 -- See LICENCE.txt for details.
 -- ###
 
-SELECT * from document WHERE {where_clause} 
+SELECT  id, title, created, revised, license, language, media_type, derived_from,
+derived_from_uri, derived_from_title, content, abstract, submitter, authors,
+publishers, copyright_holders, editors, translators, illustrators, subjects,
+keywords, state, publication, cnx_archive_uri, version, contained_in, print_style
+from document WHERE {where_clause} 
