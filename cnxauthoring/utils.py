@@ -45,7 +45,7 @@ PUBLISHING_ROLES_MAPPING = {
 
 NAMESPACES = (u'<body xmlns="http://www.w3.org/1999/xhtml" '
               'xmlns:bib="http://bibtexml.sf.net/" '
-              'xmlns:data="http://dev.w3.org/html5/spec/#custom" '
+              'xmlns:data="http://www.w3.org/TR/html5/dom.html#custom-data-attribute" '
               'xmlns:epub="http://www.idpf.org/2007/ops" '
               'xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" '
               'xmlns:dc="http://purl.org/dc/elements/1.1/" '
