@@ -218,8 +218,6 @@ class Document(cnxepub.Document, BaseContent):
 
     def update(self, **kwargs):
         super(Document, self).update(**kwargs)
-        self.metadata['content'] = utils.manage_namespace(
-            self.metadata['content'])
         self.content = self.metadata['content']
 
     def publish_prep(self):
