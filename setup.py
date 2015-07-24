@@ -12,7 +12,6 @@ install_requires = (
         'psycopg2>=2.5',
         'requests',
         'pytz',
-        'setuptools>=17.1',
         'tzlocal',
         'waitress',
         )
