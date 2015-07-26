@@ -12,7 +12,6 @@ install_requires = (
         'psycopg2>=2.5',
         'requests',
         'pytz',
-        'setuptools>=17.1',
         'tzlocal',
         'waitress',
         )
@@ -21,7 +20,9 @@ tests_require = (
         'cnx-archive',
         'cnx-publishing',
         'HTTPretty',
-        'mock',   # only required for python2
+        # FIXME mock>1.1 uses setuptools>17.1 which is not available
+        #       in debian/ubuntu stable.
+        'mock==1.0.1',   # only required for python2
         'WebTest',
         'wsgi_intercept',
         )
