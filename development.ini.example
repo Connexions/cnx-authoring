@@ -15,6 +15,9 @@ storage = postgresql
 postgresql.db-connection-string = dbname=authoring user=cnxauthoring password=cnxauthoring
 
 default-license-url = http://creativecommons.org/licenses/by/4.0/
+current-license-urls =
+   http://creativecommons.org/licenses/by/4.0/
+   http://creativecommons.org/licenses/by-nc-sa/4.0/
 
 # size limit of file upload in MB
 authoring.file_upload.limit = 50

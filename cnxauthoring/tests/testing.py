@@ -41,8 +41,14 @@ def integration_test_settings():
 
 _LICENSE_VALUES = (
   ('Creative Commons Attribution License',
+   'by', '3.0',
+   'http://creativecommons.org/licenses/by/3.0/'),
+  ('Creative Commons Attribution License',
    'by', '4.0',
    'http://creativecommons.org/licenses/by/4.0/'),
+  ('Creative Commons Attribution-NonCommercial-ShareAlike License',
+   'by-nc-sa', '3.0',
+   'http://creativecommons.org/licenses/by-nc-sa/3.0/'),
   ('Creative Commons Attribution-NonCommercial-ShareAlike License',
    'by-nc-sa', '4.0',
    'http://creativecommons.org/licenses/by-nc-sa/4.0/'),
@@ -61,8 +67,12 @@ def _setup_licenses():
         models.License(**dict(args))
         for args in [zip(_LICENSE_KEYS, v) for v in _LICENSE_VALUES]
         ]
-    models.DEFAULT_LICENSE = models.LICENSES[0]
+    models.CURRENT_LICENSES = (models.LICENSES[1], models.LICENSES[3],)
+    models.DEFAULT_LICENSE = models.CURRENT_LICENSES[0]
     assert models.DEFAULT_LICENSE.code == 'by'
+    assert models.DEFAULT_LICENSE.version == '4.0'
+    assert models.CURRENT_LICENSES[1].code == 'by-nc-sa'
+    assert models.CURRENT_LICENSES[1].version == '4.0'
 
 
 _setup_licenses()
