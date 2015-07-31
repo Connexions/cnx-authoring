@@ -489,6 +489,12 @@ def revise_content(request, **kwargs):
     return document
 
 
+def _upgrade_license(license):
+    """Given a license, upgrade it to it's comparable type."""
+    new_license = [l for l in CURRENT_LICENSES if l.code == license.code][0]
+    return new_license
+
+
 def derive_content(request, **kwargs):
     derived_from = kwargs['derived_from']
     document = utils.fetch_archive_content(request, derived_from)
@@ -506,4 +512,8 @@ def derive_content(request, **kwargs):
     document['translators'] = []
     document['editors'] = []
     document['illustrators'] = []
+    # Upgrade the license
+    if document['license']['url'] not in [l.url for l in CURRENT_LICENSES]:
+        license = License.from_url(document['license']['url'])
+        document['license'] = _upgrade_license(license).__json__()
     return document

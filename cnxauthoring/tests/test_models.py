@@ -15,7 +15,7 @@ except ImportError:
 import httpretty
 from pyramid import testing as pyramid_testing
 
-from . import testing
+from .testing import set_up_licenses
 
 
 class ModelUtilitiesTestCase(unittest.TestCase):
@@ -72,3 +72,73 @@ class ModelUtilitiesTestCase(unittest.TestCase):
         expected['derived_from_uri'] = "http://cnx.org/contents/{}@{}" \
             .format(archived_data['id'], archived_data['version'])
         self.assertEqual(document_as_dict, expected)
+
+    @httpretty.activate
+    def test_derive_content_upgrades_license(self):
+        archive_url = "http://example.com"
+        settings = {'archive.url': archive_url}
+
+        from ..models import LICENSES, DEFAULT_LICENSE
+        license = [l for l in LICENSES if l.url.find('by/3') >= 0][0]
+
+        content_id = 'uuid'
+        content_title = 'title'
+        archived_data = {
+            'id': content_id,
+            'version': '1',
+            'license': license.__json__(),
+            'title': content_title,
+            }
+
+        url = "{}/contents/{}.json".format(archive_url, content_id)
+        faux_response_body = json.dumps(archived_data)
+        httpretty.register_uri(httpretty.GET, url,
+                               body=faux_response_body, status=200)
+
+        request = pyramid_testing.DummyRequest()
+        request.registry = mock.Mock()
+        request.registry.settings = settings
+
+        from ..models import derive_content
+        document_as_dict = derive_content(request, derived_from=content_id)
+
+        self.assertEqual(document_as_dict['license']['version'],
+                         DEFAULT_LICENSE.version)
+
+
+    @httpretty.activate
+    def test_derive_content_upgrades_to_comparable_license(self):
+        archive_url = "http://example.com"
+        settings = {'archive.url': archive_url}
+
+        set_up_licenses()
+        from ..models import LICENSES, CURRENT_LICENSES, DEFAULT_LICENSE
+        license = [l for l in LICENSES if l.url.find('nc-sa/3') >= 0][0]
+
+        content_id = 'uuid'
+        content_title = 'title'
+        archived_data = {
+            'id': content_id,
+            'version': '1',
+            'license': license.__json__(),
+            'title': content_title,
+            }
+
+        url = "{}/contents/{}.json".format(archive_url, content_id)
+        faux_response_body = json.dumps(archived_data)
+        httpretty.register_uri(httpretty.GET, url,
+                               body=faux_response_body, status=200)
+
+        request = pyramid_testing.DummyRequest()
+        request.registry = mock.Mock()
+        request.registry.settings = settings
+
+        from ..models import derive_content
+        document_as_dict = derive_content(request, derived_from=content_id)
+
+        expected_license = [l for l in CURRENT_LICENSES
+                            if l.url.find('nc-sa/4') >= 0][0]
+        self.assertEqual(document_as_dict['license']['code'],
+                         expected_license.code)
+        self.assertEqual(document_as_dict['license']['version'],
+                         expected_license.version)

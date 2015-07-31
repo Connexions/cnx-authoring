@@ -12,7 +12,7 @@ from pyramid.paster import get_appsettings
 
 __all__ = (
     'TEST_DATA_DIRECTORY',
-    'integration_test_settings', 'test_data',
+    'integration_test_settings', 'set_up_licenses', 'test_data',
     )
 
 
@@ -56,7 +56,7 @@ _LICENSE_VALUES = (
 _LICENSE_KEYS = ('name', 'code', 'version', 'url',)
 
 
-def _setup_licenses():
+def set_up_licenses():
     """This sets up a limited set of licenses for tests.
     This is necessary because licenses are normally initiallized from
     a request made to an archive instance. Since, unittests won't
@@ -75,4 +75,4 @@ def _setup_licenses():
     assert models.CURRENT_LICENSES[1].version == '4.0'
 
 
-_setup_licenses()
+set_up_licenses()
