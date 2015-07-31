@@ -475,7 +475,8 @@ def derive_content(request, **kwargs):
     derived_from = kwargs['derived_from']
     document = utils.fetch_archive_content(request, derived_from)
     document['derived_from_title'] = document['title']
-    # TODO not hardcode this url
+    # FIXME This is a hardcoded value and the hostname is wrong.
+    #       It should point to archive.cnx.org.
     document['derived_from_uri'] = 'http://cnx.org/contents/{}@{}'.format(document['id'],document['version'])
     document['title'] = u'Copy of {}'.format(document['title'])
     document['created'] = None
