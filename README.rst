@@ -102,8 +102,6 @@ INSTALL
 
    ./bin/pserve development.ini
 
-**Known bugs**: pickle storage is currently broken.
-
 
 INSTALL (Mac OSX)
 -----------------
