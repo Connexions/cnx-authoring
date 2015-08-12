@@ -80,3 +80,7 @@ def main(global_config, **settings):
     config.set_authorization_policy(ACLAuthorizationPolicy())
 
     return config.make_wsgi_app()
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions

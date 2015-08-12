@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
+ import versioneer
 
 install_requires = (
         'cnx-epub',
@@ -29,7 +30,9 @@ tests_require = (
 
 setup(
         name='cnx-authoring',
-        version='0.6.0',
+        version=versioneer.get_version(),
+        cmdclass=versioneer.get_cmdclass(),
+        version='0.8.1',
         author='Connexions team',
         author_email='info@cnx.org',
         url='https://github.com/connexions/cnx-authoring',
