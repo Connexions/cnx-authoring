@@ -29,7 +29,7 @@ tests_require = (
 
 setup(
         name='cnx-authoring',
-        version='0.6.0',
+        version='0.9.0',
         author='Connexions team',
         author_email='info@cnx.org',
         url='https://github.com/connexions/cnx-authoring',
