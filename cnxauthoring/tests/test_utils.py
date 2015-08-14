@@ -1099,3 +1099,91 @@ Thank you from your friends at OpenStax CNX
     def test_validate_for_publish_on_obj(self):
         with self.assertRaises(ValueError):
             utils.validate_for_publish(object())
+
+
+class ArchiveCommunicationsTestCase(unittest.TestCase):
+
+    @httpretty.activate
+    def test_content(self):
+        content_id = 'uuid'
+        archive_url = 'http://example.com'
+        url = "{}/contents/{}.json".format(archive_url, content_id)
+        response_data = {'id': content_id}
+        faux_response_body = json.dumps(response_data)
+        httpretty.register_uri(httpretty.GET, url,
+                               body=faux_response_body, status=200)
+
+        request = testing.DummyRequest()
+        request.registry = mock.Mock()
+        request.registry.settings = {'archive.url': archive_url}
+
+        from ..utils import fetch_archive_content
+        document_as_dict = fetch_archive_content(request, content_id)
+        self.assertEqual(document_as_dict, response_data)
+
+    @httpretty.activate
+    def test_extras(self):
+        content_id = 'uuid'
+        archive_url = 'http://example.com'
+        url = "{}/extras/{}".format(archive_url, content_id)
+        response_data = {'extraInfo': content_id}
+        faux_response_body = json.dumps(response_data)
+        httpretty.register_uri(httpretty.GET, url,
+                               body=faux_response_body, status=200)
+
+        request = testing.DummyRequest()
+        request.registry = mock.Mock()
+        request.registry.settings = {'archive.url': archive_url}
+
+        from ..utils import fetch_archive_content
+        extras = fetch_archive_content(request, content_id, extras=True)
+        self.assertEqual(extras, {'extra_info': content_id})
+
+    @httpretty.activate
+    def test_not_found(self):
+        content_id = 'uuid'
+        archive_url = 'http://example.com'
+        url = "{}/contents/{}.json".format(archive_url, content_id)
+        response_data = {'id': content_id}
+        faux_response_body = json.dumps(response_data)
+        httpretty.register_uri(httpretty.GET, url, status=404)
+
+        request = testing.DummyRequest()
+        request.registry = mock.Mock()
+        request.registry.settings = {'archive.url': archive_url}
+
+        from ..utils import fetch_archive_content
+        from ..models import DocumentNotFoundError
+        self.assertRaises(DocumentNotFoundError, fetch_archive_content,
+                          request, content_id)
+
+    @httpretty.activate
+    def test_not_json(self):
+        content_id = 'uuid'
+        archive_url = 'http://example.com'
+        url = "{}/contents/{}.json".format(archive_url, content_id)
+        response_data = "<p>not json</p>"
+        httpretty.register_uri(httpretty.GET, url, body=response_data, status=200)
+
+        request = testing.DummyRequest()
+        request.registry = mock.Mock()
+        request.registry.settings = {'archive.url': archive_url}
+
+        from ..utils import fetch_archive_content
+        from ..models import DocumentNotFoundError
+        self.assertRaises(DocumentNotFoundError, fetch_archive_content,
+                          request, content_id)
+
+    def test_connection_error(self):
+        content_id = 'uuid'
+        archive_url = 'http://example.com'
+        request = testing.DummyRequest()
+        request.registry = mock.Mock()
+        request.registry.settings = {'archive.url': archive_url}
+
+        from ..utils import fetch_archive_content
+        from ..models import ArchiveConnectionError
+        from requests.exceptions import ConnectionError
+        with mock.patch('requests.get', side_effect=ConnectionError()) as get:
+            self.assertRaises(ArchiveConnectionError, fetch_archive_content,
+                              request, content_id)

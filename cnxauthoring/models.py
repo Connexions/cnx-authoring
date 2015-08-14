@@ -34,6 +34,7 @@ DEFAULT_LANGUAGE = 'en'
 # Initialized via the setup_licenses function.
 LICENSES = []
 DEFAULT_LICENSE = None
+CURRENT_LICENSES = []
 
 
 class DocumentNotFoundError(Exception):
@@ -69,6 +70,7 @@ def initialize_licenses(event):
     """Initializes a fixed set of license objects
     based on the authoritative list stored in archive.
     """
+    global CURRENT_LICENSES
     global DEFAULT_LICENSE
     global LICENSES
     settings = event.app.registry.settings
@@ -80,6 +82,20 @@ def initialize_licenses(event):
         raise RuntimeError("Default license is not configured. "
                            "Please set the 'default-license-url' in "
                            "the application configuration.")
+    try:
+        current_license_urls = settings['current-license-urls']
+    except KeyError:
+        raise RuntimeError("A current set of licenses is not configured. "
+                           "Please set the 'current-license-urls' in "
+                           "the application configuration.")
+    # TODO Verify that only one version for each type of license is
+    #      within this value.
+    current_license_urls = [url.strip()
+                            for url in current_license_urls.split('\n')
+                            if url.strip()]
+    if default_license_url not in current_license_urls:
+        raise RuntimeError("The 'default-license-url' setting must be "
+                           "included in the 'current-license-urls'.")
 
     # Contact archive for an authoritative list of licenses.
     url = urlparse.urljoin(archive_url, '/extras')
@@ -93,7 +109,9 @@ def initialize_licenses(event):
         LICENSES.append(License(**kwargs))
 
     # Assign the default license.
-    DEFAULT_LICENSE = [l for l in LICENSES if l.url == default_license_url][0]
+    CURRENT_LICENSES = [l for l in LICENSES if l.url in current_license_urls]
+    DEFAULT_LICENSE = [l for l in CURRENT_LICENSES
+                       if l.url == default_license_url][0]
 
 
 class License(object):
@@ -469,11 +487,18 @@ def revise_content(request, **kwargs):
     return document
 
 
+def _upgrade_license(license):
+    """Given a license, upgrade it to it's comparable type."""
+    new_license = [l for l in CURRENT_LICENSES if l.code == license.code][0]
+    return new_license
+
+
 def derive_content(request, **kwargs):
     derived_from = kwargs['derived_from']
     document = utils.fetch_archive_content(request, derived_from)
     document['derived_from_title'] = document['title']
-    # TODO not hardcode this url
+    # FIXME This is a hardcoded value and the hostname is wrong.
+    #       It should point to archive.cnx.org.
     document['derived_from_uri'] = 'http://cnx.org/contents/{}@{}'.format(document['id'],document['version'])
     document['title'] = u'Copy of {}'.format(document['title'])
     document['created'] = None
@@ -485,4 +510,8 @@ def derive_content(request, **kwargs):
     document['translators'] = []
     document['editors'] = []
     document['illustrators'] = []
+    # Upgrade the license
+    if document['license']['url'] not in [l.url for l in CURRENT_LICENSES]:
+        license = License.from_url(document['license']['url'])
+        document['license'] = _upgrade_license(license).__json__()
     return document
