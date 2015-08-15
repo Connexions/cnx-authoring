@@ -53,8 +53,8 @@ def main(global_config, **settings):
     # storage is configurable. module and class for a given storage name are
     # configured in storage __init__, settings for that storage are then
     # passed as keyword arguments (without the prefix) i.e.  configuration of
-    # 'storage = pickle' with 'pickle.filename' values.  lookup storage
-    # factory by name and pass in 'filename = foo'
+    # 'storage = postgresql' with 'postgresql.db-connection-string' values.
+    # lookup storage factory by name and pass in 'db_connection_string = foo'
 
     from . import storage
 

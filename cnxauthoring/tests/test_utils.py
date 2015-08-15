@@ -22,6 +22,7 @@ import httpretty
 from pyramid import testing
 
 from .. import utils
+from .testing import integration_test_settings
 
 
 class CaptureRequest:
@@ -1022,6 +1023,7 @@ Thank you from your friends at OpenStax CNX
             document = create_content(
                 title='My Document',
                 license={'url': DEFAULT_LICENSE.url},
+                submitter={'id': 'me'},
                 authors=[{'id': 'me', 'has_accepted': True}],
                 publishers=[{'id': 'me', 'has_accepted': True}],
                 editors=[{'id': 'me', 'has_accepted': True},
@@ -1050,9 +1052,19 @@ Thank you from your friends at OpenStax CNX
                 )
             return binder
 
+        from ..storage.database import CONNECTION_SETTINGS_KEY, initdb
+        from ..storage.postgresql import PostgresqlStorage
+        settings = integration_test_settings()
+        test_db = settings[CONNECTION_SETTINGS_KEY]
+        initdb({CONNECTION_SETTINGS_KEY: test_db}, clear=True)
+        self.storage = PostgresqlStorage(db_connection_string=test_db)
+        def persist_and_disconnect():
+            self.storage.persist()
+            self.storage.conn.close()
+        self.addCleanup(persist_and_disconnect)
+
         from .. import storage
-        from ..storage.memory import MemoryStorage
-        setattr(storage, 'storage', MemoryStorage())
+        setattr(storage, 'storage', self.storage)
 
         from ..storage import storage
 
