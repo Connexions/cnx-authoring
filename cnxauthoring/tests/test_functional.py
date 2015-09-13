@@ -1156,7 +1156,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'mediaType': u'application/vnd.org.cnx.collection',
             u'permissions': [u'edit', u'publish', u'view'],
             u'publication': None,
-            u'publishers': [cnxcap_role, osc_role],
+            u'publishers': [osc_role, cnxcap_role],
             u'state': u'Draft',
             u'subjects': [
                 u'Mathematics and Statistics',
