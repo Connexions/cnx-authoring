@@ -2,7 +2,7 @@
 ###############
 __pycache__
 *.pyc
-*.egg-info
+*.egg*
 .tox
 *.*~
 .DS_Store
@@ -16,11 +16,16 @@ bin
 lib
 include
 
-# Build file #
-##############
+# Build files #
+###############
 build/
 dist/
+
+# Test files #
+##############
+messages.txt
 
 # Coverage #
 ############
 .coverage
+coverage_html_report/
