@@ -30,7 +30,7 @@ INSTALL
 
 .. code :: bash
 
-   sudo apt-get libxml2-dev libxslt-dev libz-dev libpq-dev
+   sudo apt-get install libxml2-dev libxslt-dev libz-dev libpq-dev
 
 3. Install cnx-query-grammar
 
@@ -80,7 +80,7 @@ INSTALL
    
    .. code:: bash
 
-      sudo apt-get postgresql postgresql-contrib
+      sudo apt-get install postgresql postgresql-contrib
 
    Change two instances of "password" to "trust" in pg_hba.conf file and reload
    
