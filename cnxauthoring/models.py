@@ -484,6 +484,10 @@ def revise_content(request, **kwargs):
     document.update(kwargs)
     document['revised'] = None
     document['maintainers'] = document['publishers']
+    # Upgrade the license
+    if document['license']['url'] not in [l.url for l in CURRENT_LICENSES]:
+        license = License.from_url(document['license']['url'])
+        document['license'] = _upgrade_license(license).__json__()
     return document
 
 
