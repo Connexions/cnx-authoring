@@ -97,6 +97,7 @@ class ModelUtilitiesTestCase(unittest.TestCase):
 
         self.assertEqual(document_as_dict['license']['version'],
                          DEFAULT_LICENSE.version)
+        self.assertEqual(document_as_dict['license']['upgraded'],True)
 
 
     @httpretty.activate
@@ -136,6 +137,7 @@ class ModelUtilitiesTestCase(unittest.TestCase):
                          expected_license.code)
         self.assertEqual(document_as_dict['license']['version'],
                          expected_license.version)
+        self.assertEqual(document_as_dict['license']['upgraded'],True)
 
     @httpretty.activate
     def test_derive_content(self):
