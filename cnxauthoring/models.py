@@ -192,6 +192,9 @@ class BaseContent(object):
         if 'license' in kwargs:
             license_url = kwargs['license']['url']
             self.metadata['license'] = License.from_url(license_url)
+        if 'original_license' in kwargs:
+            original_license_url = kwargs['original_license']['url']
+            self.metadata['original_license'] = License.from_url(original_license_url)
         self.metadata['revised'] = datetime.datetime.now(TZINFO)
 
     def to_dict(self):
@@ -305,12 +308,13 @@ def build_tree(tree):
 def build_metadata(
         title, id=None, content=None, abstract=None, created=None,
         revised=None, version=None, subjects=None, keywords=None,
-        license=LICENSE_PARAMETER_MARKER, language=None, derived_from=None,
-        derived_from_uri=None, derived_from_title=None,
-        submitter=None, state=None, publication=None, cnx_archive_uri=None,
-        authors=None, publishers=None, contained_in=None,
-        licensors=None, copyright_holders=None,
-        editors=None, translators=None, illustrators=None, print_style=None):
+        license=LICENSE_PARAMETER_MARKER, original_license=None,
+        language=None, derived_from=None, derived_from_uri=None,
+        derived_from_title=None, submitter=None, state=None,
+        publication=None, cnx_archive_uri=None, authors=None,
+        publishers=None, contained_in=None, licensors=None,
+        copyright_holders=None, editors=None, translators=None,
+        illustrators=None, print_style=None):
     metadata = {}
     metadata['title'] = title
     metadata['version'] = version is None and 'draft' or version
@@ -325,6 +329,8 @@ def build_metadata(
         metadata['license'] = DEFAULT_LICENSE
     else:
         metadata['license'] = license
+    metadata['original_license'] = \
+        original_license is None and metadata['license'] or original_license
     metadata['language'] = language is None and DEFAULT_LANGUAGE or language
     metadata['derived_from'] = derived_from
     metadata['derived_from_uri'] = derived_from_uri
@@ -368,6 +374,7 @@ def to_dict(metadata):
     result['created'] = created.astimezone(TZINFO).isoformat()
     result['revised'] = revised.astimezone(TZINFO).isoformat()
     result['license'] = result['license'].__dict__.copy()
+    result['original_license'] = result['original_license'].__dict__.copy()
     return result
 
 
@@ -462,11 +469,12 @@ def create_content(**appstruct):
     """Given a Colander *appstruct*, create a content object."""
     kwargs = appstruct.copy()
     # TODO Lookup via storage.
-    license = appstruct.get('license')
-    if license is not None:
-        if not isinstance(license, License):
-            license = License.from_url(license['url'])
-        kwargs['license'] = license
+    for li_arg in ('license','original_license'):
+        license = appstruct.get(li_arg)
+        if license is not None:
+            if not isinstance(license, License):
+                license = License.from_url(license['url'])
+            kwargs[li_arg] = license
     media_type = 'media_type' in kwargs and kwargs.pop('media_type')
     if media_type == BINDER_MEDIATYPE:
         return Binder(**kwargs)
@@ -486,11 +494,10 @@ def revise_content(request, **kwargs):
     document['maintainers'] = document['publishers']
     # Upgrade the license
     if document['license']['url'] not in [l.url for l in CURRENT_LICENSES]:
-        license = _upgrade_license(
+        document['original_license'] = document['license']
+        document['license'] = _upgrade_license(
             License.from_url(
                 document['license']['url'])).__json__()
-        license['upgraded'] = True
-        document['license'] = license
     return document
 
 

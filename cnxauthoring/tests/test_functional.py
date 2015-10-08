@@ -241,6 +241,12 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0',
                 },
+            u'originalLicense': {
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
             u'revised': get_result['revised'],
             u'mediaType': u'application/vnd.org.cnx.module',
             u'language': u'en',
@@ -513,6 +519,12 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'originalLicense': {
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
             u'subjects': [],
             u'isPublishable': True,
             u'publishBlockers': None,
@@ -558,6 +570,12 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'originalLicense': {
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
             u'subjects': [],
             u'isPublishable': True,
             u'publishBlockers': None,
@@ -622,6 +640,12 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'originalLicense': {
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
             u'subjects': [],
             u'isPublishable': True,
             u'publishBlockers': None,
@@ -667,6 +691,12 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'originalLicense': {
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
             u'subjects': [],
             u'isPublishable': True,
             u'publishBlockers': None,
@@ -729,6 +759,12 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'originalLicense': {
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
             u'subjects': [],
             u'isPublishable': True,
             u'publishBlockers': None,
@@ -774,6 +810,12 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'originalLicense': {
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
             u'subjects': [],
             u'isPublishable': True,
             u'publishBlockers': None,
@@ -829,6 +871,12 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'originalLicense': {
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
             u'isPublishable': True,
             u'publishBlockers': None,
             u'keywords': [],
@@ -947,10 +995,12 @@ class FunctionalTests(BaseFunctionalTestCase):
         result = response.json
         license = result.pop('license')
         self.assertEqual(license['url'], DEFAULT_LICENSE.url)
+        original_license = result.pop('originalLicense')
+        self.assertEqual(original_license['url'], DEFAULT_LICENSE.url)
         created = result.pop('created')
         self.assertTrue(created.startswith('2011-10-05'))
         revised = result.pop('revised')
-        self.assertEqual(revised, now.astimezone(TZINFO).isoformat())
+        self.assertEqual(revised, formatted_now)
         content = result.pop('content')
         self.assertTrue(u'Lav en madplan for den kommende uge' in content)
 
@@ -1031,6 +1081,12 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0',
                 },
+            u'originalLicense': {
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
             u'subjects': [u'Science and Technology'],
             u'isPublishable': True,
             u'publishBlockers': None,
@@ -1081,6 +1137,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         # Test the response data
         license = result.pop('license')
         self.assertEqual(license['url'], DEFAULT_LICENSE.url)
+        original_license = result.pop('originalLicense')
+        self.assertEqual(original_license['url'], DEFAULT_LICENSE.url)
         created = result.pop('created')
         self.assertTrue(created.startswith('2013-07-31'))
         revised = result.pop('revised')
@@ -1176,6 +1234,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         result = response.json
         license = result.pop('license')
         self.assertEqual(license['url'], DEFAULT_LICENSE.url)
+        original_license = result.pop('originalLicense')
+        self.assertEqual(original_license['url'], DEFAULT_LICENSE.url)
         created = result.pop('created')
         self.assertTrue(created.startswith('2013-07-31'))
         revised = result.pop('revised')
@@ -1217,6 +1277,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         result = response.json
         license = result.pop('license')
         self.assertEqual(license['url'], post_data['license']['url'])
+        original_license = result.pop('originalLicense')
+        self.assertEqual(original_license['url'], post_data['license']['url'])
         created = result.pop('created')
         self.assertTrue(created.startswith('2014-03-13T15:21:15.677617'))
         revised = result.pop('revised')
@@ -1331,6 +1393,12 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'originalLicense': {
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
             u'tree': {
                 u'id': u'{}@draft'.format(book['id']),
                 u'title': u'Book',
@@ -1538,6 +1606,12 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'originalLicense': {
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
             u'title': u'...',
             u'tree': {
                 u'id': u'{}@draft'.format(binder['id']),
@@ -1592,6 +1666,12 @@ class FunctionalTests(BaseFunctionalTestCase):
                 u'name': u'Creative Commons Attribution License',
                 u'url': u'http://creativecommons.org/licenses/by/4.0/',
                 u'version': u'4.0'},
+            u'originalLicense': {
+                u'code': u'by',
+                u'name': u'Creative Commons Attribution License',
+                u'url': u'http://creativecommons.org/licenses/by/4.0/',
+                u'version': u'4.0',
+                },
             u'title': u'...',
             u'tree': {
                 u'id': u'{}@draft'.format(binder['id']),

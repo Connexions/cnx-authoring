@@ -70,6 +70,12 @@ class ModelJSONRendering(unittest.TestCase):
                 'name': 'Creative Commons Attribution License',
                 'version': '4.0',
                 },
+            'originalLicense': {
+                'url': 'http://creativecommons.org/licenses/by/4.0/',
+                'code': 'by',
+                'name': 'Creative Commons Attribution License',
+                'version': '4.0',
+                },
             'subjects': [],
             'isPublishable': False,
             'publishBlockers': ['no_content'],

@@ -93,7 +93,8 @@ class PostgresqlStorage(BaseStorage):
             model = Resource(row['mediatype'], io.BytesIO(row['data'][:]),
                              filename=row['hash'])
         else:  # It's a Document/Binder...
-            row['license'] = License.from_url(json.loads(row['license'])['url'])
+            row['license'] = License.from_url(row['license']['url'])
+            row['original_license'] = License.from_url(row['original_license']['url'])
             for field in ('user_id', 'permission', 'uuid'):
                 if field in row:
                     row.pop(field)
@@ -218,6 +219,7 @@ class PostgresqlStorage(BaseStorage):
         elif type_name in ['document','binder']:
             args = item.to_dict()
             args['license'] = json.dumps(args['license'])
+            args['original_license'] = json.dumps(args['original_license'])
             args['media_type'] = MEDIATYPES[type_name]
             if 'summary' in args:
                 args.pop('summary')
@@ -289,6 +291,7 @@ class PostgresqlStorage(BaseStorage):
         elif type_name in ['document', 'binder']:
             args = item.to_dict()
             args['license'] = json.dumps(args['license'])
+            args['original_license'] = json.dumps(args['original_license'])
             if 'license_url' in args:
                 args.pop('license_url')
             if 'license_text' in args:
