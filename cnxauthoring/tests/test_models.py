@@ -43,7 +43,7 @@ class ModelUtilitiesTestCase(unittest.TestCase):
             'illustrators': [{}, {}, {}],
             'created': 'awhile ago',
             'revised': 'just now',
-            }
+        }
 
         url = "{}/contents/{}.json".format(archive_url, content_id)
         faux_response_body = json.dumps(archived_data)
@@ -60,8 +60,9 @@ class ModelUtilitiesTestCase(unittest.TestCase):
         expected = archived_data.copy()
         role_attrs = ('authors', 'licensors', 'editors', 'illustrators',
                       'maintainers', 'publishers', 'translators',)
-        for role_attr in  role_attrs:
-            expected[role_attr] = [{'has_accepted':True},{'has_accepted':True},{'has_accepted':True}]
+        for role_attr in role_attrs:
+            expected[role_attr] = [
+                {'has_accepted': True}, {'has_accepted': True}, {'has_accepted': True}]
         expected['revised'] = None
         self.assertEqual(document_as_dict, expected)
 
@@ -81,7 +82,7 @@ class ModelUtilitiesTestCase(unittest.TestCase):
             'license': license.__json__(),
             'title': content_title,
             'publishers': [{}, {}, {}],
-            }
+        }
 
         url = "{}/contents/{}.json".format(archive_url, content_id)
         faux_response_body = json.dumps(archived_data)
@@ -97,8 +98,7 @@ class ModelUtilitiesTestCase(unittest.TestCase):
 
         self.assertEqual(document_as_dict['license']['version'],
                          DEFAULT_LICENSE.version)
-        self.assertEqual(document_as_dict['license']['upgraded'],True)
-
+        self.assertEqual(document_as_dict['license']['upgraded'], True)
 
     @httpretty.activate
     def test_revise_content_upgrades_to_comparable_license(self):
@@ -117,7 +117,7 @@ class ModelUtilitiesTestCase(unittest.TestCase):
             'license': license.__json__(),
             'title': content_title,
             'publishers': [{}, {}, {}],
-            }
+        }
 
         url = "{}/contents/{}.json".format(archive_url, content_id)
         faux_response_body = json.dumps(archived_data)
@@ -137,7 +137,7 @@ class ModelUtilitiesTestCase(unittest.TestCase):
                          expected_license.code)
         self.assertEqual(document_as_dict['license']['version'],
                          expected_license.version)
-        self.assertEqual(document_as_dict['license']['upgraded'],True)
+        self.assertEqual(document_as_dict['license']['upgraded'], True)
 
     @httpretty.activate
     def test_derive_content(self):
