@@ -184,6 +184,9 @@ class DocumentSchema(colander.MappingSchema):
     license = LicenseSchema(
         missing=colander.drop,
         )
+    original_license = LicenseSchema(
+        missing=colander.drop,
+        )
     language = colander.SchemaNode(
         colander.String(),
         default=DEFAULT_LANGUAGE,

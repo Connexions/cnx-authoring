@@ -98,7 +98,7 @@ class ModelUtilitiesTestCase(unittest.TestCase):
 
         self.assertEqual(document_as_dict['license']['version'],
                          DEFAULT_LICENSE.version)
-        self.assertEqual(document_as_dict['license']['upgraded'], True)
+        self.assertEqual(document_as_dict['original_license'], license.__json__())
 
     @httpretty.activate
     def test_revise_content_upgrades_to_comparable_license(self):
@@ -137,7 +137,7 @@ class ModelUtilitiesTestCase(unittest.TestCase):
                          expected_license.code)
         self.assertEqual(document_as_dict['license']['version'],
                          expected_license.version)
-        self.assertEqual(document_as_dict['license']['upgraded'], True)
+        self.assertEqual(document_as_dict['original_license'], license.__json__())
 
     @httpretty.activate
     def test_derive_content(self):

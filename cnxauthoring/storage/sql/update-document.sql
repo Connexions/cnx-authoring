@@ -20,6 +20,7 @@ UPDATE document
             publication = %(publication)s, cnx_archive_uri = %(cnx-archive-uri)s,
             publishers = %(publishers)s,
             contained_in = %(contained_in)s,
+            original_license = %(original_license)s,
             copyright_holders = %(copyright_holders)s,
             editors = %(editors)s, translators = %(translators)s,
             illustrators = %(illustrators)s, version = %(version)s, print_style = %(print_style)s
