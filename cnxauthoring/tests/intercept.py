@@ -187,7 +187,7 @@ def install_intercept():
     with psycopg2.connect(connection_string) as db_connection:
         with db_connection.cursor() as cursor:
             cursor.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public")
-        
+
     # Initialize the archive database.
     archive_initdb(settings)
     # Initialize the publishing database.
@@ -206,7 +206,9 @@ def install_intercept():
     global _archive_app
     if not _archive_app:
         _archive_app = archive_main({}, **publishing_settings())
-    make_app = lambda : _archive_app
+
+    def make_app():
+        return _archive_app
     # Grab the configured archive url from the authoring config.
     host, port = _parse_url_from_settings(authoring_settings,
                                           'archive.url')
@@ -216,7 +218,9 @@ def install_intercept():
     global _publishing_app
     if not _publishing_app:
         _publishing_app = publishing_main({}, **publishing_settings())
-    make_app = lambda : _publishing_app
+
+    def make_app():
+        return _publishing_app
     # Grab the configured publishing url from the authoring config.
     host, port = _parse_url_from_settings(authoring_settings,
                                           'publishing.url')

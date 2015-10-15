@@ -56,11 +56,11 @@ class ViewsTests(unittest.TestCase):
         self.addCleanup(delattr, testing.DummyRequest, 'user')
 
         for mock_target in (
-            'cnxauthoring.utils.declare_acl',
-            'cnxauthoring.utils.declare_roles',
-            'cnxauthoring.utils.declare_licensors',
-            'cnxauthoring.utils.accept_roles',
-            ):
+                'cnxauthoring.utils.declare_acl',
+                'cnxauthoring.utils.declare_roles',
+                'cnxauthoring.utils.declare_licensors',
+                'cnxauthoring.utils.accept_roles',
+                ):
             patch = mock.patch(mock_target)
             patch.start()
             self.addCleanup(patch.stop)
@@ -175,7 +175,7 @@ class ViewsTests(unittest.TestCase):
         document_title = "The Floating Dust"
         from ..models import Document
         expected = Document(document_title, id=id)
-        expected.acls = {'userid': ('edit','view','publish')}
+        expected.acls = {'userid': ('edit', 'view', 'publish')}
 
         # Test the view
         request = testing.DummyRequest()
@@ -225,9 +225,10 @@ class ViewsTests(unittest.TestCase):
         title = "Double negative hemispheres"
         self.document = None
         self.addCleanup(delattr, self, 'document')
+
         def mocked_add(item):
             self.document = item
-            self.document.acls = {'userid': ('edit','publish','view')}
+            self.document.acls = {'userid': ('edit', 'publish', 'view')}
             self.document.id = uuid.uuid4()
             return self.document
         # Given the minimal amount of information, create a document.
@@ -259,9 +260,10 @@ class ViewsTests(unittest.TestCase):
             }
         self.document = None
         self.addCleanup(delattr, self, 'document')
+
         def mocked_add(item):
             self.document = item
-            self.document.acls = {'username': ('edit','publish','view')}
+            self.document.acls = {'username': ('edit', 'publish', 'view')}
             self.document.id = uuid.uuid4()
             return self.document
         self.storage_cls.add = mock.Mock(side_effect=mocked_add)
@@ -297,6 +299,7 @@ class ViewsTests(unittest.TestCase):
 
         self.resource = None
         self.addCleanup(delattr, self, 'resource')
+
         def mocked_add(item):
             self.resource = item
             return self.resource
@@ -318,6 +321,6 @@ class ViewsTests(unittest.TestCase):
 
         self.assertEqual(request.response.status, '201 Created')
         expected_location = request.route_path('get-resource',
-                                              hash=self.resource.hash)
+                                               hash=self.resource.hash)
         self.assertIn(('Location', expected_location,),
                       request.response.headerlist)

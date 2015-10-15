@@ -122,13 +122,13 @@ class BaseFunctionalTestCase(unittest.TestCase):
 
     def assert_cors_headers(self, response, cache_message_special_case=None):
         self.assertEqual(response.headers['Access-Control-Allow-Credentials'],
-                'true')
+                         'true')
         self.assertEqual(response.headers['Access-Control-Allow-Origin'],
-                'http://localhost:8000')
+                         'http://localhost:8000')
         self.assertEqual(response.headers['Access-Control-Allow-Headers'],
-                'Origin, Content-Type')
+                         'Origin, Content-Type')
         self.assertEqual(response.headers['Access-Control-Allow-Methods'],
-                'GET, OPTIONS, PUT, POST')
+                         'GET, OPTIONS, PUT, POST')
 
         cache_header_dictionary = {
             '201 Created':
@@ -184,15 +184,17 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
     def test_get_content_403(self):
-        response = self.testapp.post_json('/users/contents',
-                {'title': 'My New Document'}, status=201)
+        response = self.testapp.post_json(
+            '/users/contents',
+            {'title': 'My New Document'}, status=201)
         content = response.json
         with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
             acl.return_value = ()
-            response = self.testapp.get('/contents/{}@draft.json'
-                    .format(content['id']), status=403)
+            response = self.testapp.get(
+                '/contents/{}@draft.json'
+                .format(content['id']), status=403)
         self.assertTrue('You do not have permission to view'
-                in response.body.decode('utf-8'))
+                        in response.body.decode('utf-8'))
 
         response = self.testapp.post_json('/users/contents', {
                     'title': 'My New Binder',
@@ -204,10 +206,11 @@ class FunctionalTests(BaseFunctionalTestCase):
         content = response.json
         with mock.patch('cnxauthoring.models.Binder.__acl__') as acl:
             acl.return_value = ()
-            response = self.testapp.get('/contents/{}@draft.json'
-                    .format(content['id']), status=403)
+            response = self.testapp.get(
+                '/contents/{}@draft.json'
+                .format(content['id']), status=403)
         self.assertTrue('You do not have permission to view'
-                in response.body.decode('utf-8'))
+                        in response.body.decode('utf-8'))
 
     def test_get_content_for_document(self):
         now = datetime.datetime.now(TZINFO)
@@ -280,7 +283,8 @@ class FunctionalTests(BaseFunctionalTestCase):
     def test_post_content_403(self):
         with mock.patch('cnxauthoring.models.Document.__acl__') as acl:
             acl.return_value = ()
-            response = self.testapp.post_json('/users/contents',
+            response = self.testapp.post_json(
+                '/users/contents',
                 {'title': u'My document タイトル'}, status=403)
         self.assert_cors_headers(response)
 
@@ -296,8 +300,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
     def test_post_content_invalid_json(self):
-        response = self.testapp.post('/users/contents',
-                'invalid json', status=400)
+        response = self.testapp.post(
+            '/users/contents', 'invalid json', status=400)
         self.assertTrue('Invalid JSON' in response.body.decode('utf-8'))
         self.assert_cors_headers(response)
 
@@ -332,8 +336,9 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
     def test_post_content_minimal(self):
-        response = self.testapp.post_json('/users/contents',
-                {'title': u'My document タイトル'}, status=201)
+        response = self.testapp.post_json(
+            '/users/contents',
+            {'title': u'My document タイトル'}, status=201)
         result = response.json
         self.assertEqual(result['title'], u'My document タイトル')
         self.assertEqual(result['language'], u'en')
@@ -451,7 +456,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                     }, status=400)
         self.assert_cors_headers(response)
         self.assertTrue('Document Not Found: page@draft' in
-                response.body.decode('utf-8'))
+                        response.body.decode('utf-8'))
 
     def test_post_content_multiple(self):
         post_data = [
@@ -488,8 +493,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         now = datetime.datetime.now(TZINFO)
         with mock.patch('datetime.datetime') as mock_datetime:
             mock_datetime.now.return_value = now
-            response = self.testapp.post_json('/users/contents',
-                post_data, status=201)
+            response = self.testapp.post_json(
+                '/users/contents', post_data, status=201)
         result = response.json
         content = result.pop('content')
         self.assertTrue(content.startswith('<html'))
@@ -608,8 +613,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         now = datetime.datetime.now(TZINFO)
         with mock.patch('datetime.datetime') as mock_datetime:
             mock_datetime.now.return_value = now
-            response = self.testapp.post_json('/users/contents',
-                post_data, status=201)
+            response = self.testapp.post_json(
+                '/users/contents', post_data, status=201)
         result = response.json
 
         content = result.pop('content')
@@ -728,8 +733,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         now = datetime.datetime.now(TZINFO)
         with mock.patch('datetime.datetime') as mock_datetime:
             mock_datetime.now.return_value = now
-            response = self.testapp.post_json('/users/contents',
-                    post_data, status=201)
+            response = self.testapp.post_json(
+                '/users/contents', post_data, status=201)
         result = response.json
         content = result.pop('content')
         self.assertTrue(u'missing resource' in content)
@@ -841,8 +846,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         now = datetime.datetime.now(TZINFO)
         with mock.patch('datetime.datetime') as mock_datetime:
             mock_datetime.now.return_value = now
-            response = self.testapp.post_json('/users/contents',
-                post_data, status=201)
+            response = self.testapp.post_json(
+                '/users/contents', post_data, status=201)
         result = response.json
         self.assertTrue(result.pop('revised') is not None)
         self.assertTrue(result.pop('created') is not None)
@@ -940,7 +945,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         result = response.json
         self.assertTrue(result.pop('created') is not None)
         self.assertTrue(result.pop('revised') is not None)
-        self.assertTrue(result.pop('abstract') is not None)        
+        self.assertTrue(result.pop('abstract') is not None)
         self.assertEqual(result, expected)
         self.assert_cors_headers(response)
 
@@ -957,8 +962,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             'keywords': [u'DNA', u'resonance'],
             }
 
-        response = self.testapp.post_json('/users/contents',
-                post_data, status=403)
+        response = self.testapp.post_json(
+            '/users/contents', post_data, status=403)
 
     def test_post_content_revision_404(self):
         post_data = {
@@ -971,8 +976,8 @@ class FunctionalTests(BaseFunctionalTestCase):
             'keywords': [u'DNA', u'resonance'],
             }
 
-        response = self.testapp.post_json('/users/contents',
-                post_data, status=404)
+        response = self.testapp.post_json(
+            '/users/contents', post_data, status=404)
 
     def test_post_content_revision(self):
         self.logout()
@@ -1272,8 +1277,8 @@ class FunctionalTests(BaseFunctionalTestCase):
         now = datetime.datetime.now(TZINFO)
         with mock.patch('datetime.datetime') as mock_datetime:
             mock_datetime.now.return_value = now
-            response = self.testapp.post_json('/users/contents',
-                post_data, status=201)
+            response = self.testapp.post_json(
+                '/users/contents', post_data, status=201)
         result = response.json
         license = result.pop('license')
         self.assertEqual(license['url'], post_data['license']['url'])
@@ -1322,14 +1327,16 @@ class FunctionalTests(BaseFunctionalTestCase):
         now = datetime.datetime.now(TZINFO)
         with mock.patch('datetime.datetime') as mock_datetime:
             mock_datetime.now.return_value = now
-            response = self.testapp.post_json('/users/contents',
+            response = self.testapp.post_json(
+                '/users/contents',
                 {'title': 'Page one'}, status=201)
         page1 = response.json
         self.assert_cors_headers(response)
 
         with mock.patch('datetime.datetime') as mock_datetime:
             mock_datetime.now.return_value = now
-            response = self.testapp.post_json('/users/contents',
+            response = self.testapp.post_json(
+                '/users/contents',
                 {'title': 'Page two'}, status=201)
         page2 = response.json
         self.assert_cors_headers(response)
@@ -1448,8 +1455,9 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
     def test_put_content_not_found(self):
-        response = self.testapp.put_json('/contents/1234abcde@draft.json',
-                {'title': u'Update document title'}, status=404)
+        response = self.testapp.put_json(
+            '/contents/1234abcde@draft.json',
+            {'title': u'Update document title'}, status=404)
         self.assert_cors_headers(response)
 
     def test_put_content_403(self):
@@ -1465,7 +1473,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 '/contents/{}@draft.json'.format(document['id']),
                 {'title': 'new title'}, status=403)
         self.assertTrue('You do not have permission to edit'
-                in response.body.decode('utf-8'))
+                        in response.body.decode('utf-8'))
 
         response = self.testapp.post_json('/users/contents', {
                     'title': u'My binder タイトル',
@@ -1482,7 +1490,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 '/contents/{}@draft.json'.format(binder['id']),
                 {'title': 'new title'}, status=403)
         self.assertTrue('You do not have permission to edit'
-                in response.body.decode('utf-8'))
+                        in response.body.decode('utf-8'))
 
     def test_put_content_invalid_json(self):
         response = self.testapp.post_json('/users/contents', {
@@ -2274,7 +2282,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.get('/search?q="Document', status=200)
         result = response.json
         self.assertEqual(result['query']['limits'],
-                [{'tag': 'text', 'value': 'Document'}])
+                         [{'tag': 'text', 'value': 'Document'}])
         self.assertEqual(result['results']['total'], 1)
         self.assert_cors_headers(response)
 
@@ -2324,7 +2332,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         result = response.json
         self.assertEqual(result['results']['total'], 1)
         self.assertEqual(result['results']['items'][0]['id'],
-                '{}@draft'.format(doc_id))
+                         '{}@draft'.format(doc_id))
         self.assert_cors_headers(response)
 
         # should be able to search multiple terms
@@ -2335,19 +2343,19 @@ class FunctionalTests(BaseFunctionalTestCase):
             {'tag': 'text', 'value': 'resonance'}])
         self.assertEqual(result['results']['total'], 2)
         self.assertEqual(sorted([i['id'] for i in result['results']['items']]),
-                sorted(['{}@draft'.format(doc_id),
-                    '{}@draft'.format(new_doc_id)]))
+                         sorted(['{}@draft'.format(doc_id),
+                                 '{}@draft'.format(new_doc_id)]))
         self.assert_cors_headers(response)
 
         # should be able to search with double quotes
         response = self.testapp.get('/search?q="through resonance"',
-                status=200)
+                                    status=200)
         result = response.json
         self.assertEqual(result['query']['limits'], [
             {'tag': 'text', 'value': 'through resonance'}])
         self.assertEqual(result['results']['total'], 1)
         self.assertEqual(result['results']['items'][0]['id'],
-                '{}@draft'.format(doc_id))
+                         '{}@draft'.format(doc_id))
 
         self.assert_cors_headers(response)
 
@@ -2360,9 +2368,10 @@ class FunctionalTests(BaseFunctionalTestCase):
         with open(test_data('1x1.png'), 'rb') as data:
             upload_data = data.read()
 
-        response = self.testapp.post('/resources',
-                {'file': Upload('1x1.png', upload_data, 'image/png')},
-                status=201)
+        response = self.testapp.post(
+            '/resources',
+            {'file': Upload('1x1.png', upload_data, 'image/png')},
+            status=201)
         self.assert_cors_headers(response)
         redirect_url = response.headers['Location']
 
@@ -2384,7 +2393,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         upload_data = b'<html><body><h1>title</h1></body></html>'
         response = self.testapp.post('/resources', {
             'file': Upload('a.html', upload_data,
-                'text/html')}, status=201)
+                           'text/html')}, status=201)
         redirect_url = response.headers['Location']
         self.assert_cors_headers(response)
 
@@ -2397,9 +2406,10 @@ class FunctionalTests(BaseFunctionalTestCase):
         with open(test_data('1x1.png'), 'rb') as data:
             upload_data = data.read()
 
-        response = self.testapp.post('/resources',
-                {'file': Upload('1x1.png', upload_data, 'image/png')},
-                status=201)
+        response = self.testapp.post(
+            '/resources',
+            {'file': Upload('1x1.png', upload_data, 'image/png')},
+            status=201)
         redirect_url = response.headers['Location']
         response = self.testapp.get(redirect_url, status=200)
         self.assertEqual(response.body, upload_data)
@@ -2416,61 +2426,67 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_post_resource_401(self):
         self.logout()
-        response = self.testapp.post('/resources',
-                {'file': Upload('a.txt', b'hello\n', 'text/plain')},
-                status=401)
+        response = self.testapp.post(
+            '/resources',
+            {'file': Upload('a.txt', b'hello\n', 'text/plain')},
+            status=401)
         self.assert_cors_headers(response)
 
     def test_post_resource_403(self):
         with mock.patch('cnxauthoring.models.Resource.__acl__') as acl:
             acl.return_value = ()
-            response = self.testapp.post('/resources',
+            response = self.testapp.post(
+                '/resources',
                 {'file': Upload('a.txt', b'hello\n', 'text/plain')},
                 status=403)
         self.assert_cors_headers(response)
 
     def test_post_resource(self):
-        response = self.testapp.post('/resources',
-                {'file': Upload('a.txt', b'hello\n', 'text/plain')},
-                status=201)
+        response = self.testapp.post(
+            '/resources',
+            {'file': Upload('a.txt', b'hello\n', 'text/plain')},
+            status=201)
         self.assertEqual(response.content_type, 'text/plain')
         self.assertEqual(response.headers['Location'],
-                'http://localhost/resources/'
-                'f572d396fae9206628714fb2ce00f72e94f2258f')
+                         'http://localhost/resources/'
+                         'f572d396fae9206628714fb2ce00f72e94f2258f')
         self.assertEqual(response.body,
-                b'/resources/'
-                b'f572d396fae9206628714fb2ce00f72e94f2258f')
+                         b'/resources/'
+                         b'f572d396fae9206628714fb2ce00f72e94f2258f')
         self.assert_cors_headers(response)
 
     def test_post_duplicate_resource(self):
-        response = self.testapp.post('/resources',
-                {'file': Upload('a.txt', b'hello\n', 'text/plain')},
-                status=201)
+        response = self.testapp.post(
+            '/resources',
+            {'file': Upload('a.txt', b'hello\n', 'text/plain')},
+            status=201)
         self.assertEqual(response.content_type, 'text/plain')
         self.assertEqual(response.headers['Location'],
-                'http://localhost/resources/'
-                'f572d396fae9206628714fb2ce00f72e94f2258f')
+                         'http://localhost/resources/'
+                         'f572d396fae9206628714fb2ce00f72e94f2258f')
         self.assertEqual(response.body,
-                b'/resources/'
-                b'f572d396fae9206628714fb2ce00f72e94f2258f')
-        response = self.testapp.post('/resources',
-                {'file': Upload('a.txt', b'hello\n', 'text/plain')},
-                status=201)
+                         b'/resources/'
+                         b'f572d396fae9206628714fb2ce00f72e94f2258f')
+        response = self.testapp.post(
+            '/resources',
+            {'file': Upload('a.txt', b'hello\n', 'text/plain')},
+            status=201)
         self.assertEqual(response.content_type, 'text/plain')
         self.assertEqual(response.headers['Location'],
-                'http://localhost/resources/'
-                'f572d396fae9206628714fb2ce00f72e94f2258f')
+                         'http://localhost/resources/'
+                         'f572d396fae9206628714fb2ce00f72e94f2258f')
         self.assertEqual(response.body,
-                b'/resources/'
-                b'f572d396fae9206628714fb2ce00f72e94f2258f')
+                         b'/resources/'
+                         b'f572d396fae9206628714fb2ce00f72e94f2258f')
         self.assert_cors_headers(response)
 
     def test_post_resource_exceed_size_limit(self):
         two_mb = b'x' * 2 * 1024 * 1024
-        response = self.testapp.post('/resources',
-                # a 2MB file, size limit for tests is 1MB
-                {'file': Upload('a.txt', two_mb, 'text/plain')},
-                status=400)
+        response = self.testapp.post(
+            '/resources',
+            # a 2MB file, size limit for tests is 1MB
+            {'file': Upload('a.txt', two_mb, 'text/plain')},
+            status=400)
         self.assertIn(b'File uploaded has exceeded limit 1MB', response.body)
 
     def test_user_search_no_q(self):
@@ -2608,7 +2624,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.get('/users/contents', status=200)
         result = response.json
         content_ids = [(i['id'], i['rolesToAccept'])
-            for i in result['results']['items']]
+                       for i in result['results']['items']]
         self.assertIn(('{}@draft'.format(page['id']), []), content_ids)
 
         # user2 should be able to see the document user1 added
@@ -2658,7 +2674,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.get('/users/contents', status=200)
         result = response.json
         content_ids = [(i['id'], i['rolesToAccept'])
-            for i in result['results']['items']]
+                       for i in result['results']['items']]
         self.assertIn(('{}@draft'.format(page['id']),
                        ['authors', 'copyright_holders', 'editors',
                         'publishers']), content_ids)
@@ -2683,7 +2699,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         response = self.testapp.get('/users/contents', status=200)
         result = response.json
         content_ids = [(i['id'], i['rolesToAccept'])
-            for i in result['results']['items']]
+                       for i in result['results']['items']]
         self.assertIn(('{}@draft'.format(page['id']),
                        ['authors', 'copyright_holders', 'publishers']),
                       content_ids)
@@ -2854,14 +2870,15 @@ class FunctionalTests(BaseFunctionalTestCase):
         mock_datetime.now = mock.Mock(return_value=one_day_ago)
 
         with mock.patch('datetime.datetime', mock_datetime):
-            response = self.testapp.post_json('/users/contents',
+            response = self.testapp.post_json(
+                '/users/contents',
                 {'title': 'single page document'}, status=201)
         single_page = response.json
 
         mock_datetime.now = mock.Mock(return_value=one_week_ago)
         with mock.patch('datetime.datetime', mock_datetime):
-            response = self.testapp.post_json('/users/contents',
-                {'title': 'page in a book'}, status=201)
+            response = self.testapp.post_json(
+                '/users/contents', {'title': 'page in a book'}, status=201)
         page_in_book = response.json
 
         response = self.testapp.post_json('/users/contents', {
@@ -3171,7 +3188,7 @@ class PublicationTests(BaseFunctionalTestCase):
             response = self.testapp.post_json(
                 '/publish', post_data, status=403)
         self.assertTrue('You do not have permission to publish'
-                    in response.body.decode('utf-8'))
+                        in response.body.decode('utf-8'))
 
         post_data = {
                 'title': 'Binder',
@@ -3195,7 +3212,7 @@ class PublicationTests(BaseFunctionalTestCase):
             response = self.testapp.post_json(
                 '/publish', post_data, status=403)
         self.assertTrue('You do not have permission to publish'
-                    in response.body.decode('utf-8'))
+                        in response.body.decode('utf-8'))
 
     def test_publish_service_not_available(self):
         post_data = {
@@ -3218,7 +3235,7 @@ class PublicationTests(BaseFunctionalTestCase):
                     '/publish', post_data, status=400)
             self.assertEqual(patched_post.call_count, 1)
         self.assertTrue('Unable to publish: response status code: 404'
-                in response.body.decode('utf-8'))
+                        in response.body.decode('utf-8'))
         self.assert_cors_headers(response)
 
     def test_publish_response_not_json(self):
@@ -3243,7 +3260,7 @@ class PublicationTests(BaseFunctionalTestCase):
                 '/publish', post_data, status=400)
             self.assertEqual(patched_post.call_count, 1)
         self.assertTrue('Unable to publish: response body: not json'
-                in response.body.decode('utf-8'))
+                        in response.body.decode('utf-8'))
         self.assert_cors_headers(response)
 
     def test_publish_single_pages(self):
@@ -3401,14 +3418,14 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
         # Put an author on.
         page1['authors'].append({'id': author_id, 'type': 'cnx-id'})
-        response = self.testapp.put_json('/contents/{}@draft.json' \
+        response = self.testapp.put_json('/contents/{}@draft.json'
                                          .format(page1['id']), page1)
         page1 = response.json
         self.logout()
 
         # Login as the author to accept the role and publish.
         self.login(author_id)
-        self.testapp.post_json('/contents/{}@draft/acceptance' \
+        self.testapp.post_json('/contents/{}@draft/acceptance'
                                .format(page1['id']),
                                {'license': True,
                                 'roles': [{'role': 'authors',
@@ -4157,14 +4174,14 @@ class PublicationTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
         # Put an author on.
         page1['authors'].append({'id': author_id, 'type': 'cnx-id'})
-        response = self.testapp.put_json('/contents/{}@draft.json' \
+        response = self.testapp.put_json('/contents/{}@draft.json'
                                          .format(page1['id']), page1)
         page1 = response.json
         self.logout()
 
         # Login as the author to accept the role and publish.
         self.login(author_id)
-        self.testapp.post_json('/contents/{}@draft/acceptance' \
+        self.testapp.post_json('/contents/{}@draft/acceptance'
                                .format(page1['id']),
                                {'license': True,
                                 'roles': [{'role': 'authors',

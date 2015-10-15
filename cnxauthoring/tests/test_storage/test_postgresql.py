@@ -196,7 +196,6 @@ class PostgresqlStorageTests(unittest.TestCase):
         result = self.storage.get(id=d1_id)
         self.assertEqual(result, None)
 
-
     def test_update_document(self):
         d1_id = uuid.uuid4()
         d = Document('Document Title: One', id=d1_id, submitter=SUBMITTER)
@@ -210,7 +209,7 @@ class PostgresqlStorageTests(unittest.TestCase):
                  licensors=[SUBMITTER],
                  editors=[USER2],
                  translators=[],
-                )
+                 )
         self.storage.update(d)
 
         d = self.storage.get(id=d1_id)
@@ -295,9 +294,9 @@ class PostgresqlStorageTests(unittest.TestCase):
         expected = [d1.to_dict(), d2.to_dict()]
         search_gen = self.storage.search([('text', u'文字でわかる！')])
         for doc in search_gen:
-           self.assertTrue(doc.to_dict() in expected)
-           expected.remove(doc.to_dict())
-           i += 1
+            self.assertTrue(doc.to_dict() in expected)
+            expected.remove(doc.to_dict())
+            i += 1
         self.assertEqual(i, 2)
 
     def test_search_multiple_submitters(self):
@@ -329,9 +328,9 @@ class PostgresqlStorageTests(unittest.TestCase):
         expected = [d1.to_dict(), d2.to_dict()]
         search_gen = self.storage.search([('text', 'Document Title')])
         for doc in search_gen:
-           self.assertTrue(doc.to_dict() in expected)
-           expected.remove(doc.to_dict())
-           i += 1
+            self.assertTrue(doc.to_dict() in expected)
+            expected.remove(doc.to_dict())
+            i += 1
         self.assertEqual(i, 2)
 
     def test_add_get_and_remove_binder(self):
@@ -352,7 +351,7 @@ class PostgresqlStorageTests(unittest.TestCase):
                 {'id': str(d1_id)},
                 ]},
             id=b1_id, submitter=SUBMITTER)
-        b.acls = {'user1': ('view', 'edit', 'publish') }
+        b.acls = {'user1': ('view', 'edit', 'publish')}
         self.storage.add(b)
         self.storage.persist()
 
@@ -361,20 +360,20 @@ class PostgresqlStorageTests(unittest.TestCase):
         self.assertEqual({k: tuple(sorted(v)) for k, v in result.acls.items()},
                          {'user1': ('edit', 'publish', 'view')})
 
-        #FIXME update_containment should become a hidden side effect inside storage
+        # FIXME update_containment should become a hidden side effect inside storage
         d.metadata['contained_in'] = [str(b1_id)]
         self.storage.update(d)
 
         result = self.storage.get(id=d1_id)
         self.assertEqual(result.to_dict(), d.to_dict())
         self.assertEqual({k: tuple(sorted(v)) for k, v in result.acls.items()},
-                         {'user2': ('view',),'user1': ('edit', 'publish', 'view')})
+                         {'user2': ('view',), 'user1': ('edit', 'publish', 'view')})
 
         self.storage.remove(b)
         result = self.storage.get(id=b1_id)
         self.assertEqual(result, None)
 
-        #FIXME update_containment should become a hidden side effect inside storage
+        # FIXME update_containment should become a hidden side effect inside storage
         d.metadata['contained_in'] = []
         self.storage.update(d)
         result = self.storage.get(id=d1_id)
