@@ -29,7 +29,8 @@ JSON_FIELDS = ('authors', 'publishers', 'copyright_holders', 'editors',
                'translators', 'illustrators',)
 
 
-# cribbed from http://stackoverflow.com/questions/19048017/python-extract-substitution-vars-from-format-string
+# cribbed from
+# http://stackoverflow.com/questions/19048017/python-extract-substitution-vars-from-format-string
 def get_format_keys(s):
     d = {}
     while True:
@@ -37,7 +38,8 @@ def get_format_keys(s):
             s % d
         except KeyError as exc:
             # exc.args[0] contains the name of the key that was not found;
-            # 0 is used because it appears to work with all types of placeholders.
+            # 0 is used because it appears to work with all types of
+            # placeholders.
             d[exc.args[0]] = 0
         else:
             break
@@ -85,16 +87,17 @@ class PostgresqlStorage(BaseStorage):
         #       If this is fixed this will read better at the very least.
         #       The fix should be rename the resources field to mediatype.
         #       This can then be fixed to something like:
-        ## if row['mediatype'] in MEDIATTYPES.values(): 
-        ##     # then process as a Document/Binder.
-        ## else:
-        ##     # then process as a Resource.
+        # if row['mediatype'] in MEDIATTYPES.values():
+        #     # then process as a Document/Binder.
+        # else:
+        #     # then process as a Resource.
         if 'mediatype' in row:  # It's a resource...
             model = Resource(row['mediatype'], io.BytesIO(row['data'][:]),
                              filename=row['hash'])
         else:  # It's a Document/Binder...
             row['license'] = License.from_url(row['license']['url'])
-            row['original_license'] = License.from_url(row['original_license']['url'])
+            row['original_license'] = License.from_url(
+                row['original_license']['url'])
             for field in ('user_id', 'permission', 'uuid'):
                 if field in row:
                     row.pop(field)
@@ -115,7 +118,8 @@ class PostgresqlStorage(BaseStorage):
                 permissions_by_users.setdefault(acl['user_id'], [])
                 permissions_by_users[acl['user_id']].append(
                         acl['permission'])
-            #UNION with  the users' permissions on any containing draft binders
+            # UNION with  the users' permissions on any containing draft
+            # binders
             binders = model.metadata['contained_in']
             if binders and binders != []:
                 for binderid in binders:
@@ -124,8 +128,10 @@ class PostgresqlStorage(BaseStorage):
                         where_clause='uuid = %(uuid)s'), {'uuid': binderid})
                     for acl in cursor.fetchall():
                         permissions_by_users.setdefault(acl['user_id'], [])
-                        if acl['permission'] not in permissions_by_users[acl['user_id']]:
-                            permissions_by_users[acl['user_id']].append(acl['permission'])
+                        if acl['permission'] not in \
+                                permissions_by_users[acl['user_id']]:
+                            permissions_by_users[acl['user_id']].append(
+                                acl['permission'])
 
             for user_id, permissions in permissions_by_users.items():
                 model.acls[user_id] = tuple(set(permissions))
@@ -143,10 +149,10 @@ class PostgresqlStorage(BaseStorage):
                 **kwargs):
         """Retrieve ``Document`` objects from storage."""
         # all kwargs are expected to match attributes of the stored Document.
-        # We're trusting the names of the args to match table column names, but not
-        # trusting the values
+        # We're trusting the names of the args to match table column names, but
+        # not trusting the values
 
-        in_progress = ( self.conn.status != STATUS_READY )
+        in_progress = (self.conn.status != STATUS_READY)
 
         cursor = self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -170,18 +176,23 @@ class PostgresqlStorage(BaseStorage):
                     match_values['{field}_{json_key}'.format(
                         field=k, json_key=json_k)] = json_v
                 match_values.pop(k)
-            elif k == 'contained_in': # Array based storage , assumes singular key
+            elif k == 'contained_in':
+                # Array based storage , assumes singular key
                 if v.startswith('not:'):
-                    match_clauses.append(' NOT %(contained_in)s = ANY (contained_in) ')
+                    match_clauses.append(
+                        ' NOT %(contained_in)s = ANY (contained_in) ')
                     match_values[k] = v[4:]
                 else:
-                    match_clauses.append(' %(contained_in)s = ANY (contained_in) ')
+                    match_clauses.append(
+                        ' %(contained_in)s = ANY (contained_in) ')
             else:
-                if  str(v).startswith('not:'):
-                    match_clauses.append(' NOT {field} = %({field})s'.format(field=k))
+                if str(v).startswith('not:'):
+                    match_clauses.append(
+                        ' NOT {field} = %({field})s'.format(field=k))
                     match_values[k] = str(v)[4:]
                 else:
-                    match_clauses.append('{field} = %({field})s'.format(field=k))
+                    match_clauses.append(
+                        '{field} = %({field})s'.format(field=k))
 
         # 1 = 1 in case where clause is empty
         where_clause = ' AND '.join(match_clauses) or '1 = 1'
@@ -196,7 +207,7 @@ class PostgresqlStorage(BaseStorage):
                 tablename=type_name, where_clause=where_clause), match_values)
         res = cursor.fetchall()
         if not in_progress:
-            self.conn.rollback() # Frees the connection
+            self.conn.rollback()  # Frees the connection
         if res:
             for r in res:
                 yield self._reassemble_model_from_document_entry(**r)
@@ -207,16 +218,19 @@ class PostgresqlStorage(BaseStorage):
         if isinstance(item_or_items, list):
             raise NotImplementedError()
         item = item_or_items
-        type_name= item.__class__.__name__.lower()
+        type_name = item.__class__.__name__.lower()
         cursor = self.conn.cursor()
-        if type_name== 'resource':
+        if type_name == 'resource':
             exists = self.get(type_=Resource, hash=item._hash)
             if not exists:
                 with item.open() as f:
                     data = Binary(f.read())
-                checked_execute(cursor, SQL['add-resource'],
-                            {'hash':item._hash,'mediatype':item.media_type,'data':data})
-        elif type_name in ['document','binder']:
+                checked_execute(
+                    cursor, SQL['add-resource'],
+                    {'hash': item._hash,
+                     'mediatype': item.media_type,
+                     'data': data})
+        elif type_name in ['document', 'binder']:
             args = item.to_dict()
             args['license'] = json.dumps(args['license'])
             args['original_license'] = json.dumps(args['original_license'])
@@ -263,11 +277,11 @@ class PostgresqlStorage(BaseStorage):
         if isinstance(item_or_items, list):
             raise NotImplementedError()
         item = item_or_items
-        type_name= item.__class__.__name__.lower()
+        type_name = item.__class__.__name__.lower()
         with self.conn.cursor() as cursor:
             if type_name == 'resource':
                 checked_execute(cursor, SQL['delete-resource'],
-                                {'hash':item._hash})
+                                {'hash': item._hash})
             elif type_name in ['document', 'binder']:
                 params = {'uuid': item.id}
                 checked_execute(cursor, SQL['delete-document-acl'], params)
@@ -283,11 +297,14 @@ class PostgresqlStorage(BaseStorage):
         if isinstance(item_or_items, list):
             raise NotImplementedError()
         item = item_or_items
-        type_name= item.__class__.__name__.lower()
+        type_name = item.__class__.__name__.lower()
         cursor = self.conn.cursor()
         if type_name == 'resource':
-            checked_execute(cursor, SQL['update-resource'],
-                        {'hash':item._hash,'mediatype':item.mediatype,'data':Binary(item.data)})
+            checked_execute(
+                cursor, SQL['update-resource'],
+                {'hash': item._hash,
+                 'mediatype': item.mediatype,
+                 'data': Binary(item.data)})
         elif type_name in ['document', 'binder']:
             args = item.to_dict()
             args['license'] = json.dumps(args['license'])
@@ -299,7 +316,7 @@ class PostgresqlStorage(BaseStorage):
             if 'media_type' in args:
                 args.pop('media_type')
             if 'summary' in args:
-                 args.pop('summary')
+                args.pop('summary')
             if 'cnx-archive-uri' not in args:
                 args['cnx-archive-uri'] = None
             if 'tree' in args:
@@ -350,7 +367,7 @@ class PostgresqlStorage(BaseStorage):
         if type_ != Document:
             raise NotImplementedError()
 
-        in_progress = ( self.conn.status != STATUS_READY )
+        in_progress = (self.conn.status != STATUS_READY)
 
         cursor = self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -365,13 +382,15 @@ class PostgresqlStorage(BaseStorage):
             where_clause = '(' + ' OR '.join(title_terms) + ')'
             sqlargs = search_terms
         else:
-            where_clause = '(' + ' OR '.join(title_terms) + ") AND submitter->>'id' = %s"
+            where_clause = '(' + ' OR '.join(title_terms) + \
+                ") AND submitter->>'id' = %s"
             sqlargs = search_terms + [submitter_id]
 
-        cursor.execute(SQL['search-title'].format(where_clause=where_clause), sqlargs)
+        cursor.execute(SQL['search-title'].format(where_clause=where_clause),
+                       sqlargs)
         res = cursor.fetchall()
         if not in_progress:
-            self.conn.rollback() # Frees the connection
+            self.conn.rollback()  # Frees the connection
         if res:
             for item in res:
                 yield self._reassemble_model_from_document_entry(**item)

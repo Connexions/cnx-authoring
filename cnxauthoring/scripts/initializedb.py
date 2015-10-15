@@ -17,7 +17,7 @@ from .utils import parse_app_settings
 # FIXME These locations are also 'constants' in the tests module.
 #       The tests module needs refactored before we can import from there.
 here = os.path.abspath(os.path.dirname(__file__))
-TEST_DATA_DIRECTORY = os.path.join(here, '..', 'tests','test_storage')
+TEST_DATA_DIRECTORY = os.path.join(here, '..', 'tests', 'test_storage')
 TESTING_DATA_SQL_FILE = os.path.join(TEST_DATA_DIRECTORY, 'data.sql')
 EXAMPLE_DATA_FILEPATHS = (
     TESTING_DATA_SQL_FILE,

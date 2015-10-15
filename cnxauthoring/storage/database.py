@@ -25,7 +25,8 @@ DB_SCHEMA_FILES = (
     )
 
 DB_SCHEMA_FILE_PATHS = tuple([os.path.join(DB_SCHEMA_DIRECTORY, dsf)
-                              for dsf in  DB_SCHEMA_FILES])
+                              for dsf in DB_SCHEMA_FILES])
+
 
 def _read_sql_file(name):
     path = os.path.join(SQL_DIRECTORY, '{}.sql'.format(name))
@@ -36,11 +37,13 @@ SQL = {
     'get-document': _read_sql_file('get-document'),
     'add-document': _read_sql_file('add-document'),
     'add-document-acl': _read_sql_file('add-document-acl'),
-    'add-document-licensor-acceptance': _read_sql_file('add-document-licensor-acceptance'),
+    'add-document-licensor-acceptance': _read_sql_file(
+        'add-document-licensor-acceptance'),
     'add-resource': _read_sql_file('add-resource'),
     'delete-document': _read_sql_file('delete-document'),
     'delete-document-acl': _read_sql_file('delete-document-acl'),
-    'delete-document-licensor-acceptance': _read_sql_file('delete-document-licensor-acceptance'),
+    'delete-document-licensor-acceptance': _read_sql_file(
+        'delete-document-licensor-acceptance'),
     'delete-resource': _read_sql_file('delete-resource'),
     'update-document': _read_sql_file('update-document'),
     'update-resource': _read_sql_file('update-resource'),

@@ -46,7 +46,8 @@ setup(
                 'main = cnxauthoring:main',
                 ],
             'console_scripts': [
-                'cnx-authoring-initialize_db = cnxauthoring.scripts.initializedb:main'
+                'cnx-authoring-initialize_db = '
+                'cnxauthoring.scripts.initializedb:main'
                 ]
             },
         test_suite='cnxauthoring.tests',

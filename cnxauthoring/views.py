@@ -11,13 +11,13 @@ import functools
 import json
 import logging
 try:
-    from urllib import urlencode # python 2
+    from urllib import urlencode  # python 2
 except ImportError:
-    from urllib.parse import urlencode # renamed in python 3
+    from urllib.parse import urlencode  # renamed in python 3
 try:
-    import urlparse # python2
+    import urlparse  # python2
 except ImportError:
-    import urllib.parse as urlparse # renamed in python3
+    import urllib.parse as urlparse  # renamed in python3
 
 from pyramid.security import forget
 from pyramid.view import view_config
@@ -32,7 +32,8 @@ from .models import (
     create_content, derive_content, revise_content,
     Document, Binder, Resource,
     )
-from .schemata import AcceptanceSchema, DocumentSchema, BinderSchema, UserSchema
+from .schemata import (AcceptanceSchema, DocumentSchema, BinderSchema,
+                       UserSchema)
 from .storage import storage
 from . import utils
 from .models import PublishingError
@@ -102,7 +103,7 @@ def user_search(request):
     result = accounts.search(
         q, per_page=per_page, order_by='last_name,first_name')
     result['users'] = [utils.profile_to_user_dict(profile)
-            for profile in result.pop('items')]
+                       for profile in result.pop('items')]
     return result
 
 
@@ -115,7 +116,9 @@ def profile(request):
 
 
 def update_content_state(request, content):
-    """Updates content state if it is non-terminal by checking w/ publishing service"""
+    """Updates content state if it is non-terminal by checking w/ publishing
+    service
+    """
     if (content.metadata['state'] not in [None, 'Done/Success'] and
             content.metadata['publication']):
         publishing_url = request.registry.settings['publishing.url']
@@ -130,7 +133,8 @@ def update_content_state(request, content):
                     content.update(state=result['state'])
                     storage.update(content)
             except (TypeError, ValueError):
-                # Not critical if there's a json problem here - perhaps log this
+                # Not critical if there's a json problem here - perhaps log
+                # this
                 pass
 
 
@@ -143,7 +147,8 @@ def user_contents(request):
     items = []
     binder_ids = set()
     # filter kwargs to subset of content metadata fields - avoid DB errors
-    kwargs = {k:v for k,v in request.GET.items() if k in ['mediaType','state','containedIn']}
+    kwargs = {k: v for k, v in request.GET.items()
+              if k in ['mediaType', 'state', 'containedIn']}
     if kwargs:
         utils.change_dict_keys(kwargs, utils.camelcase_to_underscore)
     user_id = request.unauthenticated_userid
@@ -151,12 +156,13 @@ def user_contents(request):
                                permissions=('view',), **kwargs)
     for content in contents:
         update_content_state(request, content)
-        if isinstance(content,Binder):
+        if isinstance(content, Binder):
             binder_ids.add(content.id)
 
         item = content.__json__()
-        document = {k: item[k] for k in ['mediaType', 'title', 'id', 'version',
-                                         'revised', 'derivedFrom', 'state', 'containedIn']}
+        document = {k: item[k] for k in [
+            'mediaType', 'title', 'id', 'version', 'revised', 'derivedFrom',
+            'state', 'containedIn']}
 
         # Don't add version to published items, so they are link to archive
         # instead of authoring (no @draft)
@@ -181,7 +187,8 @@ def user_contents(request):
         items.append(document)
 
     # filter out draft docs inside draft binders that this user can see
-    items = [i for i in items if not set(i['containedIn']).intersection(binder_ids)]
+    items = [i for i in items
+             if not set(i['containedIn']).intersection(binder_ids)]
 
     items.sort(key=lambda item: item['revised'], reverse=True)
     return {
@@ -210,7 +217,8 @@ def get_content(request):
         raise httpexceptions.HTTPForbidden(
                 'You do not have permission to view {}'.format(id))
     update_content_state(request, content)
-    content.metadata['permissions'] = sorted(content.acls[request.unauthenticated_userid])
+    content.metadata['permissions'] = sorted(
+        content.acls[request.unauthenticated_userid])
     return content
 
 
@@ -243,7 +251,7 @@ def post_content_single(request, cstruct):
     if derived_from:
         try:
             cstruct = derive_content(request, **cstruct)
-            derived_from = '{}@{}'.format(cstruct['id'],cstruct['version'])
+            derived_from = '{}@{}'.format(cstruct['id'], cstruct['version'])
         except (DocumentNotFoundError, ArchiveConnectionError):
             raise httpexceptions.HTTPBadRequest(
                     'Derive failed: {}'.format(derived_from))
@@ -268,8 +276,8 @@ def post_content_single(request, cstruct):
             cstruct = revise_content(request, **cstruct)
         except DocumentNotFoundError:
             raise httpexceptions.HTTPNotFound()
-        can_publish = utils.fetch_archive_content(request, archive_id,
-                extras=True)['can_publish']
+        can_publish = utils.fetch_archive_content(
+            request, archive_id, extras=True)['can_publish']
         if request.unauthenticated_userid not in can_publish:
             raise httpexceptions.HTTPForbidden(
                     'You do not have permission to edit {}'.format(archive_id))
@@ -380,7 +388,8 @@ def post_content(request):
         resp.headers.add(
             'Location',
             request.route_url('get-content-json', id=content.id))
-        content.metadata['permissions'] = sorted(content.acls[request.unauthenticated_userid])
+        content.metadata['permissions'] = sorted(
+            content.acls[request.unauthenticated_userid])
         return content
     return contents
 
@@ -408,7 +417,6 @@ def post_resource(request):
         raise httpexceptions.HTTPBadRequest(
                 'File uploaded has exceeded limit {}MB'.format(size_limit))
 
-
     resource = storage.add(resource)
 
     resp = request.response
@@ -424,8 +432,8 @@ def delete_content_single(request, id, user_id=None, raise_error=True):
         if raise_error:
             raise httpexceptions.HTTPNotFound()
         return False
-    if (user_id is None and not request.has_permission('edit', content)
-            or not request.has_permission('view', content)):
+    if (user_id is None and not request.has_permission('edit', content) or
+            not request.has_permission('view', content)):
         if raise_error:
             raise httpexceptions.HTTPForbidden(
                 'You do not have permission to delete {}'.format(id))
@@ -443,7 +451,6 @@ def delete_content_single(request, id, user_id=None, raise_error=True):
                 'Content {} is contained in {} and cannot be deleted'.format(
                     id, content.metadata['contained_in']))
         return False
-
 
     if user_id and len(content.acls.keys()) > 1:
         # remove "view" permission
@@ -601,40 +608,45 @@ def search_content(request):
 def post_to_publishing(request, userid, submitlog, content_ids,
                        license=None):
     """all params come from publish post. Content_ids is a json list of lists,
-    containing ids of binders and the pages in them to be published.  Each binder
-    is a list, starting with the binderid, and following with documentid of each
-    draft page to publish. As a degenerate case, it may be a single list of this
-    format. In addition to binder lists, the top level list may contain document
-    ids - these will be published as a 'looseleaf' set of pages.
+    containing ids of binders and the pages in them to be published.  Each
+    binder is a list, starting with the binderid, and following with documentid
+    of each draft page to publish. As a degenerate case, it may be a single
+    list of this format. In addition to binder lists, the top level list may
+    contain document ids - these will be published as a 'looseleaf' set of
+    pages.
     """
     filename = 'contents.epub'
     contents = []
     for content_id_item in content_ids:
-        if type(content_id_item) == list: # binder list
+        if type(content_id_item) == list:  # binder list
             content = []
             for content_id in content_id_item:
                 if content_id.endswith('@draft'):
                     content_id = content_id[:-len('@draft')]
                 content_item = storage.get(id=content_id, submitter=userid)
                 if content_item is None:
-                    raise httpexceptions.HTTPBadRequest('Unable to publish: '
-                            'content not found {}'.format(content_id))
+                    raise httpexceptions.HTTPBadRequest(
+                        'Unable to publish: content not found {}'
+                        .format(content_id))
                 if not request.has_permission('publish', content):
                     raise httpexceptions.HTTPForbidden(
-                        'You do not have permission to publish {}'.format(content_id))
+                        'You do not have permission to publish {}'
+                        .format(content_id))
                 content.append(content_item)
 
-        else:  #documentid
+        else:  # documentid
             content_id = content_id_item
             if content_id.endswith('@draft'):
                 content_id = content_id[:-len('@draft')]
             content = storage.get(id=content_id)
             if content is None:
-                raise httpexceptions.HTTPBadRequest('Unable to publish: '
-                        'content not found {}'.format(content_id))
+                raise httpexceptions.HTTPBadRequest(
+                    'Unable to publish: content not found {}'
+                    .format(content_id))
             if not request.has_permission('publish', content):
                 raise httpexceptions.HTTPForbidden(
-                    'You do not have permission to publish {}'.format(content_id))
+                    'You do not have permission to publish {}'
+                    .format(content_id))
 
         contents.append(content)
 
@@ -683,8 +695,9 @@ def publish(request):
         request, request.unauthenticated_userid,
         request_body['submitlog'], request_body['items'], license)
     if response.status_code != 200:
-        raise httpexceptions.HTTPBadRequest('Unable to publish: '
-                'response status code: {}'.format(response.status_code))
+        raise httpexceptions.HTTPBadRequest(
+            'Unable to publish: response status code: {}'
+            .format(response.status_code))
     try:
         result = json.loads(response.content.decode('utf-8'))
         for content in contents:

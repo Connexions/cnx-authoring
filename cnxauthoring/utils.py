@@ -11,13 +11,13 @@ import datetime
 import json
 import logging
 try:
-    import urllib2 # python2
+    import urllib2  # python2
 except ImportError:
-    import urllib.request as urllib2 # renamed in python3
+    import urllib.request as urllib2  # renamed in python3
 try:
-    import urlparse # python2
+    import urlparse  # python2
 except ImportError:
-    import urllib.parse as urlparse # renamed in python3
+    import urllib.parse as urlparse  # renamed in python3
 
 import cnxepub
 from cnxepub.models import Document, DocumentPointer, TranslucentBinder
@@ -49,9 +49,9 @@ def utf8(item):
         return [utf8(i) for i in item]
     if isinstance(item, dict):
         return {utf8(k): utf8(v) for k, v in item.items()}
-    try: 
+    try:
         return item.decode('utf-8')
-    except: # bare except since this method is supposed to be safe anywhere
+    except:  # bare except since this method is supposed to be safe anywhere
         return item
 
 
@@ -74,11 +74,13 @@ def camelcase_to_underscore(camelcase):
         return '_{}'.format(char.lower())
     return re.sub('([A-Z])', replace, camelcase)
 
+
 def underscore_to_camelcase(underscore):
     def replace(match):
         char = match.group(1)
         return '{}'.format(char.upper())
     return re.sub('_([a-z])', replace, underscore)
+
 
 def structured_query(query_string):
     try:
@@ -88,6 +90,7 @@ def structured_query(query_string):
         node_tree = grammar.parse(query_string)
     return DictFormater().visit(node_tree)
 
+
 def fix_quotes(query_string):
     # Attempt to fix unbalanced quotes in query_string
 
@@ -95,8 +98,9 @@ def fix_quotes(query_string):
         # no unbalanced quotes to fix
         return query_string
 
-    fields = [] # contains what's matched by the regexp
+    fields = []  # contains what's matched by the regexp
     # e.g. fields = ['sort:pubDate', 'author:"first last"']
+
     def f(match):
         fields.append(match.string[match.start():match.end()])
         return ''
@@ -106,22 +110,24 @@ def fix_quotes(query_string):
     query_string = '{}" {}'.format(terms.strip(), ' '.join(fields))
     return query_string
 
+
 def filter_binder_documents(binder, documents):
     """walks through a binder, converting any draft documents that are
         not in the list of documents into documentpointers."""
     docids = [d.id for d in documents]
     for i, model in enumerate(binder):
-        if isinstance(model, TranslucentBinder): # section/subcollection
+        if isinstance(model, TranslucentBinder):  # section/subcollection
             filter_binder_documents(model, documents)
 
-        elif isinstance(model,Document):
+        elif isinstance(model, Document):
             if model.id not in docids:
-                binder.pop(i) # remove it
+                binder.pop(i)  # remove it
                 # Is it new?
                 if model.get_uri('cnx-archive'):
-                    #convert to documentpointer
+                    # convert to documentpointer
                     dp = DocumentPointer(model.get_uri('cnx-archive'))
-                    binder.insert(i,dp)
+                    binder.insert(i, dp)
+
 
 def build_epub(contents, submitter, submitlog):
     from .models import DEFAULT_LICENSE, Binder
@@ -129,39 +135,41 @@ def build_epub(contents, submitter, submitlog):
     epub = io.BytesIO()
     documents = []
     binders = []
-    for i,content in enumerate(contents,1):
-        if type(content) == list: # book + pages in a list
-            if isinstance(content[0], Binder): 
+    for i, content in enumerate(contents, 1):
+        if type(content) == list:  # book + pages in a list
+            if isinstance(content[0], Binder):
                 filter_binder_documents(content[0], content[1:])
                 content[0].publish_prep()
                 binders.append(content[0])
-            else:  # belt and suspenders - seems to be an extra level of lists - filter out docs
+            else:
+                # belt and suspenders - seems to be an extra level of lists -
+                # filter out docs
                 for doc in content:
-                    if isinstance(doc,Document):
+                    if isinstance(doc, Document):
                         doc.publish_prep()
                         documents.append(doc)
-        elif isinstance(content, Binder): # Special case: toplevel is book + pages
+        elif isinstance(content, Binder):
+            # Special case: toplevel is book + pages
             content.publish_prep()
             filter_binder_documents(content, contents[i:])
             binders.append(content)
-            break # eat the whole list
-        elif isinstance(content,Document):
+            break  # eat the whole list
+        elif isinstance(content, Document):
             content.publish_prep()
             documents.append(content)
-        
 
     if documents:
         license_text = ' '.join([DEFAULT_LICENSE.name, DEFAULT_LICENSE.code,
-            DEFAULT_LICENSE.version])
+                                 DEFAULT_LICENSE.version])
         binders.append(TranslucentBinder(
-                metadata={
-                    'title': 'Publications binder',
-                    'created': datetime.datetime.now(),
-                    'revised': datetime.datetime.now(),
-                    'license_text': license_text,
-                    'license_url': DEFAULT_LICENSE.url,
-                    },
-                nodes=documents))
+            metadata={
+                'title': 'Publications binder',
+                'created': datetime.datetime.now(),
+                'revised': datetime.datetime.now(),
+                'license_text': license_text,
+                'license_url': DEFAULT_LICENSE.url,
+                },
+            nodes=documents))
     cnxepub.adapters.make_publication_epub(
             binders, submitter, submitlog, epub)
     epub.seek(0)
@@ -174,11 +182,11 @@ def fetch_archive_content(request, archive_id, extras=False):
     settings = request.registry.settings
     archive_url = settings['archive.url']
     if extras:
-        content_url = urlparse.urljoin(archive_url,
-                '/extras/{}'.format(archive_id))
+        content_url = urlparse.urljoin(
+            archive_url, '/extras/{}'.format(archive_id))
     else:
-        content_url = urlparse.urljoin(archive_url,
-                '/contents/{}.json'.format(archive_id))
+        content_url = urlparse.urljoin(
+            archive_url, '/contents/{}.json'.format(archive_id))
     try:
         response = requests.get(content_url)
     except requests.exceptions.ConnectionError as exc:
@@ -257,19 +265,19 @@ def profile_to_user_dict(profile):
     return user_profile
 
 
-def update_containment(binder, deletion = False):
+def update_containment(binder, deletion=False):
     """updates the containment status of all draft documents in this binder"""
     from .storage import storage
 
     b_id = binder.id
     doc_ids = []
-    old_docs = storage.get_all(contained_in = b_id)
+    old_docs = storage.get_all(contained_in=b_id)
 
     # additions
     if not deletion:
         docs = cnxepub.flatten_to_documents(binder)
         for doc in docs:
-            doc_ids.append(doc.id) # gather for subtractions below
+            doc_ids.append(doc.id)  # gather for subtractions below
             if b_id not in doc.metadata['contained_in']:
                 doc.metadata['contained_in'].append(b_id)
                 storage.update(doc)
@@ -321,7 +329,8 @@ Thank you from your friends at OpenStax CNX
         accounts.send_message(user_id, subject, body)
     except urllib2.HTTPError:
         # Can't send messages via accounts for some reason - should be async!
-        logger.warning("Failed sending notification message to {}".format(user_id))
+        logger.warning("Failed sending notification message to {}"
+                       .format(user_id))
         pass
 
 
@@ -538,7 +547,8 @@ def declare_roles(model):
 
     # Notify any new roles that they need to accept the assigned attribution.
     if tobe_notified:
-        logger.debug("Sending notification message to '{}', from '{}'".format(', '.join(tobe_notified),authenticated_userid))
+        logger.debug("Sending notification message to '{}', from '{}'"
+                     .format(', '.join(tobe_notified), authenticated_userid))
     for user_id in tobe_notified:
         notify_role_for_acceptance(user_id, authenticated_userid, model)
 
