@@ -15,9 +15,9 @@ from pyramid.session import SignedCookieSessionFactory
 def declare_routes(config):
     """Declaration of routing"""
     add_route = config.add_route
-    add_route('options', 
-            '/{foo:(\*|search|contents|users|resources|login|callback|logout)/?.*}',
-            request_method='OPTIONS')
+    add_route('options',
+              '/{foo:(\*|search|contents|users|resources|login|callback|logout)/?.*}',  # noqa
+              request_method='OPTIONS')
     add_route('search-content', '/search', request_method='GET')
     add_route('get-content-json', '/contents/{id}@draft.json',
               request_method='GET')
@@ -58,7 +58,6 @@ def main(global_config, **settings):
 
     from . import storage
 
-    
     storages = storage.storages
     storage_name = settings.get('storage', storage.default_storage)
     storage_modname, storage_class = storages[storage_name]

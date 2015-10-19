@@ -25,8 +25,8 @@ from .utils import TZINFO
 
 DOCUMENT_MEDIATYPE = "application/vnd.org.cnx.module"
 BINDER_MEDIATYPE = "application/vnd.org.cnx.collection"
-MEDIATYPES = { 'document' : DOCUMENT_MEDIATYPE,
-               'binder' : BINDER_MEDIATYPE }
+MEDIATYPES = {'document': DOCUMENT_MEDIATYPE,
+              'binder': BINDER_MEDIATYPE}
 
 LICENSE_PARAMETER_MARKER = object()
 DEFAULT_LANGUAGE = 'en'
@@ -104,7 +104,7 @@ def initialize_licenses(event):
 
     LICENSES = []
     for license in licenses:
-        kwargs = {k:v for k, v in license.items()
+        kwargs = {k: v for k, v in license.items()
                   if k in ('name', 'url', 'code', 'version',)}
         LICENSES.append(License(**kwargs))
 
@@ -150,7 +150,7 @@ class Resource(cnxepub.Resource):
     def __init__(self, mediatype, data, filename=None):
         # ``data`` must be a buffer or file-like object.
         cnxepub.Resource.__init__(self, 'resource_id', data,
-                mediatype, filename)
+                                  mediatype, filename)
         self.id = self.hash
 
     def __acl__(self):
@@ -181,7 +181,8 @@ class BaseContent(object):
             if key in self.metadata:
                 self.metadata[key] = value
                 # BBB 18-Nov-2014 licensors - deprecated property 'licensors'
-                #     needs changed in webview and archive before removing here.
+                #     needs changed in webview and archive before removing
+                #     here.
                 if key == 'licensors':
                     self.metadata['copyright_holders'] = value
                 elif key == 'copyright_holders':
@@ -194,7 +195,8 @@ class BaseContent(object):
             self.metadata['license'] = License.from_url(license_url)
         if 'original_license' in kwargs:
             original_license_url = kwargs['original_license']['url']
-            self.metadata['original_license'] = License.from_url(original_license_url)
+            self.metadata['original_license'] = License.from_url(
+                    original_license_url)
         self.metadata['revised'] = datetime.datetime.now(TZINFO)
 
     def to_dict(self):
@@ -205,9 +207,9 @@ class BaseContent(object):
         result['is_publishable'] = self.is_publishable
         result['publishBlockers'] = self.publication_blockers
         utils.change_dict_keys(result, utils.underscore_to_camelcase)
-        if request and hasattr(self,'acls'):
-           result['permissions'] = sorted(self.acls.get(
-               request.unauthenticated_userid, []))
+        if request and hasattr(self, 'acls'):
+            result['permissions'] = sorted(self.acls.get(
+                request.unauthenticated_userid, []))
         return result
 
     @property
@@ -244,7 +246,8 @@ class Document(cnxepub.Document, BaseContent):
     def publish_prep(self):
         license = self.metadata['license']
         self.metadata['license_url'] = license.url
-        self.metadata['license_text'] = ' '.join([license.name, license.code, license.version])
+        self.metadata['license_text'] = ' '.join(
+            [license.name, license.code, license.version])
         self.metadata['summary'] = self.metadata['abstract']
         self.set_uri('cnx-archive', self.id)
         if self.metadata['print_style'] == 'default':
@@ -265,6 +268,7 @@ class Document(cnxepub.Document, BaseContent):
 
 def build_tree(tree):
     from .storage import storage
+
     def get_nodes(tree, nodes, title_overrides):
         for i in tree['contents']:
             if 'contents' in i:
@@ -279,9 +283,9 @@ def build_tree(tree):
                     title_overrides.append(i.get('title'))
                 else:
                     nodes.append(cnxepub.Binder(i['id'],
-                        metadata={'title': i.get('title')},
-                        nodes=contents_nodes,
-                        title_overrides=contents_title_overrides))
+                                 metadata={'title': i.get('title')},
+                                 nodes=contents_nodes,
+                                 title_overrides=contents_title_overrides))
                     title_overrides.append(i.get('title'))
                 continue
             if i['id'].endswith('@draft'):
@@ -337,11 +341,11 @@ def build_metadata(
     metadata['derived_from_title'] = derived_from_title
     metadata['submitter'] = submitter
     if type(subjects) in (list, tuple):
-        metadata['subjects'] =subjects
+        metadata['subjects'] = subjects
     else:
         metadata['subjects'] = subjects and [subjects] or []
     if type(keywords) in (list, tuple):
-        metadata['keywords'] =keywords
+        metadata['keywords'] = keywords
     else:
         metadata['keywords'] = keywords and [keywords] or []
     metadata['publication'] = publication
@@ -416,8 +420,9 @@ class Binder(cnxepub.Binder, BaseContent):
         metadata['media_type'] = self.mediatype
         id = str(metadata['id'])
         nodes, title_overrides = build_tree(tree)
-        cnxepub.Binder.__init__(self, id, nodes=nodes,
-                metadata=metadata, title_overrides=title_overrides)
+        cnxepub.Binder.__init__(
+            self, id, nodes=nodes, metadata=metadata,
+            title_overrides=title_overrides)
         self.acls = acls and acls or {}
         la = licensor_acceptance
         self.licensor_acceptance = la and la or []
@@ -432,7 +437,8 @@ class Binder(cnxepub.Binder, BaseContent):
     def publish_prep(self):
         license = self.metadata['license']
         self.metadata['license_url'] = license.url
-        self.metadata['license_text'] = ' '.join([license.name, license.code, license.version])
+        self.metadata['license_text'] = ' '.join(
+            [license.name, license.code, license.version])
         self.metadata['summary'] = self.metadata['abstract']
         if self.metadata['print_style'] == 'default':
             self.metadata['print_style'] = None
@@ -469,7 +475,7 @@ def create_content(**appstruct):
     """Given a Colander *appstruct*, create a content object."""
     kwargs = appstruct.copy()
     # TODO Lookup via storage.
-    for li_arg in ('license','original_license'):
+    for li_arg in ('license', 'original_license'):
         license = appstruct.get(li_arg)
         if license is not None:
             if not isinstance(license, License):
@@ -513,7 +519,8 @@ def derive_content(request, **kwargs):
     document['derived_from_title'] = document['title']
     # FIXME This is a hardcoded value and the hostname is wrong.
     #       It should point to archive.cnx.org.
-    document['derived_from_uri'] = 'http://cnx.org/contents/{}@{}'.format(document['id'],document['version'])
+    document['derived_from_uri'] = 'http://cnx.org/contents/{}@{}'.format(
+        document['id'], document['version'])
     document['title'] = u'Copy of {}'.format(document['title'])
     document['created'] = None
     document['revised'] = None

@@ -52,6 +52,10 @@ before_install:
 install:
   - sudo /usr/bin/python setup.py install
   - cnx-authoring-initialize_db  cnxauthoring/tests/testing.ini
+before_script:
+  - pip install pep8
+  - pep8 --exclude=tests *.py cnxauthoring/
+  - pep8 --max-line-length=200 cnxauthoring/tests
 script:
   - sudo /usr/local/bin/coverage run --source=cnxauthoring setup.py test
 after_success:

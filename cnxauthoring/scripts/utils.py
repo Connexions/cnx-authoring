@@ -10,6 +10,7 @@ import os
 import sys
 from paste.deploy import appconfig
 
+
 def parse_app_settings(config_uri, name='main'):
     """Parse the settings from the config file for the application.
     The application section defaults to name 'main'.

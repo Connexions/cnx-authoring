@@ -10,7 +10,7 @@ import datetime
 import colander
 
 from .models import (TZINFO, DEFAULT_LANGUAGE, DOCUMENT_MEDIATYPE,
-        BINDER_MEDIATYPE)
+                     BINDER_MEDIATYPE)
 
 
 @colander.deferred
@@ -57,7 +57,7 @@ class Trinary(colander.SchemaType):
         except:
             raise colander.Invalid(
                 node,
-                _('${val} is not a string', mapping={'val':cstruct})
+                _('${val} is not a string', mapping={'val': cstruct})
                 )
         result = result.lower()
 
@@ -72,9 +72,9 @@ class Trinary(colander.SchemaType):
                 node,
                 _('"${val}" is neither in (${false_choices}) '
                   'nor in (${true_choices})',
-                  mapping={'val':cstruct,
+                  mapping={'val': cstruct,
                            'false_choices': self.false_reprs,
-                           'true_choices': self.true_reprs })
+                           'true_choices': self.true_reprs})
                 )
         return state
 
@@ -211,8 +211,10 @@ class DocumentSchema(colander.MappingSchema):
 
     submitter = UserSchema()
     authors = RoleSequence(validator=colander.Length(min=1))
-    publishers = RoleSequence(validator=colander.Length(min=1)) # maintainers
-    licensors = RoleSequence(validator=colander.Length(min=1)) # copyright holders
+    # maintainers
+    publishers = RoleSequence(validator=colander.Length(min=1))
+    # copyright holders
+    licensors = RoleSequence(validator=colander.Length(min=1))
     translators = RoleSequence(missing=colander.drop)
     editors = RoleSequence(missing=colander.drop)
     illustrators = RoleSequence(missing=colander.drop)

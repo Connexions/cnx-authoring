@@ -5,6 +5,8 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
+
+
 class BaseStorage:
     """Utility for managing and interfacing with the the storage medium."""
 
@@ -31,7 +33,7 @@ class BaseStorage:
     def abort(self):
         """Clear any persistent error state"""
         raise NotImplementedError()
-    
+
     class Error:
         """Class of errors that are to be handled by abort"""
         pass

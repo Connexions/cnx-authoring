@@ -8,6 +8,7 @@
 
 from pyramid.events import NewRequest
 
+
 def add_cors_headers(request, response):
     settings = request.registry.settings
     acac = settings['cors.access_control_allow_credentials']
@@ -21,7 +22,7 @@ def add_cors_headers(request, response):
         if request.headers.get('Origin') in acao:
             response.headerlist.append(
                 ('Access-Control-Allow-Origin', request.headers.get('Origin')))
-        else:   
+        else:
             response.headerlist.append(
                 ('Access-Control-Allow-Origin', acao[0]))
     if acah:
@@ -31,9 +32,11 @@ def add_cors_headers(request, response):
         response.headerlist.append(
                 ('Access-Control-Allow-Methods', acam))
 
+
 def new_request_subscriber(event):
     request = event.request
     request.add_response_callback(add_cors_headers)
+
 
 def main(config):
     config.add_subscriber(new_request_subscriber, NewRequest)

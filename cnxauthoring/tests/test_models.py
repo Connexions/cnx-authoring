@@ -180,7 +180,7 @@ class ModelUtilitiesTestCase(unittest.TestCase):
         #       copyright_holder fix/mapping is in cnx-archive.
         role_attrs = ('authors', 'licensors', 'editors', 'illustrators',
                       'maintainers', 'publishers', 'translators',)
-        for role_attr in  role_attrs:
+        for role_attr in role_attrs:
             expected[role_attr] = []
         expected['title'] = "Copy of {}".format(archived_data['title'])
         expected['created'] = None
@@ -222,7 +222,6 @@ class ModelUtilitiesTestCase(unittest.TestCase):
 
         self.assertEqual(document_as_dict['license']['version'],
                          DEFAULT_LICENSE.version)
-
 
     @httpretty.activate
     def test_derive_content_upgrades_to_comparable_license(self):

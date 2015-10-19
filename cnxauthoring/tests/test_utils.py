@@ -234,7 +234,7 @@ class UtilsTests(unittest.TestCase):
                 (url,), kwargs = post.call_args
                 self.assertEqual(
                     url,
-                    'http://publishing/contents/{}/permissions' \
+                    'http://publishing/contents/{}/permissions'
                     .format(document.id))
                 self.assertEqual(
                     json.loads(kwargs['data']),
@@ -278,7 +278,7 @@ Thank you from your friends at OpenStax CNX
             u'derived_from_title': u'Madlavning',
             u'parent_title': None,
             u'keywords': [u'k\xf8kken',
-            u'Madlavning'],
+                          u'Madlavning'],
             u'subjects': [u'Arts'],
             u'title': u'Copy of Madlavning',
             u'parent_version': u'',
@@ -342,7 +342,7 @@ Thank you from your friends at OpenStax CNX
                 'firstname': u'User',
                 'id': 'user1'},
             u'derived_from_uri': 'http://cnx.org/contents/'
-                'feda4909-5bbd-431e-a017-049aff54416d@1.1',
+                                 'feda4909-5bbd-431e-a017-049aff54416d@1.1',
             }
         now = datetime.datetime.now(utils.TZINFO)
         formatted_now = now.astimezone(utils.TZINFO).isoformat()
@@ -351,10 +351,10 @@ Thank you from your friends at OpenStax CNX
             mock_datetime.now.return_value = now
             utils.accept_roles(cstruct, {
                 'fullname': u'User One',
-                 'surname': u'One',
-                 'firstname': u'User',
-                 'has_accepted': True,
-                 'id': 'user1'})
+                'surname': u'One',
+                'firstname': u'User',
+                'has_accepted': True,
+                'id': 'user1'})
         self.maxDiff = None
         self.assertDictEqual(
             cstruct, {
@@ -364,7 +364,7 @@ Thank you from your friends at OpenStax CNX
                 u'derived_from_title': u'Madlavning',
                 u'parent_title': None,
                 u'keywords': [u'k\xf8kken',
-                u'Madlavning'],
+                              u'Madlavning'],
                 u'subjects': [u'Arts'],
                 u'title': u'Copy of Madlavning',
                 u'parent_version': u'',
@@ -654,26 +654,26 @@ Thank you from your friends at OpenStax CNX
         from ..models import PublishingError
 
         with testing.testConfig(settings=settings), \
-             mock.patch('requests.get') as get, \
-             mock.patch('requests.post') as post, \
-             mock.patch('requests.delete') as delete:
-                mock_request().authenticated_userid = 'user1'
+                mock.patch('requests.get') as get, \
+                mock.patch('requests.post') as post, \
+                mock.patch('requests.delete') as delete:
+            mock_request().authenticated_userid = 'user1'
 
-                get.return_value.status_code = 500
-                # The initial GET should fail.
-                with self.assertRaises(PublishingError):
-                    utils.declare_roles(document)
-                get.return_value.status_code = 200
-                get.return_value.json.return_value = [
-                    {'uid': 'you', 'role': 'Author', 'has_accepted': False}]
-                delete.return_value.status_code = 500
-                # Attempt to DELETE should fail.
-                with self.assertRaises(PublishingError):
-                    utils.declare_roles(document)
-                delete.return_value.status_code = 200
-                # Lastly, the POST of roles should fail.
-                with self.assertRaises(PublishingError):
-                    utils.declare_roles(document)
+            get.return_value.status_code = 500
+            # The initial GET should fail.
+            with self.assertRaises(PublishingError):
+                utils.declare_roles(document)
+            get.return_value.status_code = 200
+            get.return_value.json.return_value = [
+                {'uid': 'you', 'role': 'Author', 'has_accepted': False}]
+            delete.return_value.status_code = 500
+            # Attempt to DELETE should fail.
+            with self.assertRaises(PublishingError):
+                utils.declare_roles(document)
+            delete.return_value.status_code = 200
+            # Lastly, the POST of roles should fail.
+            with self.assertRaises(PublishingError):
+                utils.declare_roles(document)
 
     @httpretty.activate
     @mock.patch('cnxauthoring.utils.get_current_request')
@@ -910,9 +910,9 @@ Thank you from your friends at OpenStax CNX
         from ..models import PublishingError
 
         with testing.testConfig(settings=settings), \
-             mock.patch('requests.get') as get, \
-             mock.patch('requests.post') as post, \
-             mock.patch('requests.delete') as delete:
+                mock.patch('requests.get') as get, \
+                mock.patch('requests.post') as post, \
+                mock.patch('requests.delete') as delete:
             get.return_value.status_code = 500
             post.return_value.status_code = 202
             # No exception raised on a bad GET
@@ -1058,6 +1058,7 @@ Thank you from your friends at OpenStax CNX
         test_db = settings[CONNECTION_SETTINGS_KEY]
         initdb({CONNECTION_SETTINGS_KEY: test_db}, clear=True)
         self.storage = PostgresqlStorage(db_connection_string=test_db)
+
         def persist_and_disconnect():
             self.storage.persist()
             self.storage.conn.close()
