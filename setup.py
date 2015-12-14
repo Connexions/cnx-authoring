@@ -18,7 +18,12 @@ install_requires = (
 tests_require = (
         'cnx-archive',
         'cnx-publishing',
-        'HTTPretty',
+        # FIXME httpretty 0.8.11 is broken:
+        # File ".../httpretty/setup.py", line 98, in <module>
+        #   tests_require=parse_requirements('development.txt'),
+        # File ".../httpretty/setup.py", line 62, in parse_requirements
+        #   raise RuntimeError("Couldn't find the `requirements.txt' file :(")
+        'HTTPretty==0.8.10',
         # FIXME mock>1.1 uses setuptools>17.1 which is not available
         #       in debian/ubuntu stable.
         'mock==1.0.1',   # only required for python2
