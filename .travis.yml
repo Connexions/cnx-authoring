@@ -2,15 +2,15 @@ language: python
 python:
   - "2.7"
 addons:
-  postgresql: 9.3
+  postgresql: 9.4
 before_install:
   - sudo apt-get update
   - sudo apt-get remove python-zope.interface
   # Install cnx-archive
   # * Install the 'plpython' extension language
-  - sudo apt-get install postgresql-plpython-9.3
+  - sudo apt-get install postgresql-plpython-9.4
   # * Install the 'plxslt' extension language
-  - sudo apt-get install libxml2-dev libxslt-dev postgresql-server-dev-9.3
+  - sudo apt-get install libxml2-dev libxslt-dev postgresql-server-dev-9.4
   - git clone https://github.com/petere/plxslt.git
   - cd plxslt && sudo make && sudo make install && cd ..
   # * Install cnx-query-grammar
