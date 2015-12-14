@@ -37,12 +37,10 @@ before_install:
   # Set up postgres roles
   - sudo -u postgres psql -d postgres -c "CREATE USER cnxauthoring WITH SUPERUSER PASSWORD 'cnxauthoring';"
   - sudo -u postgres psql -d postgres -c "CREATE USER cnxarchive WITH SUPERUSER PASSWORD 'cnxarchive';"
-  - sudo -u postgres psql -d postgres -c "CREATE USER accounts WITH SUPERUSER PASSWORD 'accounts';"
 
   # Set up the database
   - sudo -u postgres createdb -O cnxauthoring authoring-test
   - sudo -u postgres createdb -O cnxarchive cnxarchive-testing
-  - sudo -u postgres createdb -O accounts oscaccounts-testing
 
   # Set up postgres to load virtualenv
   - git clone https://github.com/okbob/session_exec
