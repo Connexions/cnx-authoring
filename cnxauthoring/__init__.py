@@ -15,9 +15,9 @@ def declare_routes(config):
     """Declaration of routing"""
     add_route = config.add_route
     add_route('options',
-              '/{foo:(\*|search|contents|users|resources|login|callback|logout)/?.*}',  # noqa
+              '/{foo:(\*|contents|users|resources|login|callback|logout)/?.*}',  # noqa
               request_method='OPTIONS')
-    add_route('search-content', '/search', request_method='GET')
+    add_route('search-content', '/users/contents/search', request_method='GET')
     add_route('get-content-json', '/contents/{id}@draft.json',
               request_method='GET')
     add_route('get-resource', '/resources/{hash}', request_method='GET')
