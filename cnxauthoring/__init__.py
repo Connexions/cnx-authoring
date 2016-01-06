@@ -8,7 +8,6 @@
 from openstax_accounts.interfaces import IOpenstaxAccountsAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.config import Configurator
-from pyramid.security import Allow, Everyone, Authenticated
 from pyramid.session import SignedCookieSessionFactory
 
 
@@ -75,7 +74,7 @@ def main(global_config, **settings):
     config.include('openstax_accounts')
     # authorization policy must be set if an authentication policy is set
     config.set_authentication_policy(
-            config.registry.getUtility(IOpenstaxAccountsAuthenticationPolicy))
+        config.registry.getUtility(IOpenstaxAccountsAuthenticationPolicy))
     config.set_authorization_policy(ACLAuthorizationPolicy())
 
     return config.make_wsgi_app()
