@@ -51,6 +51,12 @@ before_install:
   # Install the coverage utility and coveralls reporting utility
   - pip install coverage
   - pip install coveralls
+
+  # Uninstall mock to fix error
+  # VersionConflict: (mock 1.3.0 ... Requirement.parse('mock==1.0.1'))
+  # (See Pull Request #241, Travis Build #1088)
+  - pip uninstall -y mock
+
 install:
   - python setup.py install
   - cnx-authoring-initialize_db cnxauthoring/tests/testing.ini

@@ -5,10 +5,9 @@
 # Public License version 3 (AGPLv3).
 # See LICENCE.txt for details.
 # ###
+"""Functional tests of API."""
 import datetime
 import json
-import io
-import mimetypes
 import os
 import sys
 import re
@@ -21,7 +20,7 @@ except ImportError:
 try:
     import urllib.request as urllib2  # renamed in python3
 except ImportError:
-    import urllib2  # python2
+    import urllib2  # noqa python2
 try:
     from urllib.parse import urljoin
 except:
@@ -161,10 +160,10 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.testapp.options('/', status=404)
         self.testapp.options('/some-random.html', status=404)
 
-        urls = ['/*', '/login', '/logout', '/callback', '/search',
+        urls = ['/*', '/login', '/logout', '/callback',
                 '/contents/uuid@draft.json', '/resources/hash',
                 '/contents', '/resources', '/users/search',
-                '/users/profile', '/users/contents']
+                '/users/profile', '/users/contents', '/users/contents/search']
 
         for url in urls:
             response = self.testapp.options(url, status=200)
@@ -2242,11 +2241,11 @@ class FunctionalTests(BaseFunctionalTestCase):
 
     def test_search_content_401(self):
         self.logout()
-        response = self.testapp.get('/search', status=401)
+        response = self.testapp.get('/users/contents/search', status=401)
         self.assert_cors_headers(response)
 
     def test_search_content_no_q(self):
-        response = self.testapp.get('/search', status=200)
+        response = self.testapp.get('/users/contents/search', status=200)
         result = response.json
         self.assertEqual(result, {
             'query': {'limits': []},
@@ -2259,7 +2258,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
     def test_search_content_q_empty(self):
-        response = self.testapp.get('/search?q=', status=200)
+        response = self.testapp.get('/users/contents/search?q=', status=200)
         result = response.json
         self.assertEqual(result, {
             'query': {'limits': []},
@@ -2279,7 +2278,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                 '/users/contents', post_data, status=201)
         self.assert_cors_headers(response)
 
-        response = self.testapp.get('/search?q="Document', status=200)
+        response = self.testapp.get('/users/contents/search?q="Document', status=200)
         result = response.json
         self.assertEqual(result['query']['limits'],
                          [{'tag': 'text', 'value': 'Document'}])
@@ -2316,7 +2315,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
         # should not be able to get other user's documents
-        response = self.testapp.get('/search?q=document', status=200)
+        response = self.testapp.get('/users/contents/search?q=document', status=200)
         result = response.json
         self.assertDictEqual(result, {
             'query': {
@@ -2328,7 +2327,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
         # should be able to search user's own documents
-        response = self.testapp.get('/search?q=DNA', status=200)
+        response = self.testapp.get('/users/contents/search?q=DNA', status=200)
         result = response.json
         self.assertEqual(result['results']['total'], 1)
         self.assertEqual(result['results']['items'][0]['id'],
@@ -2336,7 +2335,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
         # should be able to search multiple terms
-        response = self.testapp.get('/search?q=new+resonance', status=200)
+        response = self.testapp.get('/users/contents/search?q=new+resonance', status=200)
         result = response.json
         self.assertEqual(result['query']['limits'], [
             {'tag': 'text', 'value': 'new'},
@@ -2348,7 +2347,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
         # should be able to search with double quotes
-        response = self.testapp.get('/search?q="through resonance"',
+        response = self.testapp.get('/users/contents/search?q="through resonance"',
                                     status=200)
         result = response.json
         self.assertEqual(result['query']['limits'], [
@@ -3121,7 +3120,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         storage.conn.close()
 
         response = self.testapp.get(
-            '/search',
+            '/users/contents/search',
             status=503,
             expect_errors=True)
         self.assertEqual(response.status, '503 Service Unavailable')

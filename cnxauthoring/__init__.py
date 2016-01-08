@@ -8,7 +8,6 @@
 from openstax_accounts.interfaces import IOpenstaxAccountsAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.config import Configurator
-from pyramid.security import Allow, Everyone, Authenticated
 from pyramid.session import SignedCookieSessionFactory
 
 
@@ -16,9 +15,9 @@ def declare_routes(config):
     """Declaration of routing"""
     add_route = config.add_route
     add_route('options',
-              '/{foo:(\*|search|contents|users|resources|login|callback|logout)/?.*}',  # noqa
+              '/{foo:(\*|contents|users|resources|login|callback|logout)/?.*}',  # noqa
               request_method='OPTIONS')
-    add_route('search-content', '/search', request_method='GET')
+    add_route('search-content', '/users/contents/search', request_method='GET')
     add_route('get-content-json', '/contents/{id}@draft.json',
               request_method='GET')
     add_route('get-resource', '/resources/{hash}', request_method='GET')
@@ -75,7 +74,7 @@ def main(global_config, **settings):
     config.include('openstax_accounts')
     # authorization policy must be set if an authentication policy is set
     config.set_authentication_policy(
-            config.registry.getUtility(IOpenstaxAccountsAuthenticationPolicy))
+        config.registry.getUtility(IOpenstaxAccountsAuthenticationPolicy))
     config.set_authorization_policy(ACLAuthorizationPolicy())
 
     return config.make_wsgi_app()
