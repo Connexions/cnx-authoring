@@ -77,6 +77,8 @@ def _amend_archive_data():
     with psycopg2.connect(conn_str) as db_connection:
         with db_connection.cursor() as cursor:
             cursor.execute("""\
+INSERT INTO api_keys (key, name, groups) VALUES
+  ('b07', 'trusted', '{"g:trusted-publishers"}');
 INSERT INTO document_controls (uuid, licenseid) VALUES
   ('a3f7c934-2a89-4baf-a9a9-a89d957586d2', 11);
 INSERT INTO abstracts (abstractid, abstract, html) VALUES
@@ -92,13 +94,14 @@ INSERT INTO modules
    'cnxcap', 'tests derive-from with missing resource',
    '{cnxcap}');
 INSERT INTO files
-  (fileid, file)
+  (fileid, file, media_type)
   VALUES
-  (9000, '<html xmlns="http://www.w3.org/1999/xhtml"><head></head><body><p>module with a missing resource</p><img src="/resources/aca93d69479e75244b01272902968d8349a548f4/python"/></body></html>');
+  (9000, '<html xmlns="http://www.w3.org/1999/xhtml"><head></head><body><p>module with a missing resource</p><img src="/resources/aca93d69479e75244b01272902968d8349a548f4/python"/></body></html>',
+  'text/html');
 INSERT INTO module_files
-  (module_ident, fileid, filename, mimetype)
+  (module_ident, fileid, filename)
   VALUES
-  (9000, 9000, 'index.cnxml.html', 'text/html');""")
+  (9000, 9000, 'index.cnxml.html');""")
 
 
 def _amend_publishing_data():
