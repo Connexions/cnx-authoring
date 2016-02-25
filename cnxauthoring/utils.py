@@ -223,7 +223,8 @@ def derive_resources(request, document):
                                             io.BytesIO(response.content))
                 yield resources[r.uri]
             r.bind(resources[r.uri], path)
-    document.metadata['content'] = document.html
+    html = cnxepub.DocumentContentFormatter(document)
+    document.metadata['content'] = str(html)
 
 
 def profile_to_user_dict(profile):
