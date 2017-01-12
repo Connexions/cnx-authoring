@@ -48,9 +48,9 @@ before_install:
   - make USE_PGXS=1 -e && sudo make USE_PGXS=1 -e install
   - cd ..
 
-  # Install the coverage utility and coveralls reporting utility
+  # Install the coverage utility and codecov reporting utility
   - pip install coverage
-  - pip install coveralls
+  - pip install codecov
 
 install:
   - python setup.py install
@@ -62,7 +62,7 @@ before_script:
 script:
   - coverage run --source=cnxauthoring setup.py test
 after_success:
-  # Report test coverage to coveralls.io
-  - coveralls
+  # Report test coverage to codecov.io
+  - codecov
 notifications:
   email: false
