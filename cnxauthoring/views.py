@@ -23,7 +23,7 @@ from pyramid.security import forget
 from pyramid.view import view_config
 from pyramid import httpexceptions
 import requests
-from openstax_accounts.interfaces import *
+from openstax_accounts.interfaces import IOpenstaxAccounts
 
 from cnxepub.models import ATTRIBUTED_ROLE_KEYS
 from .models import (
@@ -628,7 +628,7 @@ def post_to_publishing(request, userid, submitlog, content_ids,
                     raise httpexceptions.HTTPBadRequest(
                         'Unable to publish: content not found {}'
                         .format(content_id))
-                if not request.has_permission('publish', content):
+                if not request.has_permission('publish', content_item):
                     raise httpexceptions.HTTPForbidden(
                         'You do not have permission to publish {}'
                         .format(content_id))
@@ -700,10 +700,19 @@ def publish(request):
             .format(response.status_code))
     try:
         result = json.loads(response.content.decode('utf-8'))
+        state = result['state']
+        publication = str(result['publication'])
         for content in contents:
-            content.update(state=result['state'],
-                           publication=str(result['publication']),
-                           version=result['mapping'][content.id].split('@')[1])
+            # FIXME the mapping may in fact have remapped the uuid as well
+            # need to deal with that possibility, eventually
+            version = result['mapping'][content.id].split('@')[1]
+            if state == 'Done/Success':
+                content.update(state=state,
+                               publication=publication,
+                               version=version)
+            else:
+                content.update(state=state,
+                               publication=publication)
             storage.update(content)
     except (TypeError, ValueError):
         raise httpexceptions.HTTPBadRequest(
