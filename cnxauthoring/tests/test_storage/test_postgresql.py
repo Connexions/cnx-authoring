@@ -9,7 +9,7 @@ import io
 import unittest
 import uuid
 
-from .. import test_data
+from .. import get_data
 from ...models import Document, Resource, Binder
 from ..testing import integration_test_settings
 
@@ -114,7 +114,7 @@ class PostgresqlStorageTests(unittest.TestCase):
         self.assertEqual(result, None)
 
     def test_add_get_and_remove_resource(self):
-        with open(test_data('1x1.png'), 'rb') as f:
+        with open(get_data('1x1.png'), 'rb') as f:
             data = f.read()
         r = Resource('image/png', io.BytesIO(data))
         self.storage.add(r)

@@ -12,7 +12,7 @@ from pyramid.paster import get_appsettings
 
 __all__ = (
     'TEST_DATA_DIRECTORY',
-    'integration_test_settings', 'set_up_licenses', 'test_data',
+    'integration_test_settings', 'set_up_licenses', 'get_data',
     )
 
 
@@ -25,7 +25,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 TEST_DATA_DIRECTORY = os.path.join(here, 'data')
 
 
-def test_data(filename):
+def get_data(filename):
     """Get the path to a test data file."""
     return os.path.join(TEST_DATA_DIRECTORY, filename)
 
