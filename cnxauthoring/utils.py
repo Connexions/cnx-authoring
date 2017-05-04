@@ -186,7 +186,8 @@ def fetch_archive_content(request, archive_id, extras=False):
             archive_url, '/extras/{}'.format(archive_id))
     else:
         content_url = urlparse.urljoin(
-            archive_url, '/contents/{}.json'.format(archive_id))
+            archive_url, '/contents/{}.json?as_collated=false'.format(
+                archive_id))
     try:
         response = requests.get(content_url)
     except requests.exceptions.ConnectionError as exc:

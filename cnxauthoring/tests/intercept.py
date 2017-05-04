@@ -21,9 +21,8 @@ from wsgi_intercept import (
     )
 
 from cnxarchive import config
-from cnxarchive.database import initdb as archive_initdb
 from cnxarchive import main as archive_main
-from cnxpublishing.db import initdb as publishing_initdb
+from cnxdb.init import init_db
 from cnxpublishing.main import main as publishing_main
 
 from .testing import integration_test_settings
@@ -80,7 +79,8 @@ def _amend_archive_data():
 INSERT INTO api_keys (key, name, groups) VALUES
   ('b07', 'trusted', '{"g:trusted-publishers"}');
 INSERT INTO document_controls (uuid, licenseid) VALUES
-  ('a3f7c934-2a89-4baf-a9a9-a89d957586d2', 11);
+  ('a3f7c934-2a89-4baf-a9a9-a89d957586d2', 11),
+  ('174c4069-2743-42e9-adfe-4c7084f81fc5', 11);
 INSERT INTO abstracts (abstractid, abstract, html) VALUES
   (9000, '', '');
 INSERT INTO modules
@@ -191,10 +191,8 @@ def install_intercept():
         with db_connection.cursor() as cursor:
             cursor.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public")
 
-    # Initialize the archive database.
-    archive_initdb(settings)
-    # Initialize the publishing database.
-    publishing_initdb(connection_string)
+    # Initialize the database.
+    init_db(connection_string, True)
     with psycopg2.connect(connection_string) as db_connection:
         with db_connection.cursor() as cursor:
             filepath = config.TEST_DATA_SQL_FILE

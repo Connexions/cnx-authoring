@@ -171,7 +171,7 @@ class ViewsTests(unittest.TestCase):
 
     def test_get_content_for_document(self):
         # Set up a piece of content.
-        id = uuid.uuid4(),
+        id = str(uuid.uuid4()),
         document_title = "The Floating Dust"
         from ..models import Document
         expected = Document(document_title, id=id)
@@ -229,7 +229,7 @@ class ViewsTests(unittest.TestCase):
         def mocked_add(item):
             self.document = item
             self.document.acls = {'userid': ('edit', 'publish', 'view')}
-            self.document.id = uuid.uuid4()
+            self.document.id = str(uuid.uuid4())
             return self.document
         # Given the minimal amount of information, create a document.
         self.storage_cls.add = mock.Mock(side_effect=mocked_add)
@@ -264,7 +264,7 @@ class ViewsTests(unittest.TestCase):
         def mocked_add(item):
             self.document = item
             self.document.acls = {'username': ('edit', 'publish', 'view')}
-            self.document.id = uuid.uuid4()
+            self.document.id = str(uuid.uuid4())
             return self.document
         self.storage_cls.add = mock.Mock(side_effect=mocked_add)
         self.storage_cls.persist = mock.Mock(return_value=None)

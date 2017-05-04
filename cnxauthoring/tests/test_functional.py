@@ -35,7 +35,7 @@ from wsgi_intercept import requests_intercept
 
 from .intercept import (install_intercept, uninstall_intercept,
                         publishing_settings)
-from .testing import integration_test_settings, test_data
+from .testing import integration_test_settings, get_data
 from ..models import DEFAULT_LICENSE, TZINFO
 
 
@@ -514,7 +514,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'derivedFromUri': u'http://cnx.org/contents/{}@1'.format(
                 post_data['derivedFrom']),
             u'title': u'Copy of Indkøb',
-            u'abstract': u'',
+            u'abstract': u'<div xmlns="http://www.w3.org/1999/xhtml">foo</div>',
             u'language': u'da',
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
@@ -565,7 +565,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'derivedFromUri': u'http://cnx.org/contents/{}@1'.format(
                 post_data['derivedFrom']),
             u'title': u'Copy of Indkøb',
-            u'abstract': u'',
+            u'abstract': u'<div xmlns="http://www.w3.org/1999/xhtml">foo</div>',
             u'language': u'da',
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
@@ -635,7 +635,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'derivedFromUri': u'http://cnx.org/contents/{}'.format(
                 post_data['derivedFrom']),
             u'title': u'Copy of Indkøb',
-            u'abstract': u'',
+            u'abstract': u'<div xmlns="http://www.w3.org/1999/xhtml">foo</div>',
             u'language': u'da',
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
@@ -686,7 +686,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'derivedFromUri': u'http://cnx.org/contents/{}'.format(
                 post_data['derivedFrom']),
             u'title': u'Copy of Indkøb',
-            u'abstract': u'',
+            u'abstract': u'<div xmlns="http://www.w3.org/1999/xhtml">foo</div>',
             u'language': u'da',
             u'mediaType': u'application/vnd.org.cnx.module',
             u'version': u'draft',
@@ -862,10 +862,10 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'publishers': [submitter_w_assign_date],
             u'id': result['id'],
             u'derivedFrom': post_data['derivedFrom'],
-            u'derivedFromTitle': u'Derived Copy of College Physics',
+            u'derivedFromTitle': u'<span style="color:red;">Derived</span> Copy of College <i>Physics</i>',
             u'derivedFromUri': u'http://cnx.org/contents/{}'.format(
                 post_data['derivedFrom']),
-            u'title': u'Copy of Derived Copy of College Physics',
+            u'title': u'Copy of <span style="color:red;">Derived</span> Copy of College <i>Physics</i>',
             u'content': u'',
             u'language': u'en',
             u'mediaType': u'application/vnd.org.cnx.collection',
@@ -897,13 +897,13 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'subjects': [],
             u'tree': {
                 u'id': u'{}@draft'.format(result['id']),
-                u'title': u'Copy of Derived Copy of College Physics',
+                u'title': u'Copy of <span style="color:red;">Derived</span> Copy of College <i>Physics</i>',
                 u'isPublishable': True,
                 u'publishBlockers': None,
                 u'contents': [
                     {u'id': u'209deb1f-1a46-4369-9e0d-18674cf58a3e@7',
                      u'title': u'Preface'},
-                    {u'id': u'subcol',
+                    {u'id': u'8a11a2f3-0099-55ef-87bf-9725214fcd8a@1.1',
                      u'title': u'Introduction: The Nature of Science and Physics',
                      u'contents': [
                          {u'id': u'f3c9ab70-a916-4d8c-9256-42953287b4e9@3',
@@ -916,7 +916,7 @@ class FunctionalTests(BaseFunctionalTestCase):
                           u'title': u'Accuracy, Precision, and Significant Figures'},
                          {u'id': u'5838b105-41cd-4c3d-a957-3ac004a48af3@5',
                           u'title': u'Approximation'}]},
-                    {u'id': u'subcol',
+                    {u'id': u'd8bd3fb3-7b7b-5cee-9f2d-839e76638459@1.1',
                      u'title': u"Further Applications of Newton's Laws: Friction, Drag, and Elasticity",
                      u'contents': [
                          {u'id': u'24a2ed13-22a6-47d6-97a3-c8aa8d54ac6d@2',
@@ -1599,7 +1599,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'publishers': [submitter_w_assign_date],
             u'id': binder['id'],
             u'derivedFrom': post_data['derivedFrom'],
-            u'derivedFromTitle': u'Derived Copy of College Physics',
+            u'derivedFromTitle': u'<span style="color:red;">Derived</span> Copy of College <i>Physics</i>',
             u'derivedFromUri': u'http://cnx.org/contents/{}'.format(
                 post_data['derivedFrom']),
             u'abstract': u'...',
@@ -1659,7 +1659,7 @@ class FunctionalTests(BaseFunctionalTestCase):
             u'publishers': [submitter_w_assign_date],
             u'id': binder['id'],
             u'derivedFrom': post_data['derivedFrom'],
-            u'derivedFromTitle': u'Derived Copy of College Physics',
+            u'derivedFromTitle': u'<span style="color:red;">Derived</span> Copy of College <i>Physics</i>',
             u'derivedFromUri': u'http://cnx.org/contents/{}'.format(
                 post_data['derivedFrom']),
             u'abstract': u'...',
@@ -2364,7 +2364,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
     def test_get_resource_403(self):
-        with open(test_data('1x1.png'), 'rb') as data:
+        with open(get_data('1x1.png'), 'rb') as data:
             upload_data = data.read()
 
         response = self.testapp.post(
@@ -2402,7 +2402,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assert_cors_headers(response)
 
     def test_get_resource(self):
-        with open(test_data('1x1.png'), 'rb') as data:
+        with open(get_data('1x1.png'), 'rb') as data:
             upload_data = data.read()
 
         response = self.testapp.post(
@@ -3134,7 +3134,7 @@ class FunctionalTests(BaseFunctionalTestCase):
         self.assertEqual(response.status, '503 Service Unavailable')
 
     @mock.patch('cnxauthoring.views.logger')
-    def test_database_restart_failed(self, logger):
+    def get_database_restart_failed(self, logger):
         import psycopg2
         from ..storage import storage
 
@@ -3275,6 +3275,7 @@ class PublicationTests(BaseFunctionalTestCase):
             'title': u'Página dos',
             'content': (u'<html><body><p>Contents of Página dos</p></body>'
                         u'</html>'),
+            'abstract': 'Hola!',
             'language': 'es',
             }
         response = self.testapp.post_json(
@@ -3349,7 +3350,8 @@ class PublicationTests(BaseFunctionalTestCase):
 
         response = self.testapp.post_json('/users/contents', {
             'title': 'Page two',
-            'content': '<html><body><p>Content of page two</p></body></html>'
+            'content': '<html><body><p>Content of page two</p></body></html>',
+            'abstract': 'gotta have one'
             }, status=201)
         page2 = response.json
         self.assert_cors_headers(response)
@@ -3461,7 +3463,8 @@ class PublicationTests(BaseFunctionalTestCase):
         response = self.testapp.post_json('/users/contents', {
             'title': 'Page two',
             'content': '<html><body><p>Content of page two</p></body></html>',
-            'printStyle': '[PDF Print Style]'
+            'printStyle': '[PDF Print Style]',
+            'abstract': 'need one'
             }, status=201)
         page2 = response.json
         self.assert_cors_headers(response)
