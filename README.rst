@@ -11,6 +11,9 @@ Connexions Authoring Service
 .. image:: https://travis-ci.org/Connexions/cnx-authoring.svg?branch=master
    :target: https://travis-ci.org/Connexions/cnx-authoring
 
+.. image:: https://img.shields.io/codecov/c/github/Connexions/cnx-authoring.svg
+   :target: https://codecov.io/gh/Connexions/cnx-authoring
+
 ----
 
 .. contents:: Table of Contents
@@ -25,7 +28,7 @@ INSTALL
 
    sudo apt-get install python-virtualenv
    virtualenv .
-   
+
 2. Install development libraries
 
 .. code :: bash
@@ -47,7 +50,7 @@ INSTALL
    cd cnx-epub && ../bin/python setup.py install && cd ..
 
 5. Install cnx-authoring
-   
+
 .. code:: bash
 
    ./bin/python setup.py install
@@ -77,17 +80,17 @@ INSTALL
 8. If you are using the postgresql storage option:
 
    Install postgresql:
-   
+
    .. code:: bash
 
       sudo apt-get install postgresql postgresql-contrib
 
    Change two instances of "password" to "trust" in pg_hba.conf file and reload
-   
+
    .. code:: bash
-   
+
       sudo service postgresql reload
-      
+
    Set up with database
 
    .. code:: bash
@@ -145,7 +148,7 @@ INSTALL (Mac OSX)
    cd cnx-epub && python setup.py install && cd ..
 
 7. Install cnx-authoring
-   
+
    Clone this repository and ``cd`` into cnx-authoring if you haven't already.
    Then, install.
 
@@ -178,11 +181,11 @@ INSTALL (Mac OSX)
 10. If you are using the postgresql storage option:
 
    Install postgresql:
-   
+
    .. code:: bash
 
       brew install postgres
-      
+
    Set up with database
 
    .. code:: bash
